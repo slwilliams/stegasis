@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     printf("Too few arguments.\n");
     printUsage();
     return 1;
-	}
+  }
 
   string command = argv[1];
   if (command == "format") {
