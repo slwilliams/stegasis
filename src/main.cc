@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string>
 
+#include "video/avi_decoder.cc"
+
 using namespace std;
 
 void printName();
