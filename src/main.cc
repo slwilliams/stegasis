@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <string>
 
+#include "steg/steganographic_algorithm.h"
+#include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
+#include "steg/lsb_algorithm.cc"
+#include "fs/fuse.cc"
 
 using namespace std;
 
@@ -12,6 +16,11 @@ void doFormat(string algorithm, string videoPath);
 void doMount(string videoPath, string mountPoint);
 
 int main(int argc, char *argv[]) {
+  SteganographicAlgorithm *lsb = new LSBAlgorithm;
+  VideoDecoder *dec = new AVIDecoder("video.avi");
+  SteganographicFileSystem *fs = new SteganographicFileSystem(dec, lsb);
+  fs->mount("/tmp/test1");
+  return 0;
   printName();
   if (argc < 2) {
     printf("Too few arguments.\n");
@@ -41,8 +50,8 @@ int main(int argc, char *argv[]) {
     return 0;
   } else {
     printf("Unknown command\n");
+    return 1;
   }
-  return 0;
 }
 
 void doFormat(string algorithm, string videoPath) {
@@ -60,7 +69,7 @@ void incorrectArgNumber(string command) {
 }
 
 void printName() {
-  printf("   _____ _                       _     			\n");
+  printf("   _____ _                                  \n");
   printf("  / ____| |                     (_)         \n");
   printf(" | (___ | |_ ___  __ _  __ _ ___ _ ___      \n");
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");

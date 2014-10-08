@@ -1,3 +1,5 @@
+#ifndef VIDDEC_H
+#define VIDDEC_H
 class VideoDecoder {
   public:
     virtual char **getFrame(int frame) = 0;
@@ -5,3 +7,4 @@ class VideoDecoder {
     virtual int fileSize() = 0;
     virtual int numberOfFrames() = 0;
 };
+#endif
