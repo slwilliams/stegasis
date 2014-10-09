@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <string>
+#include <fuse.h>
 
+#include "fs/fswrapper.h"
 #include "steg/steganographic_algorithm.h"
 #include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
 #include "steg/lsb_algorithm.cc"
-#include "fs/fuse.cc"
+
 
 using namespace std;
 
@@ -15,11 +17,22 @@ void incorrectArgNumber(string command);
 void doFormat(string algorithm, string videoPath);
 void doMount(string videoPath, string mountPoint);
 
+struct fuse_operations examplefs_oper;
+
+
 int main(int argc, char *argv[]) {
   SteganographicAlgorithm *lsb = new LSBAlgorithm;
   VideoDecoder *dec = new AVIDecoder("video.avi");
-  SteganographicFileSystem *fs = new SteganographicFileSystem(dec, lsb);
-  fs->mount("/tmp/test1");
+  
+  examplefs_oper.getattr = wrap_getattr;
+  examplefs_oper.open = wrap_open;
+  examplefs_oper.read = wrap_read;
+  examplefs_oper.readdir = wrap_readdir;
+
+  printf("ok hi");
+  fuse_main(argc, argv, &examplefs_oper, NULL);
+
+
   return 0;
   printName();
   if (argc < 2) {
