@@ -3,6 +3,7 @@
 #include <fuse.h>
 
 #include "fs/fswrapper.h"
+#include "fs/stegfs.h"
 #include "steg/steganographic_algorithm.h"
 #include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
@@ -23,13 +24,15 @@ struct fuse_operations examplefs_oper;
 int main(int argc, char *argv[]) {
   SteganographicAlgorithm *lsb = new LSBAlgorithm;
   VideoDecoder *dec = new AVIDecoder("video.avi");
-  
+
+  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
+
   examplefs_oper.getattr = wrap_getattr;
   examplefs_oper.open = wrap_open;
   examplefs_oper.read = wrap_read;
   examplefs_oper.readdir = wrap_readdir;
 
-  printf("ok hi");
+  printf("ok hi\n");
   fuse_main(argc, argv, &examplefs_oper, NULL);
 
 

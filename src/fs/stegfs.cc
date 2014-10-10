@@ -6,12 +6,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "fs/stegfs.h"
 #include "common/logging.h"
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
-#include "fs/fuse.h"
-
-
 
 static const char *hello_str = "Hello World1234!\n";
 static const char *hello_path = "/hello";
@@ -22,6 +20,10 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 
 SteganographicFileSystem *SteganographicFileSystem::Instance() {
   return SteganographicFileSystem::_instance;
+};
+
+void SteganographicFileSystem::Set(SteganographicFileSystem *i) {
+  SteganographicFileSystem::_instance = i;
 };
 
 int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
@@ -42,7 +44,7 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
 }
 
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
-  this->log->log("test");
+  this->log->log("test123\n");
   if (strcmp(path, "/") != 0)
     return -ENOENT;
 

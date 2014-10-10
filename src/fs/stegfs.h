@@ -18,11 +18,11 @@ class SteganographicFileSystem {
     VideoDecoder *decoder;
     SteganographicAlgorithm *alg;
     Logger *log;
-    static SteganographicFileSystem *_instance;
     
-
   public:
+    static SteganographicFileSystem *_instance;
     static SteganographicFileSystem *Instance();
+    static void Set(SteganographicFileSystem *i);
     SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg);
     
     int getattr(const char *path, struct stat *stbuf); 

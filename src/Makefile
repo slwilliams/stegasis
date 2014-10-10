@@ -12,10 +12,18 @@ main: obj/fswrapper.o obj/main.o
 obj:
 	        mkdir -p obj
 
-obj/fswrapper.o: fs/fswrapper.cc fs/fswrapper.h
+obj/fswrapper.o: obj/stegfs.o fs/fswrapper.cc fs/fswrapper.h
 	        g++ -g -I ~/Dropbox/stegasis/src/ -c fs/fswrapper.cc -o obj/fswrapper.o $(CFLAGS) 
 
-obj/main.o: main.cc fs/fswrapper.h
+obj/stegfs.o: fs/stegfs.cc fs/stegfs.h obj/logging.o
+	        g++ -g -I ~/Dropbox/stegasis/src/ -c fs/stegfs.cc -o obj/stegfs.o $(CFLAGS) 
+
+obj/logging.o: common/logging.cc common/logging.h
+	        g++ -g -I ~/Dropbox/stegasis/src/ -c common/logging.cc -o obj/logging.o $(CFLAGS) 
+
+obj/main.o: main.cc 
 	        gcc -g -I ~/Dropbox/stegasis/src/ -c main.cc -o obj/main.o $(CFLAGS) 
+
+
 
 

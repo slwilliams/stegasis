@@ -1,26 +1,20 @@
 #include "fs/fswrapper.h"
-
-
-
+#include "fs/stegfs.h"
 
 int wrap_getattr(const char *path, struct stat *stbuf) {
-  //SteganographicFileSystem::Instance()->getattr(path, stbuf);
-  return 1;
+  return SteganographicFileSystem::Instance()->getattr(path, stbuf);
 }
 
 int wrap_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo) {
- // SteganographicFileSystem::Instance()->readdir(path, buf, filler, offset, fileInfo);
-  return 1;
+  return SteganographicFileSystem::Instance()->readdir(path, buf, filler, offset, fileInfo);
 }
 
 int wrap_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-//  SteganographicFileSystem::Instance()->read(path, buf, size, offset, fi);
-  return 1;
+  return SteganographicFileSystem::Instance()->read(path, buf, size, offset, fi);
 }
 
 int wrap_open(const char *path, struct fuse_file_info *fi) {
-//  SteganographicFileSystem::Instance()->open(path, fi);
-  return 1;
+  return SteganographicFileSystem::Instance()->open(path, fi);
 }
 
 //struct fuse_operations examplefs_oper;
