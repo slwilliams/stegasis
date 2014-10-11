@@ -10,7 +10,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
@@ -30,7 +30,7 @@ int wrap_open(const char *path, struct fuse_file_info *fi);
 }
 #endif
 
-//void wrap_mount(std::string mountPoint);
+void wrap_mount(std::string mountPoint);
 
 
 #endif

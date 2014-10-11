@@ -6,7 +6,7 @@ all: main
 clean:
 	        rm -rf obj
 
-main: obj/fswrapper.o obj/main.o
+main: obj obj/fswrapper.o obj/main.o
 	        g++ -g -o main.o obj/* $(LINKFLAGS) 
 
 obj:
@@ -15,7 +15,7 @@ obj:
 obj/fswrapper.o: obj/stegfs.o fs/fswrapper.cc fs/fswrapper.h
 	        g++ -g -I ~/Dropbox/stegasis/src/ -c fs/fswrapper.cc -o obj/fswrapper.o $(CFLAGS) 
 
-obj/stegfs.o: fs/stegfs.cc fs/stegfs.h obj/logging.o
+obj/stegfs.o: obj/logging.o fs/stegfs.cc fs/stegfs.h
 	        g++ -g -I ~/Dropbox/stegasis/src/ -c fs/stegfs.cc -o obj/stegfs.o $(CFLAGS) 
 
 obj/logging.o: common/logging.cc common/logging.h

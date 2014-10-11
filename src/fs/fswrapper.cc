@@ -17,9 +17,9 @@ int wrap_open(const char *path, struct fuse_file_info *fi) {
   return SteganographicFileSystem::Instance()->open(path, fi);
 }
 
-//struct fuse_operations examplefs_oper;
+struct fuse_operations fs_oper;
 
-/*void wrap_mount(std::string mountPoint) {
+void wrap_mount(std::string mountPoint) {
   char **argv = (char **)malloc(2 * sizeof(char*));
   argv[0] = (char *)malloc(sizeof(char)*9);
   argv[1] = (char *)malloc(sizeof(char)*mountPoint.length() + 1);
@@ -28,17 +28,11 @@ int wrap_open(const char *path, struct fuse_file_info *fi) {
   }
   argv[1][mountPoint.length()] = '\0';
 
-//  examplefs_oper.getattr  = wrap_getattr;
- // examplefs_oper.readdir  = wrap_readdir;
-  //examplefs_oper.open   = wrap_open; 
-  //examplefs_oper.read   = wrap_read; 
+  fs_oper.getattr  = wrap_getattr;
+  fs_oper.readdir  = wrap_readdir;
+  fs_oper.open   = wrap_open; 
+  fs_oper.read   = wrap_read; 
 
-  struct fuse_operations hello_oper = {
-  .getattr  = wrap_getattr,
-  .readdir  = wrap_readdir,
-  .open   = wrap_open,
-  .read   = wrap_read,
-};
 
-  fuse_main(2, argv, &hello_oper, NULL);
-}*/
+  fuse_main(2, argv, &fs_oper, NULL);
+}

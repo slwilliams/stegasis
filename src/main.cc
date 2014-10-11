@@ -9,34 +9,14 @@
 #include "video/avi_decoder.cc"
 #include "steg/lsb_algorithm.cc"
 
-
 using namespace std;
 
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
 void doFormat(string algorithm, string videoPath);
-void doMount(string videoPath, string mountPoint);
-
-struct fuse_operations examplefs_oper;
-
 
 int main(int argc, char *argv[]) {
-  SteganographicAlgorithm *lsb = new LSBAlgorithm;
-  VideoDecoder *dec = new AVIDecoder("video.avi");
-
-  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
-
-  examplefs_oper.getattr = wrap_getattr;
-  examplefs_oper.open = wrap_open;
-  examplefs_oper.read = wrap_read;
-  examplefs_oper.readdir = wrap_readdir;
-
-  printf("ok hi\n");
-  fuse_main(argc, argv, &examplefs_oper, NULL);
-
-
-  return 0;
   printName();
   if (argc < 2) {
     printf("Too few arguments.\n");
@@ -53,8 +33,8 @@ int main(int argc, char *argv[]) {
     string algFlag = argv[2];
     string videoPath = argv[3];
     string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
+
     doFormat(alg, videoPath);
-    return 0;
   } else if (command == "mount") {
     if (argc != 4) {
       incorrectArgNumber(command);
@@ -62,21 +42,31 @@ int main(int argc, char *argv[]) {
     }
     string videoPath = argv[2];
     string mountPoint = argv[3];
-    doMount(videoPath, mountPoint);
-    return 0;
+
+    SteganographicAlgorithm *lsb = new LSBAlgorithm;
+    VideoDecoder *dec = new AVIDecoder(videoPath);
+    SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
+
+    wrap_mount(mountPoint);
+  } else if (command == "unmount") {
+    if (argc != 3) {
+      incorrectArgNumber(command);
+      return 1;
+    } 
+    string prefix("fusermount -u ");
+    string mountPoint(argv[2]);
+    string command = prefix + mountPoint;
+    printf("Unmounting %s\n", mountPoint.c_str());
+    return system(command.c_str());
   } else {
     printf("Unknown command\n");
     return 1;
   }
+  return 0;
 }
 
 void doFormat(string algorithm, string videoPath) {
   printf("alg: %s, path: %s\n", algorithm.c_str(), videoPath.c_str());		
-}
-
-void doMount(string videoPath, string mountPoint) {
-  printf("videopath: %s, mountpoint: %s\n", videoPath.c_str(), 
-      mountPoint.c_str());		
 }
 
 void incorrectArgNumber(string command) {

@@ -11,6 +11,7 @@
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
 
+SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 static const char *hello_str = "Hello World1234!\n";
 static const char *hello_path = "/hello";
 
