@@ -1,8 +1,6 @@
 #ifndef VIDDEC_H
 #define VIDDEC_H
 
-#include <stdint.h>
-
 class VideoDecoder {
   public:
     virtual char **getFrame(int frame) = 0;
