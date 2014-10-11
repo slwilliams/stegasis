@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     SteganographicAlgorithm *lsb = new LSBAlgorithm;
     VideoDecoder *dec = new AVIDecoder(videoPath);
     SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
-
+    return 0;
     wrap_mount(mountPoint);
   } else if (command == "unmount") {
     if (argc != 3) {
