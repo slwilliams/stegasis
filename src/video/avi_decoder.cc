@@ -79,6 +79,11 @@ struct BitmapInfoHeader {
   uint32_t clrImportant; 
 };
 
+struct JunkChunk {
+  char fourCC[4];
+  uint32_t size;
+};
+
 class AVIDecoder : public VideoDecoder {
   private:
     string filePath;
@@ -125,6 +130,15 @@ class AVIDecoder : public VideoDecoder {
      printf("bitcount: %d\n", this->bitmapInfoHeader.bitCount);
      printf("compression: %d\n", this->bitmapInfoHeader.compression); 
      // 0 -> uncompressed
+     
+     JunkChunk junk;
+     fread(&junk, 1, sizeof(JunkChunk), f);
+     fseek(f, junk.size, SEEK_CUR);
+
+     fread(&this->aviStreamList, 4, 3, f);
+     fread(&this->audioStreamHeader, 1, sizeof(AviStreamHeader), f);
+     printf("fcctype_audio: %.4s\n", this->audioStreamHeader.fccType);
+     printf("fcchandler_audio: %.4s\n", this->audioStreamHeader.fccHandler);
     };
     ~AVIDecoder() {
       fclose(this->f);
