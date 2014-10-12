@@ -14,7 +14,6 @@ struct RIFFHeader {
 struct AviChunk {
   char fourCC[4];
   int32_t chunkSize;
-  char *data;
 };
 
 struct AviList {
@@ -84,6 +83,17 @@ struct JunkChunk {
   uint32_t size;
 };
 
+struct WaveFormatEX {
+  char fourCC[4];
+  uint32_t padding; // Don't know why this is here
+  uint16_t wFormatTag;
+  uint16_t nChannels;
+  uint32_t nSamplesPerSec;
+  uint32_t nAvgBytesPerSec;
+  uint16_t nBlockAlign;
+  uint16_t wBitsPerSample;
+};
+
 class AVIDecoder : public VideoDecoder {
   private:
     string filePath;
@@ -94,7 +104,9 @@ class AVIDecoder : public VideoDecoder {
     struct AviStreamHeader audioStreamHeader;
     struct AviHeader aviHeader;
     struct BitmapInfoHeader bitmapInfoHeader;
+    struct WaveFormatEX audioInfoHeader;
     FILE *f;
+
   public:
     AVIDecoder(string filePath): filePath(filePath) {
      this->f = fopen(this->filePath.c_str(), "rb+"); 
@@ -137,8 +149,43 @@ class AVIDecoder : public VideoDecoder {
 
      fread(&this->aviStreamList, 4, 3, f);
      fread(&this->audioStreamHeader, 1, sizeof(AviStreamHeader), f);
-     printf("fcctype_audio: %.4s\n", this->audioStreamHeader.fccType);
-     printf("fcchandler_audio: %.4s\n", this->audioStreamHeader.fccHandler);
+     printf("audio header ff: %.4s\n", this->audioStreamHeader.fourCC);
+     printf("audio fcctype: %.4s\n", this->audioStreamHeader.fccType);
+     printf("audio cb: %d\n", this->audioStreamHeader.cb);
+
+     fread(&this->audioInfoHeader, 1, sizeof(WaveFormatEX), f);
+     printf("wavefourcc: %.4s\n", this->audioInfoHeader.fourCC);
+     printf("audio wFormatTag: %d\n", this->audioInfoHeader.wFormatTag);
+     printf("audio channels: %d\n", this->audioInfoHeader.nChannels);
+     printf("audio sample rate: %d\n", this->audioInfoHeader.nSamplesPerSec);
+     printf("audio bitrate: %d\n", this->audioInfoHeader.wBitsPerSample);
+
+     fread(&junk, 1, sizeof(JunkChunk), f);
+     fseek(f, junk.size, SEEK_CUR);
+     
+     fread(&this->aviList, 1, sizeof(AviList), f);
+     fseek(f, this->aviList.listSize - 4, SEEK_CUR);
+
+     fread(&junk, 1, sizeof(JunkChunk), f);
+     printf("junk?: %.4s\n", junk.fourCC);
+     fseek(f, junk.size, SEEK_CUR);
+
+     // Now we are at the start of the movi chunks
+
+     fread(&this->aviList, 1, sizeof(AviList), f);
+     printf("list type: %.4s\n", this->aviList.fourCC);
+     printf("list size: %d\n", this->aviList.listSize);
+
+     //now we can start reading chunks
+     AviChunk chunk;
+     while(true) {
+       fread(&chunk, 1, sizeof(AviChunk), f);
+       printf("chunk type: %.4s\n", chunk.fourCC);
+       printf("chunk size: %d\n", chunk.chunkSize);
+
+       fseek(f, chunk.chunkSize, SEEK_CUR);
+       printf("---------\n");
+     }
     };
     ~AVIDecoder() {
       fclose(this->f);
