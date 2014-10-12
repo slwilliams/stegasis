@@ -178,14 +178,24 @@ class AVIDecoder : public VideoDecoder {
 
      //now we can start reading chunks
      AviChunk chunk;
-     while(true) {
-       fread(&chunk, 1, sizeof(AviChunk), f);
-       printf("chunk type: %.4s\n", chunk.fourCC);
-       printf("chunk size: %d\n", chunk.chunkSize);
+     fread(&chunk, 1, sizeof(AviChunk), f);
+     fseek(f, chunk.chunkSize, SEEK_CUR);
+     fread(&chunk, 1, sizeof(AviChunk), f);
+     printf("chunk type: %.4s\n", chunk.fourCC);
+     printf("chunk size: %d\n", chunk.chunkSize);
+     
+     // Little endian
+     char redBytes[3];
+     redBytes[0] = 0;
+     redBytes[1] = 0;
+     redBytes[2] = 255;
 
-       fseek(f, chunk.chunkSize, SEEK_CUR);
-       printf("---------\n");
+     int i = 0;
+     // Make the first frame red
+     for (i = 0; i < 921600; i++) {
+       fwrite(&redBytes, 1, 3, f);
      }
+     fclose(f);
     };
     ~AVIDecoder() {
       fclose(this->f);
