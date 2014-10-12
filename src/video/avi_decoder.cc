@@ -1,98 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 #include <string>
 
 #include "video_decoder.h"
 
 using namespace std;
-
-struct RIFFHeader {
-  char fourCC[4];
-  int32_t fileSize;
-  char fileType[4];
-};
-
-struct AviChunk {
-  char fourCC[4];
-  int32_t chunkSize;
-};
-
-struct AviList {
-  char list[4];
-  int32_t listSize;
-  char fourCC[4];
-};
-
-struct AviHeader {
-  char header[4];
-  int32_t cb;
-  int32_t microSecPerFrame;
-  int32_t maxBytesPerSec;
-  int32_t paddingGranularity;
-  int32_t flags;
-  int32_t totalFrames;
-  int32_t initialFrames;
-  int32_t streams;
-  int32_t suggestedBufferSize;
-  int32_t width;
-  int32_t height;
-  int32_t reserved[4];
-};
-
-struct AviStreamHeader {
-  char fourCC[4];
-  int32_t cb;
-  char fccType[4];
-  char fccHandler[4];
-  int32_t flags;
-  int16_t priority;
-  int16_t language;
-  int32_t initialFrames;
-  int32_t scale;
-  int32_t rate;
-  int32_t start;
-  int32_t length;
-  int32_t suggestedBufferSize;
-  int32_t quality;
-  int32_t sampleSize;
-  struct {
-    int16_t left;
-    int16_t top;
-    int16_t right;
-    int16_t bottom;
-  } rcFrame;
-};
-
-struct BitmapInfoHeader {
-  char fourCC[4];
-  uint32_t size;
-  uint32_t sizeAgain; // No idea why this is here?
-  int32_t width;
-  int32_t height;
-  uint16_t planes;
-  uint16_t bitCount;
-  uint32_t compression;
-  uint32_t sizeImage;
-  int32_t xPelsPerMeter;
-  int32_t yPelsPerMeter;
-  uint32_t clrUsed;
-  uint32_t clrImportant; 
-};
-
-struct JunkChunk {
-  char fourCC[4];
-  uint32_t size;
-};
-
-struct WaveFormatEX {
-  char fourCC[4];
-  uint32_t padding; // Don't know why this is here
-  uint16_t wFormatTag;
-  uint16_t nChannels;
-  uint32_t nSamplesPerSec;
-  uint32_t nAvgBytesPerSec;
-  uint16_t nBlockAlign;
-  uint16_t wBitsPerSample;
-};
 
 class AVIDecoder : public VideoDecoder {
   private:
@@ -105,6 +17,8 @@ class AVIDecoder : public VideoDecoder {
     struct AviHeader aviHeader;
     struct BitmapInfoHeader bitmapInfoHeader;
     struct WaveFormatEX audioInfoHeader;
+    struct AviChunk *frameChunks;
+    long chunksOffset;
     FILE *f;
 
   public:
@@ -173,38 +87,54 @@ class AVIDecoder : public VideoDecoder {
      // Now we are at the start of the movi chunks
 
      fread(&this->aviList, 1, sizeof(AviList), f);
+     this->chunksOffset = ftell(f);
      printf("list type: %.4s\n", this->aviList.fourCC);
      printf("list size: %d\n", this->aviList.listSize);
 
-     //now we can start reading chunks
-     AviChunk chunk;
-     fread(&chunk, 1, sizeof(AviChunk), f);
-     fseek(f, chunk.chunkSize, SEEK_CUR);
-     fread(&chunk, 1, sizeof(AviChunk), f);
-     printf("chunk type: %.4s\n", chunk.fourCC);
-     printf("chunk size: %d\n", chunk.chunkSize);
+     this->frameChunks = (AviChunk *)malloc(sizeof(AviChunk) * this->aviHeader.totalFrames);
      
-     // Little endian
-     char redBytes[3];
-     redBytes[0] = 0;
-     redBytes[1] = 0;
-     redBytes[2] = 255;
-
+     //now we can start reading chunks
      int i = 0;
-     // Make the first frame red
-     for (i = 0; i < 921600; i++) {
-       fwrite(&redBytes, 1, 3, f);
+     AviChunk tempChunk;
+     while (i < this->aviHeader.totalFrames) {
+       fread(&tempChunk, 1, 4 + 4, f);
+       printf("chunk type: %.4s\n", tempChunk.fourCC);
+       printf("chunk size: %d\n", tempChunk.chunkSize);
+       if (strncmp(tempChunk.fourCC, "00db", 4) == 0) {
+         fseek(f, -8, SEEK_CUR);
+         fread(&frameChunks[i], 1, 4 + 4, f);
+         char *frameData = (char *)malloc(frameChunks[i].chunkSize);
+         frameChunks[i].frameData = frameData;
+         i ++;
+       }
+       fseek(f, tempChunk.chunkSize, SEEK_CUR);
      }
-     fclose(f);
     };
     ~AVIDecoder() {
+      // Write back the frame data
+      fseek(f, this->chunksOffset, SEEK_SET); 
+      int i = 0;
+      char fourCC[4]; 
+      int32_t chunkSize; 
+      while (i < this->aviHeader.totalFrames) {
+        fread(&fourCC, 1, 4, f);
+        if (strncmp(fourCC, "00db", 4) == 0) {
+          fseek(f, -4, SEEK_CUR);
+          fwrite(&this->frameChunks[i], 1, 8, f);
+          fwrite(&this->frameChunks[i].frameData, 1, this->frameChunks[i].chunkSize, f);
+          i ++;
+        } else {
+          fread(&chunkSize, 1, 4, f);
+          fseek(f, chunkSize, SEEK_CUR);
+        }
+      }
       fclose(this->f);
     };
-    virtual char **getFrame(int frame) {
-      
+    virtual AviChunk getFrame(int frame) {
+      return this->frameChunks[frame];
     };                                     
-    virtual bool writeFrame(int frame, char frameData[]) {
-    
+    virtual void writeFrame(int frame, char frameData[]) {
+      memcpy(this->frameChunks[frame].frameData, &frameData, this->frameChunks[frame].chunkSize);
     };                   
     virtual int getFileSize() {
       return this->riffHeader.fileSize; 
