@@ -2,7 +2,7 @@
 #define STEGALG_H 
 class SteganographicAlgorithm {                                                 
   public:                                                                       
-    virtual void embed(char *frame[], char data[]) = 0;
-    virtual char **extract(char *frame[]) = 0;                                 
+    virtual void embed(char *frame, char *data, int dataBytes) = 0;
+    virtual void extract(char *frame, char *output, int dataBytes) = 0;                                 
 };
 #endif

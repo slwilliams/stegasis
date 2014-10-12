@@ -1,11 +1,30 @@
+#include <stdio.h>
+
 #include "steganographic_algorithm.h"
 
 class LSBAlgorithm : public SteganographicAlgorithm {
   public:
-    virtual void embed(char *frame[], char data[]) {
-      
+    virtual void embed(char *frame, char *data, int dataBytes) {
+      int i = 0;
+      int j = 0;
+      int frameByte = 0;
+      char mask = 1;
+      for (i = 0; i < dataBytes; i ++) {
+        for (j = 7; j >= 0; j --) {
+          frame[frameByte] |= ((mask << j) & data[i]) >> j;
+          frameByte ++;
+        }
+      }
     };
-    virtual char **extract(char *frame[]) {
-      
+    virtual void extract(char *frame, char *output, int dataBytes) {
+      int i = 0;
+      int j = 0;
+      int frameByte = 0;
+      for (i = 0; i < dataBytes; i ++) {
+        for (j = 7; j >= 0; j --) {
+          output[i] |= ((frame[frameByte] & 1) << j);
+          frameByte ++;
+        }
+      }
     };
 };

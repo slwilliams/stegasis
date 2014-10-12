@@ -94,9 +94,9 @@ struct WaveFormatEX {
 class VideoDecoder {
   public:
     virtual AviChunk getFrame(int frame) = 0;
-    virtual void writeFrame(int frame, char frameData[]) = 0;
     virtual int getFileSize() = 0;
     virtual int numberOfFrames() = 0;
+    virtual ~VideoDecoder() {};
 };
 
 #endif

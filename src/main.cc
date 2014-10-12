@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string>
 #include <fuse.h>
 
@@ -45,7 +46,14 @@ int main(int argc, char *argv[]) {
 
     SteganographicAlgorithm *lsb = new LSBAlgorithm;
     VideoDecoder *dec = new AVIDecoder(videoPath);
+    AviChunk c = dec->getFrame(0);
+    char test[4] = {0, 0, 0, 0};
+    //lsb->embed(c.frameData, test, 4);
+    lsb->extract(c.frameData, test, 4); 
     SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
+    //destructor isn't being called for some reason??
+    delete dec;
+    printf("out?: %.4s\n", test);
     return 0;
     wrap_mount(mountPoint);
   } else if (command == "unmount") {
