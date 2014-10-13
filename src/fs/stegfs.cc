@@ -16,7 +16,7 @@ static const char *hello_str = "Hello World1234!\n";
 static const char *hello_path = "/hello";
 
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg): decoder(decoder), alg(alg) {
-    this->log = new Logger("/tmp/test.txt", false);
+  this->log = new Logger("/tmp/test.txt", false);
 };
 
 SteganographicFileSystem *SteganographicFileSystem::Instance() {
@@ -42,18 +42,20 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
     res = -ENOENT;
   }
   return res;
-}
+};
 
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
-  this->log->log("test123\n");
   if (strcmp(path, "/") != 0)
     return -ENOENT;
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
-  filler(buf, hello_path + 1, NULL, 0);
+  AviChunk headerFrame = this->decoder->getFrame(0);
+  char *file = (char *)malloc(10);
+  this->alg->extract(headerFrame.frameData, file, 10, 8 * 8);
+  filler(buf, file + 1, NULL, 0);
   return 0;
-}
+};
 
 int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) {
   if (strcmp(path, hello_path) != 0)
@@ -63,7 +65,7 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
     return -EACCES;
 
   return 0;
-}
+};
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   size_t len;
@@ -80,4 +82,4 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   }
 
   return size;
-}
+};

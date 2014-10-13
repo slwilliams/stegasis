@@ -16,6 +16,7 @@ void printName();
 void printUsage();
 void incorrectArgNumber(string command);
 void doFormat(string algorithm, string videoPath);
+SteganographicAlgorithm *getAlg(string alg);
 
 int main(int argc, char *argv[]) {
   printName();
@@ -46,16 +47,12 @@ int main(int argc, char *argv[]) {
 
     SteganographicAlgorithm *lsb = new LSBAlgorithm;
     VideoDecoder *dec = new AVIDecoder(videoPath);
-    AviChunk c = dec->getFrame(0);
-    char test[4] = {0, 0, 0, 0};
-    //lsb->embed(c.frameData, test, 4);
-    lsb->extract(c.frameData, test, 4); 
     SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
-    //destructor isn't being called for some reason??
-    delete dec;
-    printf("out?: %.4s\n", test);
-    return 0;
+    printf("Mounting...\n");
     wrap_mount(mountPoint);
+    printf("Writing AVI\n");
+    delete dec;
+    return 0;
   } else if (command == "unmount") {
     if (argc != 3) {
       incorrectArgNumber(command);
@@ -74,7 +71,30 @@ int main(int argc, char *argv[]) {
 }
 
 void doFormat(string algorithm, string videoPath) {
-  printf("alg: %s, path: %s\n", algorithm.c_str(), videoPath.c_str());		
+  SteganographicAlgorithm *alg = getAlg(algorithm);
+  VideoDecoder *dec = new AVIDecoder(videoPath);
+  char header[4] = {'s', 't', 'e', 'g'};
+
+  AviChunk headerFrame = dec->getFrame(0);
+  alg->embed(headerFrame.frameData, header, 4, 0);
+
+  // Hard coded for now
+  char algCode[4] = {'L', 'S', 'B', ' '};
+  alg->embed(headerFrame.frameData, algCode, 4, 4 * 8);
+
+ 
+  // Lets hard code some files for now
+  char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0',}; 
+  alg->embed(headerFrame.frameData, files, 10, 8 * 8);
+  
+  delete dec;
+  delete alg;
+}
+
+SteganographicAlgorithm *getAlg(string alg) {
+  if (alg == "lsb") {
+    return new LSBAlgorithm;
+  }
 }
 
 void incorrectArgNumber(string command) {

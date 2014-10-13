@@ -20,19 +20,22 @@ int wrap_open(const char *path, struct fuse_file_info *fi) {
 struct fuse_operations fs_oper;
 
 void wrap_mount(std::string mountPoint) {
-  char **argv = (char **)malloc(2 * sizeof(char*));
-  argv[0] = (char *)malloc(sizeof(char)*9);
+  char **argv = (char **)malloc(3 * sizeof(char*));
+  argv[0] = (char *)malloc(sizeof(char)*5);
   argv[1] = (char *)malloc(sizeof(char)*mountPoint.length() + 1);
   for(int i = 0; i < mountPoint.length(); i ++) {
     argv[1][i] = mountPoint.c_str()[i];
   }
   argv[1][mountPoint.length()] = '\0';
+  argv[2] = (char *)malloc(sizeof(char)*3);
+  argv[2][0] = '-'; 
+  argv[2][1] = 'f'; 
+  argv[2][2] = '\0';
 
   fs_oper.getattr  = wrap_getattr;
   fs_oper.readdir  = wrap_readdir;
   fs_oper.open   = wrap_open; 
   fs_oper.read   = wrap_read; 
 
-
-  fuse_main(2, argv, &fs_oper, NULL);
+  fuse_main(3, argv, &fs_oper, NULL);
 }
