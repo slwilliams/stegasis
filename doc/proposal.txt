@@ -137,6 +137,7 @@ If there is sufficient time, the following extensions may be attempted:
 \item Directory Structure: \texttt{Stegasis} as described only permits files to be created within the root of the virtual file system. It would be beneficial to allow users to create folder structures as you would expect from a standard file system.
 \item Audio Usage: \texttt{Stegasis} as described only makes use of video image frames to embed the file system. However, a substantial part of an \texttt{AVI} file may be the audio data. It would be useful to make use of the audio data to increase the steganographic capacity of the proposed embedding algorithms.
 \item Video Formats: Unfortunately, raw \texttt{AVI} video is (very) uncommon compared with modern compressed video formats such as \texttt{H.264 (mp4)} it would be very beneficial for \texttt{Stegasis} to operate on a variety of video formats, rather than just raw \texttt{AVI}. However, modern video formats are intricate and complex so this may well be outside the scope of this project.
+\item Evaluation of video artifacts: Quantification of ``noticeable visual impact on video content'' via a set of human trials possibly achievable by crowd-sourcing through an online website.
 \end{itemize}
 
 \section{Timetable}
@@ -157,7 +158,7 @@ If there is sufficient time, the following extensions may be attempted:
 \subsection{Lent Term}
 \begin{itemize}
 \item \textbf{\textit{16th January - 22nd January (week 1):}} Polishing of \texttt{Stegasis} and source code (not yet including extension work) - core project should be finished at this point. Write progress report and prepare for the progress presentation.
-\item \textbf{\textit{23rd January - 12th February (weeks 2-4):}} Identification and implementation of promising extension tasks.
+\item \textbf{\textit{23rd January - 12th February (weeks 2-4):}} Evaluation of the core project. Identification and implementation of promising extension tasks.
 \item \textbf{\textit{13th February - 26th March (weeks 5-10):}} Work on the dissertation write-up, completing a draft for submission to my supervisor.
 \item \textbf{\textit{27th March -  23rd April (Easter Vacation):}} Revision of dissertation addressing supervisors comments. Dissertation should be ready to submit by 23rd April.
 \end{itemize}
