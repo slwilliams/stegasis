@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 void doFormat(string algorithm, string videoPath) {
   SteganographicAlgorithm *alg = getAlg(algorithm);
   VideoDecoder *dec = new AVIDecoder(videoPath);
-  char header[4] = {'s', 't', 'e', 'g'};
+  char header[4] = {'S', 'T', 'E', 'G'};
 
   Chunk *headerFrame = dec->getFrame(0);
   alg->embed(headerFrame->getFrameData(), header, 4, 0);
@@ -82,11 +82,31 @@ void doFormat(string algorithm, string videoPath) {
   char algCode[4] = {'L', 'S', 'B', ' '};
   alg->embed(headerFrame->getFrameData(), algCode, 4, 4 * 8);
 
- 
-  // Lets hard code some files for now
-  char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0',}; 
-  alg->embed(headerFrame->getFrameData(), files, 10, 8 * 8);
+  union {
+    uint32_t num;
+    char byte[4];
+  } headerBytes;
+  headerBytes.num = 14;
+
+  alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
   
+  // Lets hard code some files for now
+  char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0'}; 
+  alg->embed(headerFrame->getFrameData(), files, 10, 12 * 8);
+
+  // write the triples amount
+  char numTriples = 1;
+  alg->embed(headerFrame->getFrameData(), &numTriples, 1, 22 * 8);
+
+  //write the triple
+  char frame = 1;
+  char offset = 0;
+  char bytes = 10;
+  alg->embed(headerFrame->getFrameData(), &frame, 1, 23 * 8);
+  alg->embed(headerFrame->getFrameData(), &offset, 1, 24 * 8);
+  alg->embed(headerFrame->getFrameData(), &bytes, 1, 25 * 8);
+  
+  headerFrame->setDirty();
   delete dec;
   delete alg;
 }

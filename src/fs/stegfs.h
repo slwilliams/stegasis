@@ -8,6 +8,7 @@
 #include <string>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unordered_map>
 
 #include "common/logging.h"
 #include "video/video_decoder.h"
@@ -18,6 +19,7 @@ class SteganographicFileSystem {
     VideoDecoder *decoder;
     SteganographicAlgorithm *alg;
     Logger *log;
+    std::unordered_map<std::string, int> fileSizes; 
     
   public:
     static SteganographicFileSystem *_instance;

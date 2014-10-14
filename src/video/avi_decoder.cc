@@ -21,17 +21,20 @@ struct AviChunk {
 
 class AviChunkWrapper : public Chunk {
   private:
-    AviChunk c;
+    AviChunk *c;
   public:
-    AviChunkWrapper(AviChunk c): c(c) {};
+    AviChunkWrapper(AviChunk *c): c(c) {};
     virtual int getChunkSize() {
-      return c.chunkSize;
+      return c->chunkSize;
     };
     virtual char *getFrameData() {
-      return c.frameData;
+      return c->frameData;
     };
     virtual bool isDirty() {
-      return c.dirty;
+      return c->dirty;
+    };
+    virtual void setDirty() {
+      c->dirty = 1;
     };
 };
 
@@ -228,7 +231,6 @@ class AVIDecoder : public VideoDecoder {
       int32_t chunkSize; 
       while (i < this->aviHeader.totalFrames) {
         fread(&fourCC, 1, 4, f);
-        printf("fourcc: %.4s\n", fourCC);
         if (strncmp(fourCC, "00db", 4) == 0) {
           fseek(f, -4, SEEK_CUR);
           fwrite(&this->frameChunks[i], 1, 8, f);
@@ -248,7 +250,7 @@ class AVIDecoder : public VideoDecoder {
       fclose(this->f);
     };
     virtual Chunk *getFrame(int frame) {
-      return new AviChunkWrapper(this->frameChunks[frame]); 
+      return new AviChunkWrapper(&this->frameChunks[frame]); 
     };                                     
     virtual int getFileSize() {
       return this->riffHeader.fileSize; 

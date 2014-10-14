@@ -5,6 +5,7 @@
 #include <string>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unordered_map>
 
 #include "fs/stegfs.h"
 #include "common/logging.h"
@@ -17,6 +18,34 @@ static const char *hello_path = "/hello";
 
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg): decoder(decoder), alg(alg) {
   this->log = new Logger("/tmp/test.txt", false);
+
+  Chunk *headerFrame = this->decoder->getFrame(0);
+  char headerSig[4] = {0,0,0,0};
+  this->alg->extract(headerFrame->getFrameData(), headerSig, 4, 0);
+  printf("header: %.4s\n", headerSig);
+
+  char algE[4] = {0,0,0,0};
+  this->alg->extract(headerFrame->getFrameData(), algE, 4, 4 * 8);
+  printf("alg: %.4s\n", algE);
+
+  union {
+    uint32_t num;
+    char byte[4];
+  } headerBytes;
+  headerBytes.byte[0] = 0;
+  headerBytes.byte[1] = 0;
+  headerBytes.byte[2] = 0;
+  headerBytes.byte[3] = 0;
+  this->alg->extract(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
+  printf("headerbytes: %d\n", headerBytes.num);
+
+  char *headerData = (char *)malloc(sizeof(char) * headerBytes.num);
+  this->alg->extract(headerFrame->getDrameData(), headerData, headerBytes.num, 12 * 8);
+
+  //TODO extract filename based on \0 char, get number of triples and extract them
+  //repeate for other filenames
+
+  
 };
 
 SteganographicFileSystem *SteganographicFileSystem::Instance() {

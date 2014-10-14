@@ -11,7 +11,11 @@ class LSBAlgorithm : public SteganographicAlgorithm {
       char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
         for (j = 7; j >= 0; j --) {
-          frame[frameByte] |= ((mask << j) & data[i]) >> j;
+          if ((((mask << j) & data[i]) >> j) == 1) {
+            frame[frameByte] |= 1;
+          } else {
+            frame[frameByte] &= ~1;
+          }
           frameByte ++;
         }
       }
