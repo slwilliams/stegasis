@@ -50,9 +50,9 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
-  AviChunk headerFrame = this->decoder->getFrame(0);
+  Chunk *headerFrame = this->decoder->getFrame(0);
   char *file = (char *)malloc(10);
-  this->alg->extract(headerFrame.frameData, file, 10, 8 * 8);
+  this->alg->extract(headerFrame->getFrameData(), file, 10, 8 * 8);
   filler(buf, file + 1, NULL, 0);
   return 0;
 };

@@ -75,17 +75,17 @@ void doFormat(string algorithm, string videoPath) {
   VideoDecoder *dec = new AVIDecoder(videoPath);
   char header[4] = {'s', 't', 'e', 'g'};
 
-  AviChunk headerFrame = dec->getFrame(0);
-  alg->embed(headerFrame.frameData, header, 4, 0);
+  Chunk *headerFrame = dec->getFrame(0);
+  alg->embed(headerFrame->getFrameData(), header, 4, 0);
 
   // Hard coded for now
   char algCode[4] = {'L', 'S', 'B', ' '};
-  alg->embed(headerFrame.frameData, algCode, 4, 4 * 8);
+  alg->embed(headerFrame->getFrameData(), algCode, 4, 4 * 8);
 
  
   // Lets hard code some files for now
   char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0',}; 
-  alg->embed(headerFrame.frameData, files, 10, 8 * 8);
+  alg->embed(headerFrame->getFrameData(), files, 10, 8 * 8);
   
   delete dec;
   delete alg;

@@ -6,6 +6,113 @@
 
 using namespace std;
 
+struct RIFFHeader {
+  char fourCC[4];
+  int32_t fileSize;
+  char fileType[4];
+};
+
+struct AviChunk {
+  char fourCC[4];
+  int32_t chunkSize;
+  char *frameData;
+  bool dirty;
+};
+
+class AviChunkWrapper : public Chunk {
+  private:
+    AviChunk c;
+  public:
+    AviChunkWrapper(AviChunk c): c(c) {};
+    virtual int getChunkSize() {
+      return c.chunkSize;
+    };
+    virtual char *getFrameData() {
+      return c.frameData;
+    };
+    virtual bool isDirty() {
+      return c.dirty;
+    };
+};
+
+struct AviList {
+  char list[4];
+  int32_t listSize;
+  char fourCC[4];
+};
+
+struct AviHeader {
+  char header[4];
+  int32_t cb;
+  int32_t microSecPerFrame;
+  int32_t maxBytesPerSec;
+  int32_t paddingGranularity;
+  int32_t flags;
+  int32_t totalFrames;
+  int32_t initialFrames;
+  int32_t streams;
+  int32_t suggestedBufferSize;
+  int32_t width;
+  int32_t height;
+  int32_t reserved[4];
+};
+
+struct AviStreamHeader {
+  char fourCC[4];
+  int32_t cb;
+  char fccType[4];
+  char fccHandler[4];
+  int32_t flags;
+  int16_t priority;
+  int16_t language;
+  int32_t initialFrames;
+  int32_t scale;
+  int32_t rate;
+  int32_t start;
+  int32_t length;
+  int32_t suggestedBufferSize;
+  int32_t quality;
+  int32_t sampleSize;
+  struct {
+    int16_t left;
+    int16_t top;
+    int16_t right;
+    int16_t bottom;
+  } rcFrame;
+};
+
+struct BitmapInfoHeader {
+  char fourCC[4];
+  uint32_t size;
+  uint32_t sizeAgain; // No idea why this is here?
+  int32_t width;
+  int32_t height;
+  uint16_t planes;
+  uint16_t bitCount;
+  uint32_t compression;
+  uint32_t sizeImage;
+  int32_t xPelsPerMeter;
+  int32_t yPelsPerMeter;
+  uint32_t clrUsed;
+  uint32_t clrImportant; 
+};
+
+struct JunkChunk {
+  char fourCC[4];
+  uint32_t size;
+};
+
+struct WaveFormatEX {
+  char fourCC[4];
+  uint32_t padding; // Don't know why this is here
+  uint16_t wFormatTag;
+  uint16_t nChannels;
+  uint32_t nSamplesPerSec;
+  uint32_t nAvgBytesPerSec;
+  uint16_t nBlockAlign;
+  uint16_t wBitsPerSample;
+};
+
 class AVIDecoder : public VideoDecoder {
   private:
     string filePath;
@@ -104,9 +211,9 @@ class AVIDecoder : public VideoDecoder {
         if (strncmp(tempChunk.fourCC, "00db", 4) == 0) {
           fseek(f, -8, SEEK_CUR);
           fread(&frameChunks[i], 1, 4 + 4, f);
-          char *frameData = (char *)malloc(frameChunks[i].chunkSize);
-          fread(frameData, frameChunks[i].chunkSize, 1, f);
-          frameChunks[i].frameData = frameData;
+          frameChunks[i].frameData = (char *)malloc(frameChunks[i].chunkSize);
+          fread(frameChunks[i].frameData, frameChunks[i].chunkSize, 1, f);
+          frameChunks[i].dirty = 0;
           i ++;
         } else {
           fseek(f, tempChunk.chunkSize, SEEK_CUR);
@@ -125,8 +232,13 @@ class AVIDecoder : public VideoDecoder {
         if (strncmp(fourCC, "00db", 4) == 0) {
           fseek(f, -4, SEEK_CUR);
           fwrite(&this->frameChunks[i], 1, 8, f);
-          printf("writing chunk %d, size: %d\n", i, this->frameChunks[i].chunkSize);
-          int out = fwrite(this->frameChunks[i].frameData, this->frameChunks[i].chunkSize, 1, f);
+          if (this->frameChunks[i].dirty) {
+            printf("writing chunk %d, size: %d\n", i, this->frameChunks[i].chunkSize);
+            fwrite(this->frameChunks[i].frameData, this->frameChunks[i].chunkSize, 1, f);
+          } else {
+            // No need to write if nothing has changed in this frame
+            fseek(f, this->frameChunks[i].chunkSize, SEEK_CUR);
+          }
           i ++;
         } else {
           fread(&chunkSize, 1, 4, f);
@@ -135,8 +247,8 @@ class AVIDecoder : public VideoDecoder {
       }
       fclose(this->f);
     };
-    virtual struct AviChunk getFrame(int frame) {
-      return this->frameChunks[frame];
+    virtual Chunk *getFrame(int frame) {
+      return new AviChunkWrapper(this->frameChunks[frame]); 
     };                                     
     virtual int getFileSize() {
       return this->riffHeader.fileSize; 
