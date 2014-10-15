@@ -16,6 +16,7 @@ SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 static const char *hello_str = "Hello World1234!\n";
 static const char *hello_path = "/hello";
 
+
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg): decoder(decoder), alg(alg) {
   this->log = new Logger("/tmp/test.txt", false);
 
@@ -40,12 +41,16 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   printf("headerbytes: %d\n", headerBytes.num);
 
   char *headerData = (char *)malloc(sizeof(char) * headerBytes.num);
-  this->alg->extract(headerFrame->getDrameData(), headerData, headerBytes.num, 12 * 8);
+  this->alg->extract(headerFrame->getFrameData(), headerData, headerBytes.num, 12 * 8);
 
   //TODO extract filename based on \0 char, get number of triples and extract them
   //repeate for other filenames
-
   
+  this->readHeader(headerData); 
+};
+
+void SteganographicFileSystem::readHeader(char *headerBytes) {
+  // Do stuff with headerBytes poulating the unordered_map
 };
 
 SteganographicFileSystem *SteganographicFileSystem::Instance() {
