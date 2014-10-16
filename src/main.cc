@@ -86,6 +86,7 @@ void doFormat(string algorithm, string videoPath) {
     uint32_t num;
     char byte[4];
   } headerBytes;
+  // Hard coded for now
   headerBytes.num = 14;
 
   alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
@@ -106,6 +107,7 @@ void doFormat(string algorithm, string videoPath) {
   alg->embed(headerFrame->getFrameData(), &offset, 1, 24 * 8);
   alg->embed(headerFrame->getFrameData(), &bytes, 1, 25 * 8);
   
+  // Make sure the header is written back
   headerFrame->setDirty();
   delete dec;
   delete alg;

@@ -33,10 +33,7 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
     uint32_t num;
     char byte[4];
   } headerBytes;
-  headerBytes.byte[0] = 0;
-  headerBytes.byte[1] = 0;
-  headerBytes.byte[2] = 0;
-  headerBytes.byte[3] = 0;
+  headerBytes.num = 0;
   this->alg->extract(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
   printf("headerbytes: %d\n", headerBytes.num);
 
@@ -45,12 +42,33 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 
   //TODO extract filename based on \0 char, get number of triples and extract them
   //repeate for other filenames
-  
-  this->readHeader(headerData); 
+  this->readHeader(headerData, headerBytes.num); 
 };
 
-void SteganographicFileSystem::readHeader(char *headerBytes) {
-  // Do stuff with headerBytes poulating the unordered_map
+void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
+  if (byteC == 0) return;
+  int offset = 0;
+  int i = 0;
+  while (offset < bytesC) {
+    while (headerBytes[offset + i++] != '\0') {}
+    // offset + i is now on the end of the file name
+    // i is the length of the string
+    char *name = (char *)malloc(sizeof(char) * i);
+    memcpy(name, headerBytes + offset, i);
+    std::string fileName((const char *)name);
+    char triples = 0;
+    memcpy(&triples, headerBytes + offset + i, 1);
+    int j = 0;
+    int fileSize = 0;
+    for (j = 0; j < triples; j ++) {
+      char triple[3];
+      memcpy((char *)triple, headerBytes + offset + i + j*3 + 1, 3); 
+      fileSize += triple[2];
+    }
+     
+    this->fileSizes[fileName.c_str()] = fileSize;        
+    offset += i + j*3 + 1;
+  }
 };
 
 SteganographicFileSystem *SteganographicFileSystem::Instance() {
