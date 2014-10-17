@@ -14,8 +14,6 @@
 #include "steg/steganographic_algorithm.h"
 
 SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
-static const char *hello_str = "Hello World1234!\n";
-static const char *hello_path = "/hello";
 
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg): decoder(decoder), alg(alg) {
   this->log = new Logger("/tmp/test.txt", false);
