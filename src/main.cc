@@ -102,13 +102,17 @@ void doFormat(string algorithm, string videoPath) {
   //write the triple
   char frame = 1;
   char offset = 0;
-  char bytes = 10;
+  char bytes = 8;
   alg->embed(headerFrame->getFrameData(), &frame, 1, 23 * 8);
   alg->embed(headerFrame->getFrameData(), &offset, 1, 24 * 8);
   alg->embed(headerFrame->getFrameData(), &bytes, 1, 25 * 8);
   
   // Make sure the header is written back
   headerFrame->setDirty();
+
+  char testData[8] = {'T', 'w', 'i', 'n', 's', 'e', 'n', '\n'};
+  alg->embed(dec->getFrame(1)->getFrameData(), testData, 8, 0);
+  dec->getFrame(1)->setDirty();
   delete dec;
   delete alg;
 }

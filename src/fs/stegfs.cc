@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unordered_map>
+#include <vector>
 
 #include "fs/stegfs.h"
 #include "common/logging.h"
@@ -15,7 +16,6 @@
 SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 static const char *hello_str = "Hello World1234!\n";
 static const char *hello_path = "/hello";
-
 
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg): decoder(decoder), alg(alg) {
   this->log = new Logger("/tmp/test.txt", false);
@@ -62,10 +62,12 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     printf("triples: %u\n", triples);
     int j = 0;
     int fileSize = 0;
+    this->fileIndex[fileName.c_str()] = std::vector<tripleT>();
     for (j = 0; j < triples; j ++) {
-      char triple[3];
-      memcpy(triple, headerBytes + offset + i + j*3 + 1, 3); 
-      fileSize += triple[2];
+      struct tripleT triple;
+      memcpy(&triple, headerBytes + offset + i + j*3 + 1, 3); 
+      this->fileIndex[fileName.c_str()].push_back(triple);
+      fileSize += triple.bytes;
     }
      
     printf("filesize: %d\n", fileSize);
@@ -123,14 +125,25 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   size_t len;
-  if(strcmp(path, hello_path) != 0)
-    return -ENOENT;
 
-  len = strlen(hello_str);
+  std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
+
+  if (file == this->fileSizes.end()) {
+    return -ENOENT;
+  }
+
+  len = file->second;
   if (offset < len) {
     if (offset + size > len)
       size = len - offset;
-    memcpy(buf, hello_str + offset, size);
+    std::vector<tripleT> triples = this->fileIndex[path];
+    char *fullFile = (char *)malloc(sizeof(char) * len);
+    int fileOffset = 0;
+    for (auto t : triples) {
+      Chunk *c = this->decoder->getFrame(t.frame); 
+      this->alg->extract(c->getFrameData(), fullFile + fileOffset, t.bytes, t.offset);
+    }
+    memcpy(buf, fullFile + offset, size);
   } else {
     size = 0;
   }

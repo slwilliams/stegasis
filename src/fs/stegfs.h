@@ -9,10 +9,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unordered_map>
+#include <vector>
 
 #include "common/logging.h"
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
+
+struct tripleT {
+  char frame;
+  char offset;
+  char bytes;
+};
 
 class SteganographicFileSystem {
   private:
@@ -20,6 +27,7 @@ class SteganographicFileSystem {
     SteganographicAlgorithm *alg;
     Logger *log;
     std::unordered_map<std::string, int> fileSizes; 
+    std::unordered_map<std::string, std::vector<struct tripleT> > fileIndex; 
     
   public:
     static SteganographicFileSystem *_instance;
