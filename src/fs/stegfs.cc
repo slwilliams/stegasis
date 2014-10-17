@@ -40,8 +40,6 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   char *headerData = (char *)malloc(sizeof(char) * headerBytes.num);
   this->alg->extract(headerFrame->getFrameData(), headerData, headerBytes.num, 12 * 8);
 
-  //TODO extract filename based on \0 char, get number of triples and extract them
-  //repeate for other filenames
   this->readHeader(headerData, headerBytes.num); 
 };
 
@@ -49,25 +47,30 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
   if (byteC == 0) return;
   int offset = 0;
   int i = 0;
-  while (offset < bytesC) {
+  while (offset < byteC) {
     while (headerBytes[offset + i++] != '\0') {}
+    printf("i is: %d\n", i);
     // offset + i is now on the end of the file name
     // i is the length of the string
     char *name = (char *)malloc(sizeof(char) * i);
     memcpy(name, headerBytes + offset, i);
+    printf("name of file: %s\n", name);
     std::string fileName((const char *)name);
+    printf("string: %s\n", fileName.c_str());
     char triples = 0;
     memcpy(&triples, headerBytes + offset + i, 1);
+    printf("triples: %u\n", triples);
     int j = 0;
     int fileSize = 0;
     for (j = 0; j < triples; j ++) {
       char triple[3];
-      memcpy((char *)triple, headerBytes + offset + i + j*3 + 1, 3); 
+      memcpy(triple, headerBytes + offset + i + j*3 + 1, 3); 
       fileSize += triple[2];
     }
      
+    printf("filesize: %d\n", fileSize);
     this->fileSizes[fileName.c_str()] = fileSize;        
-    offset += i + j*3 + 1;
+    offset += i + j*3 + 1 + 3;
   }
 };
 
@@ -86,14 +89,19 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
   if (strcmp(path, "/") == 0) {
     stbuf->st_mode = S_IFDIR | 0755;
     stbuf->st_nlink = 2;
-  } else if (strcmp(path, hello_path) == 0) {
-    stbuf->st_mode = S_IFREG | 0444;
-    stbuf->st_nlink = 1;
-    stbuf->st_size = strlen(hello_str);
+    return 0;
   } else {
-    res = -ENOENT;
+    for (auto kv : this->fileSizes) {
+      if (strcmp(path, kv.first.c_str()) == 0) {
+        stbuf->st_mode = S_IFREG | 0444;
+        stbuf->st_nlink = 1;
+        stbuf->st_size = kv.second;
+        return 0;
+      }
+    }
   }
-  return res;
+  // Requested file not in the filesystem...
+  return -ENOENT;
 };
 
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
@@ -102,20 +110,14 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
-  Chunk *headerFrame = this->decoder->getFrame(0);
-  char *file = (char *)malloc(10);
-  this->alg->extract(headerFrame->getFrameData(), file, 10, 8 * 8);
-  filler(buf, file + 1, NULL, 0);
+  for (auto kv : this->fileSizes) {
+    filler(buf, kv.first.c_str() + 1, NULL, 0);
+  }
   return 0;
 };
 
 int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) {
-  if (strcmp(path, hello_path) != 0)
-    return -ENOENT;
-
-  if ((fi->flags & 3) != O_RDONLY)
-    return -EACCES;
-
+  // Just let everyone open everything
   return 0;
 };
 
