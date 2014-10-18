@@ -109,7 +109,7 @@ int SteganographicFileSystem::utime(const char *path, struct utimbuf *ubuf) {
 };
 
 int SteganographicFileSystem::access(const char *path, int mask) {
-  printf("access called\n");
+  // Let everyone access everything
   return 0;
 };
 
@@ -127,7 +127,6 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
 
 int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) {
   // Just let everyone open everything
-  printf("open called\n");
   return 0;
 };
 
@@ -139,6 +138,7 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
 };
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  printf("readcalled: size: %lu, offset: %lo\n", size, offset);
   size_t len;
 
   std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
@@ -152,13 +152,18 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (offset + size > len)
       size = len - offset;
     std::vector<tripleT> triples = this->fileIndex[path];
-    char *fullFile = (char *)malloc(sizeof(char) * len);
+    char *fullFile = (char *)calloc(sizeof(char), len);
     int fileOffset = 0;
     for (auto t : triples) {
       Chunk *c = this->decoder->getFrame(t.frame); 
       this->alg->extract(c->getFrameData(), fullFile + fileOffset, t.bytes, t.offset);
+      fileOffset += t.bytes;
     }
-    memcpy(buf, fullFile + offset, size);
+    if (size < len) {
+      memcpy(buf, fullFile + offset, size);
+    } else {
+      memcpy(buf, fullFile + offset, len);
+    }
     free(fullFile);
   } else {
     size = 0;
@@ -168,7 +173,43 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 };
 
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  // work out difference between current size and new write size
+  // write upto using current space until none left
+  // then start allocating new space
+
   printf("write; path: %s, size: %lo, offset: %lo\n", path, size, offset);  
+  // If offset is 0 we can overwrite fileSizes[path]
+  // if it is not we should add on size think, never seen offset != 0 though?
+
+  int sizeDiff = size - this->fileSizes[path];
+  printf("filesizes: %d\n", this->fileSizes[path]);
+  printf("sizeDiff: %d\n", sizeDiff);
+  if (sizeDiff < 0) {
+    // new file is smaller, we could possible remove triples here...
+    int bytesWritten = 0;
+    for (auto t : this->fileIndex[path]) {
+      int bytesLeft = size - bytesWritten;
+      printf("bytesleft: %d\n", bytesLeft);
+      if (bytesLeft - t.bytes <= 0) {
+        //this one will finish it
+        printf("t.frame: %u\n", t.frame);
+        Chunk *c = this->decoder->getFrame(t.frame);
+        printf("byteswritten: %d, t.offset: %u", bytesWritten, t.offset);
+        this->alg->embed(c->getFrameData(), (char *)(buf + bytesWritten), bytesLeft, t.offset * 8);
+        t.bytes = bytesLeft;
+        break;
+      }
+    }
+  } else {
+    // new file is larger will need new triples but will use existing ones first...
+  }
+
+  if (offset == 0) {
+    this->fileSizes[path] = size;
+  } else {
+    this->fileSizes[path] += size;
+  }
+
   int i = 0;
   for (i = 0; i < size; i ++) {
     printf("%c", buf[i]);
@@ -177,6 +218,5 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 };
 
 int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
-  printf("truncate called\n");
   return 0;
 };

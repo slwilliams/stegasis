@@ -13,9 +13,13 @@ class LSBAlgorithm : public SteganographicAlgorithm {
       for (i = 0; i < dataBytes; i ++) {
         for (j = 7; j >= 0; j --) {
           if ((((mask << j) & data[i]) >> j) == 1) {
+            printf("before: %u\n", frame[frameByte]);
             frame[frameByte] |= 1;
+            printf("af: %u\n", frame[frameByte]);
           } else {
+            printf("before: %u\n", frame[frameByte]);
             frame[frameByte] &= ~1;
+            printf("af: %u\n", frame[frameByte]);
           }
           frameByte ++;
         }
