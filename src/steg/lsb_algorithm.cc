@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "steganographic_algorithm.h"
 
@@ -30,5 +31,9 @@ class LSBAlgorithm : public SteganographicAlgorithm {
           frameByte ++;
         }
       }
+    };
+    virtual void getAlgorithmCode(char out[4]) {
+      char tmp[4] = {'L', 'S', 'B', ' '};
+      memcpy(out, tmp, 4);
     };
 };

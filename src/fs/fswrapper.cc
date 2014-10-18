@@ -17,6 +17,26 @@ int wrap_open(const char *path, struct fuse_file_info *fi) {
   return SteganographicFileSystem::Instance()->open(path, fi);
 }
 
+int wrap_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  return SteganographicFileSystem::Instance()->write(path, buf, size, offset, fi);
+}
+
+int wrap_access(const char *path, int mask) {
+  return SteganographicFileSystem::Instance()->access(path, mask);
+}
+
+int wrap_truncate(const char *path, off_t newsize) {
+  return SteganographicFileSystem::Instance()->truncate(path, newsize);
+}
+
+int wrap_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+  return SteganographicFileSystem::Instance()->create(path, mode, fi);
+}
+
+int wrap_utime(const char *path, struct utimbuf *ubuf) {
+  return SteganographicFileSystem::Instance()->utime(path, ubuf);
+}
+
 struct fuse_operations fs_oper;
 
 void wrap_mount(std::string mountPoint) {
@@ -36,6 +56,11 @@ void wrap_mount(std::string mountPoint) {
   fs_oper.readdir  = wrap_readdir;
   fs_oper.open   = wrap_open; 
   fs_oper.read   = wrap_read; 
+  fs_oper.write = wrap_write;
+  fs_oper.access = wrap_access;
+  fs_oper.truncate = wrap_truncate;
+  fs_oper.create = wrap_create;
+  fs_oper.utime = wrap_utime;
 
   fuse_main(3, argv, &fs_oper, NULL);
 }

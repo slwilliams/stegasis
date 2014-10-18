@@ -78,8 +78,8 @@ void doFormat(string algorithm, string videoPath) {
   Chunk *headerFrame = dec->getFrame(0);
   alg->embed(headerFrame->getFrameData(), header, 4, 0);
 
-  // Hard coded for now
-  char algCode[4] = {'L', 'S', 'B', ' '};
+  char algCode[4];
+  alg->getAlgorithmCode(algCode);
   alg->embed(headerFrame->getFrameData(), algCode, 4, 4 * 8);
 
   union {

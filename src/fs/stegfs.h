@@ -39,6 +39,12 @@ class SteganographicFileSystem {
     int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);    
     int open(const char *path, struct fuse_file_info *fi);
     int read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);   
+    int write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+    int access(const char *path, int mask);
+    int truncate(const char *path, off_t newsize);
+    int create(const char *path, mode_t mode, struct fuse_file_info *fi);
+    int utime(const char *path, struct utimbuf *ubuf);
+
     void readHeader(char *headerBytes, int byteC);
 };
 #endif

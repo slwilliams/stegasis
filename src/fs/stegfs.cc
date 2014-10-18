@@ -93,7 +93,7 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
   } else {
     for (auto kv : this->fileSizes) {
       if (strcmp(path, kv.first.c_str()) == 0) {
-        stbuf->st_mode = S_IFREG | 0444;
+        stbuf->st_mode = S_IFREG | 0755;
         stbuf->st_nlink = 1;
         stbuf->st_size = kv.second;
         return 0;
@@ -102,6 +102,15 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
   }
   // Requested file not in the filesystem...
   return -ENOENT;
+};
+
+int SteganographicFileSystem::utime(const char *path, struct utimbuf *ubuf) {
+  return 0; 
+};
+
+int SteganographicFileSystem::access(const char *path, int mask) {
+  printf("access called\n");
+  return 0;
 };
 
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
@@ -118,6 +127,14 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
 
 int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) {
   // Just let everyone open everything
+  printf("open called\n");
+  return 0;
+};
+
+int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+  // write new file to the header here 
+  this->fileSizes[path] = 0;
+  this->fileIndex[path] = std::vector<struct tripleT>();
   return 0;
 };
 
@@ -142,9 +159,24 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
       this->alg->extract(c->getFrameData(), fullFile + fileOffset, t.bytes, t.offset);
     }
     memcpy(buf, fullFile + offset, size);
+    free(fullFile);
   } else {
     size = 0;
   }
 
   return size;
+};
+
+int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  printf("write; path: %s, size: %lo, offset: %lo\n", path, size, offset);  
+  int i = 0;
+  for (i = 0; i < size; i ++) {
+    printf("%c", buf[i]);
+  }
+  return size;
+};
+
+int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
+  printf("truncate called\n");
+  return 0;
 };
