@@ -128,6 +128,9 @@ class AVIDecoder : public VideoDecoder {
 
     long chunksOffset;
 
+    int nextFrame = 1;
+    int nextOffset = 8;
+
   public:
     AVIDecoder(string filePath): filePath(filePath) {
       this->f = fopen(this->filePath.c_str(), "rb+"); 
@@ -257,5 +260,16 @@ class AVIDecoder : public VideoDecoder {
     };                                                 
     virtual int numberOfFrames() {
       return this->aviHeader.totalFrames; 
-    };   
+    };
+    virtual void getNextFrameOffset(int *frame, int *offset) {
+      *frame = this->nextFrame;
+      *offset = this->nextOffset;
+    };
+   virtual void setNextFrameOffset(int frame, int offset) {
+      this->nextFrame = frame;
+      this->nextOffset = offset;
+   };
+   virtual int frameSize() {
+     return this->aviHeader.width * this->aviHeader.height;
+   };
 };

@@ -52,9 +52,9 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     // i is the length of the string
     char *name = (char *)malloc(sizeof(char) * i);
     memcpy(name, headerBytes + offset, i);
-    printf("name of file: %s\n", name);
+    printf("name of file: %.10s\n", name);
     std::string fileName((const char *)name);
-    printf("string: %s\n", fileName.c_str());
+    printf("string: %.10s\n", fileName.c_str());
     char triples = 0;
     memcpy(&triples, headerBytes + offset + i, 1);
     printf("triples: %u\n", triples);
@@ -156,7 +156,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     int fileOffset = 0;
     for (auto t : triples) {
       Chunk *c = this->decoder->getFrame(t.frame); 
-      this->alg->extract(c->getFrameData(), fullFile + fileOffset, t.bytes, t.offset);
+      this->alg->extract(c->getFrameData(), fullFile + fileOffset, t.bytes, t.offset * 8);
       fileOffset += t.bytes;
     }
     if (size < len) {
@@ -177,17 +177,22 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   // write upto using current space until none left
   // then start allocating new space
 
-  printf("write; path: %s, size: %lo, offset: %lo\n", path, size, offset);  
+  printf("write; path: %.10s, size: %lo, offset: %lo\n", path, size, offset);  
   // If offset is 0 we can overwrite fileSizes[path]
   // if it is not we should add on size think, never seen offset != 0 though?
+  
+  // TODO none of this code below will work when offset > 0
 
-  int sizeDiff = size - this->fileSizes[path];
+  // Need to inlcude offset here...
+  int sizeDiff = size + offset - this->fileSizes[path];
   printf("filesizes: %d\n", this->fileSizes[path]);
   printf("sizeDiff: %d\n", sizeDiff);
   if (sizeDiff < 0) {
     // new file is smaller, we could possible remove triples here...
     int bytesWritten = 0;
+    int usedTriples = 0;
     for (auto t : this->fileIndex[path]) {
+      usedTriples ++;
       int bytesLeft = size - bytesWritten;
       printf("bytesleft: %d\n", bytesLeft);
       if (bytesLeft - t.bytes <= 0) {
@@ -197,11 +202,65 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         printf("byteswritten: %d, t.offset: %u", bytesWritten, t.offset);
         this->alg->embed(c->getFrameData(), (char *)(buf + bytesWritten), bytesLeft, t.offset * 8);
         t.bytes = bytesLeft;
+        // All elements left in the iterator can be removed
         break;
+      } else {
+        // This chunk will not finish it, fill the entire thing up
+        Chunk *c = this->decoder->getFrame(t.frame);
+        this->alg->embed(c->getFrameData(), (char *)(buf + bytesWritten), t.bytes, t.offset * 8);
+        bytesWritten += t.bytes;
       }
     }
+    // Remove now possibly unsed triples
+    this->fileIndex[path].resize(usedTriples);
   } else {
     // new file is larger will need new triples but will use existing ones first...
+    if (this->fileIndex[path].size() == 0) {
+      printf("new exisiting file :)\n");
+      // This is a new file, pretty sure offset must == 0
+      int bytesWritten = 0;
+      while (bytesWritten < size) {
+        int nextFrame = 0;
+        int nextOffset = 0;
+        this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
+        struct tripleT triple;
+        int bytesLeftInFrame = this->decoder->frameSize() - nextOffset;  
+        // TODO replace this duplicate code
+        if (size < bytesLeftInFrame) {
+          triple.bytes = size;
+          triple.frame = nextFrame;
+          triple.offset = nextOffset;
+          this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)buf, size, nextOffset * 8);
+          this->fileIndex[path].push_back(triple);
+          bytesWritten += size;
+        } else {
+          // Write all bytes left in frame and go around again
+          triple.bytes = bytesLeftInFrame;
+          triple.frame = nextFrame;
+          triple.offset = nextOffset;
+          this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)buf, bytesLeftInFrame, nextOffset * 8);
+          this->fileIndex[path].push_back(triple);
+          bytesWritten += bytesLeftInFrame;
+          this->decoder->setNextFrameOffset(nextFrame + 1, 0);
+        }
+      }
+      printf("out loop, triple is: frame: %u, bytes: %u, offset: %u\n", this->fileIndex[path].front().frame, this->fileIndex[path].front().bytes, this->fileIndex[path].front().offset);
+    } else {
+      // This is an existsing file, need to fill in exsisting triples first
+      // Since this is larger than existsing file we know we will always write
+      // over all current triplles..
+      // However we don't know size is > all current tripples....
+      int bytesWritten = 0;
+      for (auto t : this->fileIndex[path]) {
+        if (bytesWritten + t.bytes > size) {
+          // This one will do this chunk, doubt this will ever happen...
+          this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)buf, size - bytesWritten, t.offset * 8);
+          t.bytes = size - bytesWritten;
+          break;
+        } 
+      }
+
+    }
   }
 
   if (offset == 0) {
@@ -210,10 +269,6 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     this->fileSizes[path] += size;
   }
 
-  int i = 0;
-  for (i = 0; i < size; i ++) {
-    printf("%c", buf[i]);
-  }
   return size;
 };
 
