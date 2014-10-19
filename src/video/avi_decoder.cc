@@ -270,6 +270,6 @@ class AVIDecoder : public VideoDecoder {
       this->nextOffset = offset;
    };
    virtual int frameSize() {
-     return this->aviHeader.width * this->aviHeader.height;
+     return this->aviHeader.width * this->aviHeader.height * 3;
    };
 };

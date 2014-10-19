@@ -26,6 +26,7 @@ class LSBAlgorithm : public SteganographicAlgorithm {
       int j = 0;
       int frameByte = offset;
       for (i = 0; i < dataBytes; i ++) {
+        output[i] = 0;
         for (j = 7; j >= 0; j --) {
           output[i] |= ((frame[frameByte] & 1) << j);
           frameByte ++;

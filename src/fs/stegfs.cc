@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 #include "fs/stegfs.h"
 #include "common/logging.h"
@@ -35,9 +36,13 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   this->alg->extract(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
   printf("headerbytes: %d\n", headerBytes.num);
 
-  char *headerData = (char *)malloc(sizeof(char) * headerBytes.num);
+  char *headerData = (char *)calloc(sizeof(char), headerBytes.num);
   this->alg->extract(headerFrame->getFrameData(), headerData, headerBytes.num, 12 * 8);
-
+  int i = 0;
+  for (i = 0; i < 26; i ++) {
+    printf("%u,", headerData[i]);
+  }
+  printf("\n");
   this->readHeader(headerData, headerBytes.num); 
 };
 
@@ -55,22 +60,27 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     printf("name of file: %.10s\n", name);
     std::string fileName((const char *)name);
     printf("string: %.10s\n", fileName.c_str());
-    char triples = 0;
-    memcpy(&triples, headerBytes + offset + i, 1);
-    printf("triples: %u\n", triples);
+    union {
+      uint32_t num;
+      char byte[4];
+    } triples;
+    triples.num = 0;
+    memcpy(&triples, headerBytes + offset + i, 4);
+    printf("triples: %u\n", triples.num);
     int j = 0;
     int fileSize = 0;
     this->fileIndex[fileName.c_str()] = std::vector<tripleT>();
-    for (j = 0; j < triples; j ++) {
+    for (j = 0; j < triples.num; j ++) {
       struct tripleT triple;
-      memcpy(&triple, headerBytes + offset + i + j*3 + 1, 3); 
+      memcpy(&triple, headerBytes + offset + i + j*sizeof(tripleT) + 4, sizeof(tripleT)); 
+      printf("triple: frame: %d, bytes: %d, off: %d\n", triple.frame, triple.bytes, triple.offset);
       this->fileIndex[fileName.c_str()].push_back(triple);
       fileSize += triple.bytes;
     }
      
     printf("filesize: %d\n", fileSize);
     this->fileSizes[fileName.c_str()] = fileSize;        
-    offset += i + j*3 + 1 + 3;
+    offset += i + j*sizeof(tripleT) + 4;
   }
 };
 
@@ -138,8 +148,8 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
 };
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  printf("readcalled: size: %lu, offset: %lo\n", size, offset);
-  size_t len;
+  printf("readcalled: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+
 
   std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
 
@@ -147,37 +157,145 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     return -ENOENT;
   }
 
-  len = file->second;
-  if (offset < len) {
-    if (offset + size > len)
-      size = len - offset;
-    std::vector<tripleT> triples = this->fileIndex[path];
-    char *fullFile = (char *)calloc(sizeof(char), len);
-    int fileOffset = 0;
-    for (auto t : triples) {
-      Chunk *c = this->decoder->getFrame(t.frame); 
-      this->alg->extract(c->getFrameData(), fullFile + fileOffset, t.bytes, t.offset * 8);
-      fileOffset += t.bytes;
-    }
-    if (size < len) {
-      memcpy(buf, fullFile + offset, size);
-    } else {
-      memcpy(buf, fullFile + offset, len);
-    }
-    free(fullFile);
-  } else {
-    size = 0;
+  int toRead = file->second;
+  if (size + offset >toRead) {
+    size = toRead - offset;
   }
+  if (offset > toRead) {
+    printf("hee??\n");
+    return -ENOENT;
+  }
+  printf("toread: %d\n", toRead);
+  int out = size;
+  if (offset + size > toRead) {
+    // This requested chunk will go off the end
+    out = file->second - offset;
+  }
+  std::vector<tripleT> triples = this->fileIndex[path];
+//  char *fileBuf = (char *)calloc(sizeof(char), toRead);
 
-  return size;
+  int fileOffset = 0;
+  int bytesWritten = 0;
+  int readBytes = 0;
+  int i = 0;
+  for (auto t : triples) {
+    if (readBytes + t.bytes >= offset) {
+      while (bytesWritten < size) {
+        auto t1 = triples.at(i);
+        int chunkOffset = offset - readBytes;
+        int bytesLeftInChunk = t1.bytes - chunkOffset;
+        if (size - bytesWritten < bytesLeftInChunk) {
+          Chunk *c = this->decoder->getFrame(t1.frame); 
+          this->alg->extract(c->getFrameData(), buf, size-bytesWritten, (t1.offset + chunkOffset) * 8);
+          return size;
+        }
+        Chunk *c = this->decoder->getFrame(t1.frame); 
+        this->alg->extract(c->getFrameData(), buf, t1.bytes, t1.offset * 8);
+        bytesWritten += t1.bytes;
+        // just to 0 chunkOffset from here on
+        readBytes = offset;
+        i ++;
+      }
+      return size;
+    } else {
+      readBytes += t.bytes;
+      i ++;
+    }
+  }
+//    printf("triple: frame: %u, bytes: %u, offset: %u\n", t.frame, t.bytes, t.offset);
+  /*  Chunk *c = this->decoder->getFrame(t.frame); 
+    bytesWritten += t.bytes;
+    if (bytesWritten > toRead) {
+      break;
+    }
+  }
+  memcpy(buf, fileBuf + offset, out);
+  free(fileBuf);
+
+  return size;*/
 };
 
+//117MB limit if using 4096 chunks with a singe header frame
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   // work out difference between current size and new write size
   // write upto using current space until none left
   // then start allocating new space
 
-  printf("write; path: %.10s, size: %lo, offset: %lo\n", path, size, offset);  
+  printf("write; path: %.10s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+
+  // Attempt to find the correct chunk
+  struct tripleT theChunk;
+  bool gotChunk = false;
+  int byteCount = 0;
+  for (auto t : this->fileIndex[path]) {
+    byteCount += t.bytes;
+    if (byteCount > offset) {
+      theChunk = t;
+      gotChunk = true;
+      break;
+    }
+  }
+
+  if (gotChunk == false) {
+    printf("in here\n");
+    // Need to allocate all new chunks
+    int bytesWritten = 0;
+    while (bytesWritten < size) {
+      int nextFrame = 0;
+      int nextOffset = 0;
+      this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
+      struct tripleT triple;
+      int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
+      printf("bytes left in frame: %d\n", bytesLeftInFrame);
+      //bytesLeftInFrame = std::floor((double)bytesLeftInFrame / 8);
+      //printf("bytes left in frame: %d\n", bytesLeftInFrame);
+      // TODO replace this duplicate code
+      if (size*8 < bytesLeftInFrame) {
+        triple.bytes = size - bytesWritten;
+        triple.frame = nextFrame;
+        triple.offset = nextOffset;
+        printf("about to embed, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset);
+        this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)buf, size-bytesWritten, nextOffset * 8);
+        printf("segging here?\n");
+        this->fileIndex[path].push_back(triple);
+        this->decoder->setNextFrameOffset(nextFrame, nextOffset + size-bytesWritten);
+        bytesWritten += size-bytesWritten;
+      } else {
+        printf("HELLO!!!!\n");
+        // Write all bytes left in frame and go around again
+        triple.bytes = bytesLeftInFrame;
+        triple.frame = nextFrame;
+        triple.offset = nextOffset;
+        this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)buf, bytesLeftInFrame/8, nextOffset * 8);
+        this->fileIndex[path].push_back(triple);
+        bytesWritten += bytesLeftInFrame;
+        this->decoder->setNextFrameOffset(nextFrame + 1, 0);
+      }
+    }
+  } else {
+    // Can overwrite existsing chunks
+  }
+
+  if (offset == 0) {
+    this->fileSizes[path] = size;
+  } else {
+    this->fileSizes[path] += size;
+  }
+
+  return size;
+
+
+
+
+
+
+
+
+
+
+
+
+
   // If offset is 0 we can overwrite fileSizes[path]
   // if it is not we should add on size think, never seen offset != 0 though?
   

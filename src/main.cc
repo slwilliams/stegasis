@@ -87,25 +87,50 @@ void doFormat(string algorithm, string videoPath) {
     char byte[4];
   } headerBytes;
   // Hard coded for now
-  headerBytes.num = 14;
+  headerBytes.num = 26;
 
   alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
   
   // Lets hard code some files for now
   char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0'}; 
   alg->embed(headerFrame->getFrameData(), files, 10, 12 * 8);
+  int i = 0;
+  for (i = 96; i < 96+10*8; i ++) {
+    printf("%u", headerFrame->getFrameData()[i]);
+  }
+  printf("\n");
 
   // write the triples amount
-  char numTriples = 1;
-  alg->embed(headerFrame->getFrameData(), &numTriples, 1, 22 * 8);
+  union {
+    uint32_t num;
+    char byte[4];
+  } numTriples;
+  numTriples.num = 1;
+  printf("byte[0]: %u\n", numTriples.byte[0]);
+  printf("byte[0]: %u\n", numTriples.byte[1]);
+  printf("byte[0]: %u\n", numTriples.byte[2]);
+  printf("byte[0]: %u\n", numTriples.byte[3]);
+  alg->embed(headerFrame->getFrameData(), numTriples.byte, 4, 22 * 8);
 
   //write the triple
-  char frame = 1;
-  char offset = 0;
-  char bytes = 8;
-  alg->embed(headerFrame->getFrameData(), &frame, 1, 23 * 8);
-  alg->embed(headerFrame->getFrameData(), &offset, 1, 24 * 8);
-  alg->embed(headerFrame->getFrameData(), &bytes, 1, 25 * 8);
+  union {
+    uint32_t num;
+    char byte[4];
+  } frame;
+  frame.num = 1;
+  union {
+    uint32_t num;
+    char byte[4];
+  } offset;
+  offset.num = 0;
+  union {
+    uint32_t num;
+    char byte[4];
+  } bytes;
+  bytes.num = 8; 
+  alg->embed(headerFrame->getFrameData(), frame.byte, 4, 26 * 8);
+  alg->embed(headerFrame->getFrameData(), offset.byte, 4, 30 * 8);
+  alg->embed(headerFrame->getFrameData(), bytes.byte, 4, 34 * 8);
   
   // Make sure the header is written back
   headerFrame->setDirty();

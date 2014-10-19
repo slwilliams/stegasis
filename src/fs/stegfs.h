@@ -16,9 +16,9 @@
 #include "steg/steganographic_algorithm.h"
 
 struct tripleT {
-  char frame;
-  char offset;
-  char bytes;
+  uint32_t frame;
+  uint32_t offset;
+  uint32_t bytes;
 };
 
 class SteganographicFileSystem {
