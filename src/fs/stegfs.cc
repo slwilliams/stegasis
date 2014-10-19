@@ -174,11 +174,11 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   std::vector<tripleT> triples = this->fileIndex[path];
 //  char *fileBuf = (char *)calloc(sizeof(char), toRead);
 
-  int fileOffset = 0;
   int bytesWritten = 0;
   int readBytes = 0;
   int i = 0;
   for (auto t : triples) {
+    printf("radebytes: %d, t.bytes: %d, offset: %jd\n", readBytes, t.bytes, (intmax_t)offset);
     if (readBytes + t.bytes >= offset) {
       while (bytesWritten < size) {
         auto t1 = triples.at(i);
@@ -186,12 +186,14 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         if (size - bytesWritten < bytesLeftInChunk) {
           Chunk *c = this->decoder->getFrame(t1.frame); 
-          this->alg->extract(c->getFrameData(), buf, size-bytesWritten, (t1.offset + chunkOffset) * 8);
+          printf("extracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
+          this->alg->extract(c->getFrameData(), buf + bytesWritten, size-bytesWritten, (t1.offset + chunkOffset) * 8);
           return size;
         }
         Chunk *c = this->decoder->getFrame(t1.frame); 
-        this->alg->extract(c->getFrameData(), buf, t1.bytes, t1.offset * 8);
-        bytesWritten += t1.bytes;
+        printf("extracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
+        this->alg->extract(c->getFrameData(), buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
+        bytesWritten += bytesLeftInChunk;
         // just to 0 chunkOffset from here on
         readBytes = offset;
         i ++;
@@ -250,7 +252,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       //bytesLeftInFrame = std::floor((double)bytesLeftInFrame / 8);
       //printf("bytes left in frame: %d\n", bytesLeftInFrame);
       // TODO replace this duplicate code
-      if (size*8 < bytesLeftInFrame) {
+      if ((size-bytesWritten)*8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
         triple.frame = nextFrame;
         triple.offset = nextOffset;
@@ -263,12 +265,13 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       } else {
         printf("HELLO!!!!\n");
         // Write all bytes left in frame and go around again
-        triple.bytes = bytesLeftInFrame;
+        triple.bytes = bytesLeftInFrame / 8;
         triple.frame = nextFrame;
         triple.offset = nextOffset;
+        printf("about to embed, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame/8, nextOffset);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)buf, bytesLeftInFrame / 8, nextOffset * 8);
         this->fileIndex[path].push_back(triple);
-        bytesWritten += bytesLeftInFrame;
+        bytesWritten += bytesLeftInFrame / 8;
         this->decoder->setNextFrameOffset(nextFrame + 1, 0);
       }
     }
