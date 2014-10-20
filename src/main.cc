@@ -94,11 +94,6 @@ void doFormat(string algorithm, string videoPath) {
   // Lets hard code some files for now
   char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0'}; 
   alg->embed(headerFrame->getFrameData(), files, 10, 12 * 8);
-  int i = 0;
-  for (i = 96; i < 96+10*8; i ++) {
-    printf("%u", headerFrame->getFrameData()[i]);
-  }
-  printf("\n");
 
   // write the triples amount
   union {
@@ -106,10 +101,6 @@ void doFormat(string algorithm, string videoPath) {
     char byte[4];
   } numTriples;
   numTriples.num = 1;
-  printf("byte[0]: %u\n", numTriples.byte[0]);
-  printf("byte[0]: %u\n", numTriples.byte[1]);
-  printf("byte[0]: %u\n", numTriples.byte[2]);
-  printf("byte[0]: %u\n", numTriples.byte[3]);
   alg->embed(headerFrame->getFrameData(), numTriples.byte, 4, 22 * 8);
 
   //write the triple
@@ -135,6 +126,7 @@ void doFormat(string algorithm, string videoPath) {
   // Make sure the header is written back
   headerFrame->setDirty();
 
+  // Write some test data
   char testData[8] = {'T', 'w', 'i', 'n', 's', 'e', 'n', '\n'};
   alg->embed(dec->getFrame(1)->getFrameData(), testData, 8, 0);
   dec->getFrame(1)->setDirty();
