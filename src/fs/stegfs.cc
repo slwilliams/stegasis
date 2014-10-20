@@ -231,7 +231,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.bytes = bytesLeftInFrame / 8;
         triple.frame = nextFrame;
         triple.offset = nextOffset;
-        printf("Embeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame/8, nextOffset);
+        printf("Embeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->fileIndex[path].push_back(triple);
         bytesWritten += bytesLeftInFrame / 8;
