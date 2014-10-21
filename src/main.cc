@@ -16,6 +16,7 @@ void printName();
 void printUsage();
 void incorrectArgNumber(string command);
 void doFormat(string algorithm, string videoPath);
+void doMount(string videoPath, string mountPoint);
 SteganographicAlgorithm *getAlg(string alg);
 
 int main(int argc, char *argv[]) {
@@ -44,15 +45,8 @@ int main(int argc, char *argv[]) {
     }
     string videoPath = argv[2];
     string mountPoint = argv[3];
-
-    SteganographicAlgorithm *lsb = new LSBAlgorithm;
-    VideoDecoder *dec = new AVIDecoder(videoPath);
-    SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
-    printf("Mounting...\n");
-    wrap_mount(mountPoint);
-    printf("Writing AVI\n");
-    delete dec;
-    return 0;
+    
+    doMount(videoPath, mountPoint);
   } else if (command == "unmount") {
     if (argc != 3) {
       incorrectArgNumber(command);
@@ -68,6 +62,21 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   return 0;
+}
+
+void doMount(string videoPath, string mountPoint) {
+  SteganographicAlgorithm *lsb = new LSBAlgorithm;
+  VideoDecoder *dec = new AVIDecoder(videoPath);
+  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
+
+  printf("Mounting...\n");
+  wrap_mount(mountPoint);
+
+  printf("Writing video...\n");
+  SteganographicFileSystem::Instance()->writeHeader();
+  delete dec;
+
+  printf("Sucsessfully unmounted\n");
 }
 
 void doFormat(string algorithm, string videoPath) {

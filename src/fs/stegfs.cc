@@ -224,6 +224,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.offset = nextOffset;
         printf("Embeding, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
+        this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);
         this->decoder->setNextFrameOffset(nextFrame, nextOffset + size-bytesWritten);
         bytesWritten += size-bytesWritten;
@@ -234,6 +235,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.offset = nextOffset;
         printf("Embeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
+        this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);
         bytesWritten += bytesLeftInFrame / 8;
         this->decoder->setNextFrameOffset(nextFrame + 1, 0);
@@ -256,4 +258,28 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
   // This implementation is needed
   return 0;
+};
+
+void SteganographicFileSystem::writeHeader() {
+  int headerBytes = 0;
+  int offset = 12;
+  Chunk *headerFrame = this->decoder->getFrame(0);
+  for (auto f : this->fileIndex) {
+    this->alg->embed(headerFrame->getFrameData(), (char *)f.first.c_str(), f.first.length()+1, offset * 8); 
+    offset += f.first.length() + 1;
+    int triples = f.second.size();
+    this->alg->embed(headerFrame->getFrameData(), (char *)&triples, 4, offset * 8); 
+    offset += 4;
+    
+    // Embed all the triples
+    for (auto t : f.second) {
+      this->alg->embed(headerFrame->getFrameData(), (char *)&t, sizeof(tripleT), offset * 8); 
+      offset += sizeof(tripleT);
+    }
+    headerBytes += f.first.length() + 1;
+    headerBytes += 4;
+    headerBytes += 4*3*f.second.size();
+  }
+  this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4) * 8); 
+  headerFrame->setDirty();
 };

@@ -5,8 +5,8 @@ int wrap_getattr(const char *path, struct stat *stbuf) {
   return SteganographicFileSystem::Instance()->getattr(path, stbuf);
 }
 
-int wrap_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fileInfo) {
-  return SteganographicFileSystem::Instance()->readdir(path, buf, filler, offset, fileInfo);
+int wrap_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
+  return SteganographicFileSystem::Instance()->readdir(path, buf, filler, offset, fi);
 }
 
 int wrap_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
