@@ -45,6 +45,8 @@ class SteganographicFileSystem {
     int create(const char *path, mode_t mode, struct fuse_file_info *fi);
     int utime(const char *path, struct utimbuf *ubuf);
 
+    void writeHeader();
+
     void readHeader(char *headerBytes, int byteC);
 };
 #endif
