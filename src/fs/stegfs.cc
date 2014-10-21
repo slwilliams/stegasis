@@ -160,7 +160,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   int readBytes = 0;
   int i = 0;
   for (auto t : triples) {
-    if (readBytes + t.bytes > offset) {
+    if (readBytes + t.bytes >= offset) {
       while (bytesWritten < size) {
         auto t1 = triples.at(i);
         int chunkOffset = offset - readBytes;
@@ -185,6 +185,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
       i ++;
     }
   }
+  return -ENOENT;
 };
 
 //117MB limit if using 4096 chunks with a singe header frame
