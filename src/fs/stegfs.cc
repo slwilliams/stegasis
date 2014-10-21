@@ -46,6 +46,7 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
   int offset = 0;
   int i = 0;
   while (offset < byteC) {
+    i = 0;
     while (headerBytes[offset + i++] != '\0') {}
     // offset + i is now on the end of the file name
     // i is the length of the string
@@ -53,6 +54,7 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     memcpy(name, headerBytes + offset, i);
     printf("File name: %s\n", name);
     std::string fileName((const char *)name);
+    free(name);
     union {
       uint32_t num;
       char byte[4];
