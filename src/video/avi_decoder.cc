@@ -127,7 +127,6 @@ class AVIDecoder : public VideoDecoder {
     struct AviChunk *frameChunks;
 
     long chunksOffset;
-
     int nextFrame = 1;
     int nextOffset = 8;
 
@@ -137,13 +136,16 @@ class AVIDecoder : public VideoDecoder {
       fseek(f, 0, SEEK_SET);
  
       fread(&this->riffHeader, 4, 3, f);
+      if (this->riffHeader.fourCC != "RIFF") {
+        // TODO: This is not an AVI file throw an error
+      }
+
       printf("riff?: %.4s\n", this->riffHeader.fourCC);
       printf("filesize: %d\n", this->riffHeader.fileSize);
       printf("fileTYpe: %s\n", this->riffHeader.fileType);
 
       struct AviList aviList;
       fread(&aviList, 4, 3, f);
-      printf("lisesize: %d\n", aviList.listSize);
 
       fread(&this->aviHeader, 1, sizeof(AviHeader), f);
       printf("microsecperframe: %d\n", this->aviHeader.microSecPerFrame); 
@@ -157,18 +159,9 @@ class AVIDecoder : public VideoDecoder {
 
       struct AviStreamHeader videoStreamHeader;
       fread(&videoStreamHeader, 1, sizeof(AviStreamHeader), f);
-      printf("fcctype: %.4s\n", videoStreamHeader.fccType);
-      printf("fcchandler: %.4s\n", videoStreamHeader.fccHandler);
-    
       fread(&this->bitmapInfoHeader, 1, sizeof(BitmapInfoHeader), f); 
-      printf("bitmap fourCC: %.4s\n", this->bitmapInfoHeader.fourCC);
-      printf("size: %d\n", this->bitmapInfoHeader.size);
-      printf("bitmap witdh: %d\n", this->bitmapInfoHeader.width);
-      printf("bitmap height: %d\n", this->bitmapInfoHeader.height);
-      printf("planes: %d\n", this->bitmapInfoHeader.planes);
-      printf("bitcount: %d\n", this->bitmapInfoHeader.bitCount);
-      printf("compression: %d\n", this->bitmapInfoHeader.compression); 
      
+      // TODO: Is this junk chunk in all AVI files?
       struct JunkChunk junk;
       fread(&junk, 1, sizeof(JunkChunk), f);
       fseek(f, junk.size, SEEK_CUR);
@@ -177,17 +170,9 @@ class AVIDecoder : public VideoDecoder {
 
       struct AviStreamHeader audioStreamHeader;
       fread(&audioStreamHeader, 1, sizeof(AviStreamHeader), f);
-      printf("audio header ff: %.4s\n", audioStreamHeader.fourCC);
-      printf("audio fcctype: %.4s\n", audioStreamHeader.fccType);
-      printf("audio cb: %d\n", audioStreamHeader.cb);
 
       struct WaveFormatEX audioInfoHeader;
       fread(&audioInfoHeader, 1, sizeof(WaveFormatEX), f);
-      printf("wavefourcc: %.4s\n", audioInfoHeader.fourCC);
-      printf("audio wFormatTag: %d\n", audioInfoHeader.wFormatTag);
-      printf("audio channels: %d\n", audioInfoHeader.nChannels);
-      printf("audio sample rate: %d\n", audioInfoHeader.nSamplesPerSec);
-      printf("audio bitrate: %d\n", audioInfoHeader.wBitsPerSample);
 
       fread(&junk, 1, sizeof(JunkChunk), f);
       fseek(f, junk.size, SEEK_CUR);
@@ -202,18 +187,15 @@ class AVIDecoder : public VideoDecoder {
 
       fread(&aviList, 1, sizeof(AviList), f);
       this->chunksOffset = ftell(f);
-      printf("list type: %.4s\n", aviList.fourCC);
-      printf("list size: %d\n", aviList.listSize);
 
       this->frameChunks = (AviChunk *)malloc(sizeof(AviChunk) * this->aviHeader.totalFrames);
      
-      //now we can start reading chunks
+      // Now we can start reading chunks
       int i = 0;
       struct AviChunk tempChunk;
       while (i < this->aviHeader.totalFrames) {
         fread(&tempChunk, 1, 4 + 4, f);
-        printf("chunk type: %.4s\n", tempChunk.fourCC);
-        printf("chunk size: %d\n", tempChunk.chunkSize);
+        printf("Reading chunk '%d', type: %.4s, size: %d\n", i, tempChunk.fourCC, tempChunk.chunkSize);
         if (strncmp(tempChunk.fourCC, "00db", 4) == 0) {
           fseek(f, -8, SEEK_CUR);
           fread(&frameChunks[i], 1, 4 + 4, f);
@@ -227,6 +209,11 @@ class AVIDecoder : public VideoDecoder {
       }
     };
     virtual ~AVIDecoder() {
+      this->writeBack();
+      free(this->frameChunks);
+      fclose(this->f);
+    };
+    virtual void writeBack() {
       // Write back the frame data
       fseek(f, this->chunksOffset, SEEK_SET); 
       int i = 0;
@@ -240,6 +227,8 @@ class AVIDecoder : public VideoDecoder {
           if (this->frameChunks[i].dirty) {
             printf("writing chunk %d, size: %d\n", i, this->frameChunks[i].chunkSize);
             fwrite(this->frameChunks[i].frameData, this->frameChunks[i].chunkSize, 1, f);
+            // This frame is no longer dirty
+            this->frameChunks[i].dirty = 0;
           } else {
             // No need to write if nothing has changed in this frame
             fseek(f, this->frameChunks[i].chunkSize, SEEK_CUR);
@@ -250,7 +239,6 @@ class AVIDecoder : public VideoDecoder {
           fseek(f, chunkSize, SEEK_CUR);
         }
       }
-      fclose(this->f);
     };
     virtual Chunk *getFrame(int frame) {
       return new AviChunkWrapper(&this->frameChunks[frame]); 
@@ -270,6 +258,7 @@ class AVIDecoder : public VideoDecoder {
       this->nextOffset = offset;
    };
    virtual int frameSize() {
+     // 24 bits per pixel
      return this->aviHeader.width * this->aviHeader.height * 3;
    };
 };
