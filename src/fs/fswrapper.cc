@@ -37,6 +37,10 @@ int wrap_utime(const char *path, struct utimbuf *ubuf) {
   return SteganographicFileSystem::Instance()->utime(path, ubuf);
 }
 
+int wrap_fsync(const char *path, int datasync, struct fuse_file_info *fi) {
+  return SteganographicFileSystem::Instance()->fsync(path, datasync, fi);
+}
+
 struct fuse_operations fs_oper;
 
 void wrap_mount(std::string mountPoint) {
@@ -54,13 +58,14 @@ void wrap_mount(std::string mountPoint) {
 
   fs_oper.getattr  = wrap_getattr;
   fs_oper.readdir  = wrap_readdir;
-  fs_oper.open   = wrap_open; 
-  fs_oper.read   = wrap_read; 
-  fs_oper.write = wrap_write;
-  fs_oper.access = wrap_access;
+  fs_oper.open     = wrap_open; 
+  fs_oper.read     = wrap_read; 
+  fs_oper.write    = wrap_write;
+  fs_oper.access   = wrap_access;
   fs_oper.truncate = wrap_truncate;
-  fs_oper.create = wrap_create;
-  fs_oper.utime = wrap_utime;
+  fs_oper.create   = wrap_create;
+  fs_oper.utime    = wrap_utime;
+  fs_oper.fsync    = wrap_fsync;
 
   fuse_main(3, argv, &fs_oper, NULL);
 }

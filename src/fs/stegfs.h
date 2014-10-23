@@ -44,6 +44,7 @@ class SteganographicFileSystem {
     int truncate(const char *path, off_t newsize);
     int create(const char *path, mode_t mode, struct fuse_file_info *fi);
     int utime(const char *path, struct utimbuf *ubuf);
+    int fsync(const char *path, int datasync, struct fuse_file_info *fi);
 
     void writeHeader();
 

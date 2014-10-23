@@ -15,8 +15,6 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
-
-
 #ifdef __cplusplus
   extern "C" {
 #endif
@@ -30,12 +28,12 @@ int wrap_access(const char *path, int mask);
 int wrap_truncate(const char *path, off_t newsize);
 int wrap_create(const char *path, mode_t mode, struct fuse_file_info *fi);
 int wrap_utime(const char *path, struct utimbuf *ubuf);
+int wrap_fsync(const char *path, int datasync, struct fuse_file_info *fi);
 
 #ifdef __cplusplus
 }
 #endif
 
 void wrap_mount(std::string mountPoint);
-
 
 #endif

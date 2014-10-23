@@ -268,6 +268,12 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   return size;
 };
 
+int SteganographicFileSystem::fsync(const char *path, int datasync, struct fuse_file_info *fi) {
+  // Flush any dirty frames we're holding
+  printf("fsync called: datasync: %d\n", datasync);
+  return 0;
+};
+
 int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
   // This implementation is needed
   return 0;
