@@ -195,21 +195,36 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
-  struct tripleT theChunk;
   bool gotChunk = false;
   int byteCount = 0;
+  int bytesWritten = 0;
+
   for (auto t : this->fileIndex[path]) {
-    byteCount += t.bytes;
-    if (byteCount > offset) {
-      theChunk = t;
-      gotChunk = true;
-      break;
+    if (byteCount + t.bytes > offset) {
+      int chunkOffset = offset - byteCount;
+      int bytesLeftInChunk = t.bytes - chunkOffset;
+      if (bytesLeftInChunk + bytesWritten >= size) {
+        // This chunk will finish it
+        int toWrite = size - bytesWritten;
+        this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)(buf + bytesWritten), toWrite, (chunkOffset + t.offset) * 8);
+        t.bytes = toWrite;
+        gotChunk = true;
+        break;
+      }
+      // Otherwise we can just write into the entire chunk
+      this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
+      bytesWritten += bytesLeftInChunk;
+      // Force chunkOffset to be 0 next time round
+      byteCount = offset;  
+    } else {
+      byteCount += t.bytes;
     }
   }
+  
+  // If we drop out here with gotChunk == true, we need to allocate more chunks...
 
   if (gotChunk == false) {
-    // Need to allocate all new chunks
-    int bytesWritten = 0;
+    // Need to allocate some new chunks
     while (bytesWritten < size) {
       int nextFrame = 0;
       int nextOffset = 0;
@@ -218,9 +233,8 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       struct tripleT triple;
       int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
       printf("Bytes left in frame: %d\n", bytesLeftInFrame);
-      // TODO replace this duplicate code
       // *8 since 8 bits per bytes
-      if ((size-bytesWritten)*8 < bytesLeftInFrame) {
+      if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
         triple.frame = nextFrame;
         triple.offset = nextOffset;
@@ -243,9 +257,6 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         this->decoder->setNextFrameOffset(nextFrame + 1, 0);
       }
     }
-  } else {
-    // Can overwrite existsing chunks
-    // TODO implement this
   }
 
   if (offset == 0) {

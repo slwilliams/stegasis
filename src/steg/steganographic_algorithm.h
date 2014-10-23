@@ -1,5 +1,5 @@
-#ifndef STEGALG_H
-#define STEGALG_H 
+#ifndef stegalg_h
+#define stegalg_h 
 class SteganographicAlgorithm {                                                 
   public:                                                                       
     virtual void embed(char *frame, char *data, int dataBytes, int offset) = 0;
