@@ -29,6 +29,7 @@ int wrap_truncate(const char *path, off_t newsize);
 int wrap_create(const char *path, mode_t mode, struct fuse_file_info *fi);
 int wrap_utime(const char *path, struct utimbuf *ubuf);
 int wrap_fsync(const char *path, int datasync, struct fuse_file_info *fi);
+int wrap_unlink(const char *path);
 
 #ifdef __cplusplus
 }

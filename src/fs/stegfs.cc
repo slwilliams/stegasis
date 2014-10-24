@@ -173,10 +173,10 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   int bytesWritten = 0;
   int readBytes = 0;
   int i = 0;
-  for (auto t : triples) {
+  for (struct tripleT t : triples) {
     if (readBytes + t.bytes >= offset) {
       while (bytesWritten < size) {
-        auto t1 = triples.at(i);
+        struct tripleT t1 = triples.at(i);
         int chunkOffset = offset - readBytes;
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         Chunk *c = this->decoder->getFrame(t1.frame); 
@@ -207,11 +207,11 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
-  bool gotChunk = false;
+  bool needMoreChunks = true;
   int byteCount = 0;
   int bytesWritten = 0;
 
-  for (auto t : this->fileIndex[path]) {
+  for (struct tripleT t : this->fileIndex[path]) {
     if (byteCount + t.bytes > offset) {
       int chunkOffset = offset - byteCount;
       int bytesLeftInChunk = t.bytes - chunkOffset;
@@ -221,7 +221,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)(buf + bytesWritten), toWrite, (chunkOffset + t.offset) * 8);
         this->decoder->getFrame(t.frame)->setDirty(); 
         t.bytes = toWrite;
-        gotChunk = true;
+        needMoreChunks = false;
         break;
       }
       // Otherwise we can just write into the entire chunk
@@ -235,9 +235,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     }
   }
   
-  // If we drop out here with gotChunk == true, we need to allocate more chunks...
-
-  if (gotChunk == false) {
+  if (needMoreChunks == true) {
     // Need to allocate some new chunks
     while (bytesWritten < size) {
       int nextFrame = 0;
@@ -247,7 +245,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       struct tripleT triple;
       int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
       printf("Bytes left in frame: %d\n", bytesLeftInFrame);
-      // *8 since 8 bits per bytes
+      // *8 since it takes 8 bytes to embed one byte
       if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
         triple.frame = nextFrame;
@@ -315,4 +313,11 @@ void SteganographicFileSystem::writeHeader() {
   }
   this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4) * 8); 
   headerFrame->setDirty();
+};
+
+int SteganographicFileSystem::unlink(const char *path) {
+  printf("Unlink called with path: %s\n", path);
+  this->fileIndex.erase(this->fileIndex.find(path));
+  this->fileSizes.erase(this->fileSizes.find(path));
+  return 0;
 };
