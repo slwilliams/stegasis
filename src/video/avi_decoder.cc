@@ -128,7 +128,7 @@ class AVIDecoder : public VideoDecoder {
 
     long chunksOffset;
     int nextFrame = 1;
-    int nextOffset = 8;
+    int nextOffset = 0;
 
   public:
     AVIDecoder(string filePath): filePath(filePath) {

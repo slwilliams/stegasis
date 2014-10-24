@@ -42,7 +42,8 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 };
 
 void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
-  if (byteC == 0) return;
+  int nextFrame = 1;
+  int nextOffset = 0;
   int offset = 0;
   int i = 0;
   while (offset < byteC) {
@@ -70,6 +71,15 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
       memcpy(&triple, headerBytes + offset + i + j*sizeof(tripleT) + 4, sizeof(tripleT)); 
       printf("Triple: frame: %d, bytes: %d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
       this->fileIndex[fileName.c_str()].push_back(triple);
+      // Work out where we should start writing i.e. largest frame + offset
+      if (triple.frame > nextFrame) {
+        nextFrame = triple.frame;
+        nextOffset = triple.offset + triple.bytes;
+      } else if (triple.frame == nextFrame) {
+        if (triple.offset + triple.bytes > nextOffset) {
+          nextOffset = triple.offset + triple.bytes;
+        }
+      }
       fileSize += triple.bytes;
     }
      
@@ -77,6 +87,8 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     this->fileSizes[fileName.c_str()] = fileSize;        
     offset += i + j*sizeof(tripleT) + 4;
   }
+
+  this->decoder->setNextFrameOffset(nextFrame, nextOffset);
 };
 
 SteganographicFileSystem *SteganographicFileSystem::Instance() {
@@ -207,12 +219,14 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         // This chunk will finish it
         int toWrite = size - bytesWritten;
         this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)(buf + bytesWritten), toWrite, (chunkOffset + t.offset) * 8);
+        this->decoder->getFrame(t.frame)->setDirty(); 
         t.bytes = toWrite;
         gotChunk = true;
         break;
       }
       // Otherwise we can just write into the entire chunk
       this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
+      this->decoder->getFrame(t.frame)->setDirty(); 
       bytesWritten += bytesLeftInChunk;
       // Force chunkOffset to be 0 next time round
       byteCount = offset;  

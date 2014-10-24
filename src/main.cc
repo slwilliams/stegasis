@@ -96,49 +96,13 @@ void doFormat(string algorithm, string videoPath) {
     char byte[4];
   } headerBytes;
   // Hard coded for now
-  headerBytes.num = 26;
+  headerBytes.num = 0;
 
   alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
-  
-  // Lets hard code some files for now
-  char files[10] = {'/', 't', 'e', 's', 't', '.', 't', 'x', 't', '\0'}; 
-  alg->embed(headerFrame->getFrameData(), files, 10, 12 * 8);
-
-  // write the triples amount
-  union {
-    uint32_t num;
-    char byte[4];
-  } numTriples;
-  numTriples.num = 1;
-  alg->embed(headerFrame->getFrameData(), numTriples.byte, 4, 22 * 8);
-
-  //write the triple
-  union {
-    uint32_t num;
-    char byte[4];
-  } frame;
-  frame.num = 1;
-  union {
-    uint32_t num;
-    char byte[4];
-  } offset;
-  offset.num = 0;
-  union {
-    uint32_t num;
-    char byte[4];
-  } bytes;
-  bytes.num = 8; 
-  alg->embed(headerFrame->getFrameData(), frame.byte, 4, 26 * 8);
-  alg->embed(headerFrame->getFrameData(), offset.byte, 4, 30 * 8);
-  alg->embed(headerFrame->getFrameData(), bytes.byte, 4, 34 * 8);
   
   // Make sure the header is written back
   headerFrame->setDirty();
 
-  // Write some test data
-  char testData[8] = {'T', 'w', 'i', 'n', 's', 'e', 'n', '\n'};
-  alg->embed(dec->getFrame(1)->getFrameData(), testData, 8, 0);
-  dec->getFrame(1)->setDirty();
   delete dec;
   delete alg;
 }
