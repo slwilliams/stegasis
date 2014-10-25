@@ -5,7 +5,7 @@
 
 class SteganographicAlgorithm {                                                 
   protected:
-    std::string key;
+    std::string password;
   public:                                                                       
     virtual void embed(char *frame, char *data, int dataBytes, int offset) = 0;
     virtual void extract(char *frame, char *output, int dataBytes, int offset) = 0;                                 

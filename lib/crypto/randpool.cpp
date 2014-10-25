@@ -42,11 +42,11 @@ void RandomPool::GenerateIntoBufferedTransformation(BufferedTransformation &targ
 		Timer timer;
 		TimerWord tw = timer.GetCurrentTimerValue();
 		CRYPTOPP_COMPILE_ASSERT(sizeof(tw) <= 16);
-		*(TimerWord *)m_seed.data() += tw;
+		//*(TimerWord *)m_seed.data() += tw;
 
 		time_t t = time(NULL);
 		CRYPTOPP_COMPILE_ASSERT(sizeof(t) <= 8);
-		*(time_t *)(m_seed.data()+8) += t;
+		//*(time_t *)(m_seed.data()+8) += t;
 
 		do
 		{

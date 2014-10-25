@@ -3,14 +3,41 @@
 #include <string>
 #include <pwdbased.h>
 #include <cryptlib.h>
+#include <randpool.h>
+#include <whrlpool.h>
 
 #include "steganographic_algorithm.h"
 
 class LSBKAlgorithm : public SteganographicAlgorithm {
+  private:
+    char * key;
+    // TODO: make salt dependant on feature of the video...
+    char salt[10] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'};
+
   public:
-    LSBKAlgorithm(std::string key) {this->key = key;};
+    LSBKAlgorithm(std::string password) {
+      this->password = password;
+      this->key = (char *)malloc(128 * sizeof(char));
+      CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
+      keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
+          (const unsigned char *)this->password.c_str(), this->password.length(),
+          (const unsigned char *)this->salt, 10, 32, 0) ;
+
+    };
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
-      CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::MessageAuthenticationCode>;
+      CryptoPP::RandomPool pool;
+      pool.IncorporateEntropy((const unsigned char *)key, 128);
+
+      // Just shuffle the data...
+      int a = dataBytes - 1;
+      int b = 0;
+      char temp = 0;
+      for (a = dataBytes - 1; a >= 0; a --) {
+        b = pool.GenerateWord32(0, a);
+        temp = data[b];
+        data[b] = data[a];
+        data[a] = temp;
+      }
 
       int i = 0;
       int j = 0;
@@ -28,6 +55,9 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void extract(char *frame, char *output, int dataBytes, int offset) {
+      CryptoPP::RandomPool pool;
+      pool.IncorporateEntropy((const unsigned char *)key, 128);
+
       int i = 0;
       int j = 0;
       int frameByte = offset;
@@ -37,6 +67,17 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
           output[i] |= ((frame[frameByte] & 1) << j);
           frameByte ++;
         }
+      }
+
+      // Unshuffle the data
+      int a = dataBytes - 1;
+      int b = 0;
+      char temp = 0;
+      for (a = dataBytes - 1; a >= 0; a --) {
+        b = pool.GenerateWord32(0, a);
+        temp = output[b];
+        output[b] = output[a];
+        output[a] = temp;
       }
     };
     virtual void getAlgorithmCode(char out[4]) {

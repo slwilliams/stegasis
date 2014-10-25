@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 }
 
 void doMount(string videoPath, string mountPoint, bool performance) {
-  SteganographicAlgorithm *lsb = new LSBAlgorithm;
+  SteganographicAlgorithm *lsb = new LSBKAlgorithm("LMBFTW");
   VideoDecoder *dec = new AVIDecoder(videoPath);
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
@@ -89,7 +89,8 @@ void doMount(string videoPath, string mountPoint, bool performance) {
 }
 
 void doFormat(string algorithm, string videoPath) {
-  SteganographicAlgorithm *alg = getAlg(algorithm);
+  //SteganographicAlgorithm *alg = getAlg(algorithm);
+  SteganographicAlgorithm *alg = new LSBKAlgorithm("LMBFTW");
   VideoDecoder *dec = new AVIDecoder(videoPath);
   char header[4] = {'S', 'T', 'E', 'G'};
 
