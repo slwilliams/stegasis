@@ -16,7 +16,8 @@
 
 SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 
-SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg): decoder(decoder), alg(alg) {
+SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg,
+    bool performance): decoder(decoder), alg(alg), performance(performance) {
   this->log = new Logger("/tmp/test.txt", false);
 
   Chunk *headerFrame = this->decoder->getFrame(0);
@@ -326,6 +327,8 @@ int SteganographicFileSystem::unlink(const char *path) {
 
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
   printf("flush called: %s\n", path);
-  this->decoder->writeBack();
+  if (!this->performance) {
+    this->decoder->writeBack();
+  }
   return 0; 
 };

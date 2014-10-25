@@ -16,7 +16,7 @@ void printName();
 void printUsage();
 void incorrectArgNumber(string command);
 void doFormat(string algorithm, string videoPath);
-void doMount(string videoPath, string mountPoint);
+void doMount(string videoPath, string mountPoint, bool performance);
 SteganographicAlgorithm *getAlg(string alg);
 
 int main(int argc, char *argv[]) {
@@ -39,14 +39,22 @@ int main(int argc, char *argv[]) {
 
     doFormat(alg, videoPath);
   } else if (command == "mount") {
-    if (argc != 4) {
+    if (argc < 4) {
       incorrectArgNumber(command);
       return 1;
     }
-    string videoPath = argv[2];
-    string mountPoint = argv[3];
-    
-    doMount(videoPath, mountPoint);
+    string firstFlag = argv[2];
+    string performanceFlag("-p");
+    if (firstFlag == performanceFlag) {
+      // Optional performance flag
+      string videoPath = argv[3];
+      string mountPoint = argv[4];
+      doMount(videoPath, mountPoint, true); 
+    } else {
+      string videoPath = argv[2];
+      string mountPoint = argv[3];
+      doMount(videoPath, mountPoint, false);
+    }
   } else if (command == "unmount") {
     if (argc != 3) {
       incorrectArgNumber(command);
@@ -64,10 +72,10 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void doMount(string videoPath, string mountPoint) {
+void doMount(string videoPath, string mountPoint, bool performance) {
   SteganographicAlgorithm *lsb = new LSBAlgorithm;
   VideoDecoder *dec = new AVIDecoder(videoPath);
-  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb)); 
+  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
   printf("Mounting...\n");
   wrap_mount(mountPoint);

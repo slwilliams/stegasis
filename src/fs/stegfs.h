@@ -25,6 +25,7 @@ class SteganographicFileSystem {
   private:
     VideoDecoder *decoder;
     SteganographicAlgorithm *alg;
+    bool performance;
     Logger *log;
     std::unordered_map<std::string, int> fileSizes; 
     std::unordered_map<std::string, std::vector<struct tripleT> > fileIndex; 
@@ -33,7 +34,7 @@ class SteganographicFileSystem {
     static SteganographicFileSystem *_instance;
     static SteganographicFileSystem *Instance();
     static void Set(SteganographicFileSystem *i);
-    SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg);
+    SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg, bool performance);
 
     int getattr(const char *path, struct stat *stbuf); 
     int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);    
