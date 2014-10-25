@@ -45,6 +45,10 @@ int wrap_unlink(const char *path) {
   return SteganographicFileSystem::Instance()->unlink(path);
 }
 
+int wrap_flush(const char *path, struct fuse_file_info *fi) {
+  return SteganographicFileSystem::Instance()->flush(path, fi);
+}
+
 struct fuse_operations fs_oper;
 
 void wrap_mount(std::string mountPoint) {
@@ -71,6 +75,7 @@ void wrap_mount(std::string mountPoint) {
   fs_oper.utime    = wrap_utime;
   fs_oper.fsync    = wrap_fsync;
   fs_oper.unlink   = wrap_unlink;
+  fs_oper.flush    = wrap_flush;
 
   fuse_main(3, argv, &fs_oper, NULL);
 }

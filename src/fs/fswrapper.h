@@ -30,6 +30,7 @@ int wrap_create(const char *path, mode_t mode, struct fuse_file_info *fi);
 int wrap_utime(const char *path, struct utimbuf *ubuf);
 int wrap_fsync(const char *path, int datasync, struct fuse_file_info *fi);
 int wrap_unlink(const char *path);
+int wrap_flush(const char *path, struct fuse_file_info *fi);
 
 #ifdef __cplusplus
 }

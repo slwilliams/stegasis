@@ -321,3 +321,9 @@ int SteganographicFileSystem::unlink(const char *path) {
   this->fileSizes.erase(this->fileSizes.find(path));
   return 0;
 };
+
+int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
+  printf("flush called: %s\n", path);
+  this->decoder->writeBack();
+  return 0; 
+};
