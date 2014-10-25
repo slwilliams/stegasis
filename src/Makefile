@@ -1,5 +1,5 @@
-CFLAGS = -DFUSE_USE_VERSION=26 `pkg-config fuse --cflags`
-LINKFLAGS = `pkg-config fuse --libs`
+CFLAGS = -L ../lib/crypto/ -lcryptopp -lresolv -lpthread -DFUSE_USE_VERSION=26 `pkg-config fuse --cflags` 
+LINKFLAGS = -L ../lib/crypto/ -lcryptopp -lresolv -lpthread `pkg-config fuse --libs`
 
 all: main
 
@@ -7,22 +7,22 @@ clean:
 	        rm -rf obj
 
 main: obj obj/fswrapper.o obj/main.o
-	        g++ -g -o main.o obj/* $(LINKFLAGS) 
+	        g++ -m64 -g -o main.o obj/* $(LINKFLAGS) 
 
 obj:
 	        mkdir -p obj
 
 obj/fswrapper.o: obj/stegfs.o fs/fswrapper.cc fs/fswrapper.h
-	        g++ -std=c++11 -g -I . -c fs/fswrapper.cc -o obj/fswrapper.o $(CFLAGS) 
+	        g++ -m64 -std=c++11 -g -I . -I ../lib/crypto -c fs/fswrapper.cc -o obj/fswrapper.o $(CFLAGS) 
 
 obj/stegfs.o: obj/logging.o fs/stegfs.cc fs/stegfs.h
-	        g++ -std=c++11 -g -I . -c fs/stegfs.cc -o obj/stegfs.o $(CFLAGS) 
+	        g++ -m64 -std=c++11 -g -I . -I ../lib/crypto -c fs/stegfs.cc -o obj/stegfs.o $(CFLAGS) 
 
 obj/logging.o: common/logging.cc common/logging.h
-	        g++ -g -I . -c common/logging.cc -o obj/logging.o $(CFLAGS) 
+	        g++ -m64 -std=c++11 -g -I . -I ../lib/crypto -c common/logging.cc -o obj/logging.o $(CFLAGS) 
 
 obj/main.o: main.cc 
-	        gcc -std=c++11 -g -I . -c main.cc -o obj/main.o $(CFLAGS) 
+					g++ -m64 -std=c++11 -g -I . -I ../lib/crypto -c main.cc -o obj/main.o $(CFLAGS)
 
 
 

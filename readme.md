@@ -14,3 +14,9 @@ Useage
     $ echo "test" > /mnt/volume/test.txt
     # Unmount the file system
     $ stegasis umount /mnt/volume
+
+Notes
+------
+
+libc6-dev-i386
+sudo apt-get install gcc-4.8-multilib g++-4.8-multilib

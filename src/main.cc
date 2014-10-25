@@ -9,6 +9,7 @@
 #include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
 #include "steg/lsb_algorithm.cc"
+#include "steg/lsbk_algorithm.cc"
 
 using namespace std;
 
