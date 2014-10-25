@@ -195,7 +195,8 @@ class AVIDecoder : public VideoDecoder {
       struct AviChunk tempChunk;
       while (i < this->aviHeader.totalFrames) {
         fread(&tempChunk, 1, 4 + 4, f);
-        printf("Reading chunk '%d', type: %.4s, size: %d\n", i, tempChunk.fourCC, tempChunk.chunkSize);
+        printf("\e[1A"); 
+        printf("\e[0K\rReading chunk '%d', type: %.4s, size: %d\n", i, tempChunk.fourCC, tempChunk.chunkSize);
         if (strncmp(tempChunk.fourCC, "00db", 4) == 0) {
           fseek(f, -8, SEEK_CUR);
           fread(&frameChunks[i], 1, 4 + 4, f);
@@ -225,7 +226,8 @@ class AVIDecoder : public VideoDecoder {
           fseek(f, -4, SEEK_CUR);
           fwrite(&this->frameChunks[i], 1, 8, f);
           if (this->frameChunks[i].dirty) {
-            printf("writing chunk %d, size: %d\n", i, this->frameChunks[i].chunkSize);
+            printf("\e[1A"); 
+            printf("\e[0K\rwriting chunk %d, size: %d\n", i, this->frameChunks[i].chunkSize);
             fwrite(this->frameChunks[i].frameData, this->frameChunks[i].chunkSize, 1, f);
             // This frame is no longer dirty
             this->frameChunks[i].dirty = 0;

@@ -69,7 +69,6 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     for (j = 0; j < triples.num; j ++) {
       struct tripleT triple;
       memcpy(&triple, headerBytes + offset + i + j*sizeof(tripleT) + 4, sizeof(tripleT)); 
-      printf("Triple: frame: %d, bytes: %d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
       this->fileIndex[fileName.c_str()].push_back(triple);
       // Work out where we should start writing i.e. largest frame + offset
       if (triple.frame > nextFrame) {
@@ -155,7 +154,7 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
 };
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+  //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
   std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
 
   if (file == this->fileSizes.end()) {
@@ -181,11 +180,13 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         Chunk *c = this->decoder->getFrame(t1.frame); 
         if (size - bytesWritten < bytesLeftInChunk) {
-          printf("Extracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
+          printf("\e[1A"); 
+          printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
           this->alg->extract(c->getFrameData(), buf + bytesWritten, size-bytesWritten, (t1.offset + chunkOffset) * 8);
           return size;
         }
-        printf("Extracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
+        printf("\e[1A"); 
+        printf("\e[0K\rExtracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
         this->alg->extract(c->getFrameData(), buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
         bytesWritten += bytesLeftInChunk;
         // just to 0 chunkOffset from here on
@@ -204,7 +205,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 
 //117MB limit if using 4096 chunks with a singe header frame
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+  //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
   bool needMoreChunks = true;
@@ -244,13 +245,13 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       
       struct tripleT triple;
       int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
-      printf("Bytes left in frame: %d\n", bytesLeftInFrame);
       // *8 since it takes 8 bytes to embed one byte
       if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
         triple.frame = nextFrame;
         triple.offset = nextOffset;
-        printf("Embeding, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset);
+        printf("\e[1A"); 
+        printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);
@@ -261,7 +262,8 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.bytes = bytesLeftInFrame / 8;
         triple.frame = nextFrame;
         triple.offset = nextOffset;
-        printf("Embeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset);
+        printf("\e[1A"); 
+        printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);

@@ -3,8 +3,6 @@
 
 #include "steganographic_algorithm.h"
 
-using namespace std;
-
 class LSBAlgorithm : public SteganographicAlgorithm {
   public:
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
