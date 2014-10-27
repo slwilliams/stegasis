@@ -295,26 +295,33 @@ int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
 };
 
 void SteganographicFileSystem::writeHeader() {
+  char *header = (char *)malloc(this->decoder->frameSize() * sizeof(char));
   int headerBytes = 0;
-  int offset = 12;
+  int offset = 0;
   Chunk *headerFrame = this->decoder->getFrame(0);
   for (auto f : this->fileIndex) {
-    this->alg->embed(headerFrame->getFrameData(), (char *)f.first.c_str(), f.first.length()+1, offset * 8); 
+    memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
+    //this->alg->embed(headerFrame->getFrameData(), (char *)f.first.c_str(), f.first.length()+1, offset * 8); 
     offset += f.first.length() + 1;
     int triples = f.second.size();
-    this->alg->embed(headerFrame->getFrameData(), (char *)&triples, 4, offset * 8); 
+    memcpy(header + offset, (char *)&triples, 4);
+    //this->alg->embed(headerFrame->getFrameData(), (char *)&triples, 4, offset * 8); 
     offset += 4;
     
     // Embed all the triples
-    for (auto t : f.second) {
-      this->alg->embed(headerFrame->getFrameData(), (char *)&t, sizeof(tripleT), offset * 8); 
+    for (struct tripleT t : f.second) {
+      memcpy(header + offset, (char *)&t, sizeof(tripleT));
+      //this->alg->embed(headerFrame->getFrameData(), (char *)&t, sizeof(tripleT), offset * 8); 
       offset += sizeof(tripleT);
     }
     headerBytes += f.first.length() + 1;
     headerBytes += 4;
     headerBytes += 4*3*f.second.size();
   }
+  printf("headerbyutes: %d\n", headerBytes);
   this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4) * 8); 
+  printf("headerbyutes: %d\n", headerBytes);
+  this->alg->embed(headerFrame->getFrameData(), header, headerBytes, (4+4+4) * 8); 
   headerFrame->setDirty();
 };
 

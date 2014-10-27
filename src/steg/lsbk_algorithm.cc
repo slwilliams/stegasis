@@ -10,7 +10,7 @@
 
 class LSBKAlgorithm : public SteganographicAlgorithm {
   private:
-    char * key;
+    char *key;
     // TODO: make salt dependant on feature of the video...
     char salt[10] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'};
 
@@ -28,24 +28,14 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)key, 128);
 
-      // Just shuffle the data...
-      int a = dataBytes - 1;
-      int b = 0;
-      char temp = 0;
-      for (a = dataBytes - 1; a >= 0; a --) {
-        b = pool.GenerateWord32(0, a);
-        temp = data[b];
-        data[b] = data[a];
-        data[a] = temp;
-      }
-
       int i = 0;
       int j = 0;
       int frameByte = offset;
       char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
+        char toXor = pool.GenerateByte();
         for (j = 7; j >= 0; j --) {
-          if ((((mask << j) & data[i]) >> j) == 1) {
+          if ((((mask << j) & (data[i] ^ toXor)) >> j) == 1) {
             frame[frameByte] |= 1;
           } else {
             frame[frameByte] &= ~1;
@@ -67,17 +57,7 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
           output[i] |= ((frame[frameByte] & 1) << j);
           frameByte ++;
         }
-      }
-
-      // Unshuffle the data
-      int a = dataBytes - 1;
-      int b = 0;
-      char temp = 0;
-      for (a = dataBytes - 1; a >= 0; a --) {
-        b = pool.GenerateWord32(0, a);
-        temp = output[b];
-        output[b] = output[a];
-        output[a] = temp;
+        output[i] ^= pool.GenerateByte();
       }
     };
     virtual void getAlgorithmCode(char out[4]) {
