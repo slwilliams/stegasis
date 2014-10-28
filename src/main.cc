@@ -24,7 +24,7 @@ SteganographicAlgorithm *getAlg(string alg, string pass);
 int main(int argc, char *argv[]) {
   printName();
   if (argc < 2) {
-    printf("Too few arguments.\n");
+    printf("Error: Insufficient arguments specified.\n");
     printUsage();
     return 1;
   }
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
       doFormat(alg, NULL, videoPath);
     }
   } else if (command == "mount") {
-    // stegasis mount /media/video.avi --alb=lsbk --pass=123 /tmp/test
+    // stegasis mount --alb=lsbk --pass=123 /media/video.avi /tmp/test
     if (argc < 4) {
       incorrectArgNumber(command);
       return 1;
@@ -57,28 +57,30 @@ int main(int argc, char *argv[]) {
     string performanceFlag("-p");
     if (firstFlag == performanceFlag) {
       // Optional performance flag
-      string videoPath = argv[3];
-      string algFlag = argv[4];
-      string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
-      if (algRequiresPass(alg)) {
-        string passFlag = argv[5];
-        string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
-        string mountPoint = argv[6];
-        doMount(videoPath, mountPoint, alg, pass, true); 
-      } else {
-        string mountPoint = argv[6];
-        doMount(videoPath, mountPoint, alg, NULL, true); 
-      }
-    } else {
-      string videoPath = argv[2];
       string algFlag = argv[3];
       string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
       if (algRequiresPass(alg)) {
         string passFlag = argv[4];
         string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
+        string videoPath = argv[5];
+        string mountPoint = argv[6];
+        doMount(videoPath, mountPoint, alg, pass, true); 
+      } else {
+        string videoPath = argv[4];
+        string mountPoint = argv[5];
+        doMount(videoPath, mountPoint, alg, NULL, true); 
+      }
+    } else {
+      string algFlag = argv[2];
+      string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
+      if (algRequiresPass(alg)) {
+        string passFlag = argv[3];
+        string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
+        string videoPath = argv[4];
         string mountPoint = argv[5];
         doMount(videoPath, mountPoint, alg, pass, false);
       } else {
+        string videoPath = argv[3];
         string mountPoint = argv[4];
         doMount(videoPath, mountPoint, alg, NULL, false);
       }
@@ -155,7 +157,7 @@ SteganographicAlgorithm *getAlg(string alg, string pass) {
 }
 
 void incorrectArgNumber(string command) {
-  printf("Incorrect number of arguments for command %s\n", command.c_str());
+  printf("Error: Incorrect number of arguments for command '%s'\n", command.c_str());
   printUsage();
 }
 
@@ -171,5 +173,12 @@ void printName() {
 }
 
 void printUsage() {
-  printf("Stegasis usage:\n");
+  printf("\nStegasis usage:\n");
+  printf("---------------------------\n");
+  printf("Example commands:\n");
+  printf("\tstegasis format --alg=lsbk --pass=password123 /media/video.avi\n");
+  printf("\tstegasis mount --alg=lsbk --password123 /media/video.avi /tmp/test\n"); 
+  printf("Optional flags:\n");
+  printf("\t-p Do not flush writes to disk until unmount\n");
+  printf("\t-g Use green channel for embedding\n");
 }
