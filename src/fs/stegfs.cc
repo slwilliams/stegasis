@@ -177,6 +177,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (readBytes + t.bytes >= offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
+        // TODO: If chunkoffset is not zero, keyed algs will fail...
         int chunkOffset = offset - readBytes;
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         Chunk *c = this->decoder->getFrame(t1.frame); 
@@ -301,26 +302,21 @@ void SteganographicFileSystem::writeHeader() {
   Chunk *headerFrame = this->decoder->getFrame(0);
   for (auto f : this->fileIndex) {
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
-    //this->alg->embed(headerFrame->getFrameData(), (char *)f.first.c_str(), f.first.length()+1, offset * 8); 
     offset += f.first.length() + 1;
     int triples = f.second.size();
     memcpy(header + offset, (char *)&triples, 4);
-    //this->alg->embed(headerFrame->getFrameData(), (char *)&triples, 4, offset * 8); 
     offset += 4;
     
     // Embed all the triples
     for (struct tripleT t : f.second) {
       memcpy(header + offset, (char *)&t, sizeof(tripleT));
-      //this->alg->embed(headerFrame->getFrameData(), (char *)&t, sizeof(tripleT), offset * 8); 
       offset += sizeof(tripleT);
     }
     headerBytes += f.first.length() + 1;
     headerBytes += 4;
     headerBytes += 4*3*f.second.size();
   }
-  printf("headerbyutes: %d\n", headerBytes);
   this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4) * 8); 
-  printf("headerbyutes: %d\n", headerBytes);
   this->alg->embed(headerFrame->getFrameData(), header, headerBytes, (4+4+4) * 8); 
   headerFrame->setDirty();
 };

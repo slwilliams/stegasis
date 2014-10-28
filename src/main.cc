@@ -16,9 +16,10 @@ using namespace std;
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
-void doFormat(string algorithm, string videoPath);
-void doMount(string videoPath, string mountPoint, bool performance);
-SteganographicAlgorithm *getAlg(string alg);
+void doFormat(string algorithm, string pass, string videoPath);
+void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
+bool algRequiresPass(string alg);
+SteganographicAlgorithm *getAlg(string alg, string pass);
 
 int main(int argc, char *argv[]) {
   printName();
@@ -30,16 +31,24 @@ int main(int argc, char *argv[]) {
 
   string command = argv[1];
   if (command == "format") {
+    // stegasis format --alg=lsbk --pass=123 /media/video.avi
     if (argc != 4) {
       incorrectArgNumber(command);
       return 1;
     }
     string algFlag = argv[2];
-    string videoPath = argv[3];
     string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
-
-    doFormat(alg, videoPath);
+    if (algRequiresPass(alg)) {
+      string passFlag = argv[3];
+      string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
+      string videoPath = argv[4];
+      doFormat(alg, pass, videoPath);
+    } else {
+      string videoPath = argv[3];
+      doFormat(alg, NULL, videoPath);
+    }
   } else if (command == "mount") {
+    // stegasis mount /media/video.avi --alb=lsbk --pass=123 /tmp/test
     if (argc < 4) {
       incorrectArgNumber(command);
       return 1;
@@ -49,12 +58,30 @@ int main(int argc, char *argv[]) {
     if (firstFlag == performanceFlag) {
       // Optional performance flag
       string videoPath = argv[3];
-      string mountPoint = argv[4];
-      doMount(videoPath, mountPoint, true); 
+      string algFlag = argv[4];
+      string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
+      if (algRequiresPass(alg)) {
+        string passFlag = argv[5];
+        string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
+        string mountPoint = argv[6];
+        doMount(videoPath, mountPoint, alg, pass, true); 
+      } else {
+        string mountPoint = argv[6];
+        doMount(videoPath, mountPoint, alg, NULL, true); 
+      }
     } else {
       string videoPath = argv[2];
-      string mountPoint = argv[3];
-      doMount(videoPath, mountPoint, false);
+      string algFlag = argv[3];
+      string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
+      if (algRequiresPass(alg)) {
+        string passFlag = argv[4];
+        string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
+        string mountPoint = argv[5];
+        doMount(videoPath, mountPoint, alg, pass, false);
+      } else {
+        string mountPoint = argv[4];
+        doMount(videoPath, mountPoint, alg, NULL, false);
+      }
     }
   } else if (command == "unmount") {
     if (argc != 3) {
@@ -73,8 +100,8 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void doMount(string videoPath, string mountPoint, bool performance) {
-  SteganographicAlgorithm *lsb = new LSBKAlgorithm("LMBFTW");
+void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance) {
+  SteganographicAlgorithm *lsb = getAlg(alg, pass); 
   VideoDecoder *dec = new AVIDecoder(videoPath);
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
@@ -88,9 +115,8 @@ void doMount(string videoPath, string mountPoint, bool performance) {
   printf("Sucsessfully unmounted\n");
 }
 
-void doFormat(string algorithm, string videoPath) {
-  //SteganographicAlgorithm *alg = getAlg(algorithm);
-  SteganographicAlgorithm *alg = new LSBKAlgorithm("LMBFTW");
+void doFormat(string algorithm, string pass, string videoPath) {
+  SteganographicAlgorithm *alg = getAlg(algorithm, pass);
   VideoDecoder *dec = new AVIDecoder(videoPath);
   char header[4] = {'S', 'T', 'E', 'G'};
 
@@ -105,7 +131,6 @@ void doFormat(string algorithm, string videoPath) {
     uint32_t num;
     char byte[4];
   } headerBytes;
-  // Hard coded for now
   headerBytes.num = 0;
 
   alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
@@ -117,9 +142,15 @@ void doFormat(string algorithm, string videoPath) {
   delete alg;
 }
 
-SteganographicAlgorithm *getAlg(string alg) {
+bool algRequiresPass(string alg) {
+  return alg == "lsbk";
+}
+
+SteganographicAlgorithm *getAlg(string alg, string pass) {
   if (alg == "lsb") {
     return new LSBAlgorithm;
+  } else if (alg == "lsbk") {
+    return new LSBKAlgorithm(pass);
   }
 }
 
