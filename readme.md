@@ -1,7 +1,9 @@
 Stegasis
 ========
 Cambridge Part II Computer Science project <slw69@cam.ac.uk>
+
 Stegasis allows files to be steganographically hidden inside video files via a file system interface.
+
 Stegasis provides a number of steganographic algorithms, encryption functionality and (currently) supports uncompressed AVI video files.
 
 Useage
