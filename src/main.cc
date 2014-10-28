@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
   string command = argv[1];
   if (command == "format") {
     // stegasis format --alg=lsbk --pass=123 /media/video.avi
-    if (argc != 4) {
+    if (argc < 4) {
       incorrectArgNumber(command);
       return 1;
     }

@@ -23,8 +23,11 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   Chunk *headerFrame = this->decoder->getFrame(0);
   char headerSig[4] = {0,0,0,0};
   this->alg->extract(headerFrame->getFrameData(), headerSig, 4, 0);
-  // TODO add check to see if file is from us
   printf("header: %.4s\n", headerSig);
+  if (strncmp(headerSig, "STEG", 4) != 0) {
+    printf("Could not read header. Has this video been formated?\n");
+    exit(0);
+  }
 
   char algE[4] = {0,0,0,0};
   this->alg->extract(headerFrame->getFrameData(), algE, 4, 4 * 8);
@@ -179,6 +182,12 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
         struct tripleT t1 = triples.at(i);
         // TODO: If chunkoffset is not zero, keyed algs will fail...
         int chunkOffset = offset - readBytes;
+        if (chunkOffset != 0) {
+          printf("Oh dear...\n");
+          printf("Oh dear...\n");
+          printf("Oh dear...\n");
+          exit(0);
+        }
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         Chunk *c = this->decoder->getFrame(t1.frame); 
         if (size - bytesWritten < bytesLeftInChunk) {
