@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <mutex> 
 
 #include "video_decoder.h"
 
@@ -120,6 +121,8 @@ class AVIDecoder : public VideoDecoder {
   private:
     string filePath;
     FILE *f;
+    // Lock around filehandler access
+    mutex mtx; 
 
     struct RIFFHeader riffHeader;
     struct AviHeader aviHeader;
@@ -136,8 +139,9 @@ class AVIDecoder : public VideoDecoder {
       fseek(f, 0, SEEK_SET);
  
       fread(&this->riffHeader, 4, 3, f);
-      if (this->riffHeader.fourCC != "RIFF") {
-        // TODO: This is not an AVI file throw an error
+      if (strncmp(this->riffHeader.fourCC, "RIFF", 4) != 0) {
+        printf("File is not an AVI file\n");
+        exit(0);
       }
 
       printf("riff?: %.4s\n", this->riffHeader.fourCC);
@@ -215,13 +219,19 @@ class AVIDecoder : public VideoDecoder {
       fclose(this->f);
     };
     virtual void writeBack() {
-      // Write back the frame data
+      // Lock needed for the case in which flush is called twice in quick sucsession
+      mtx.lock();
       fseek(f, this->chunksOffset, SEEK_SET); 
       int i = 0;
       char fourCC[4]; 
       int32_t chunkSize; 
       while (i < this->aviHeader.totalFrames) {
-        fread(&fourCC, 1, 4, f);
+        int read = fread(&fourCC, 1, 4, f);
+        if (read != 4) {
+          // Error reading file, unlock and return
+          mtx.unlock();
+          return;
+        }
         if (strncmp(fourCC, "00db", 4) == 0) {
           fseek(f, -4, SEEK_CUR);
           fwrite(&this->frameChunks[i], 1, 8, f);
@@ -241,6 +251,7 @@ class AVIDecoder : public VideoDecoder {
           fseek(f, chunkSize, SEEK_CUR);
         }
       }
+      mtx.unlock();
     };
     virtual Chunk *getFrame(int frame) {
       return new AviChunkWrapper(&this->frameChunks[frame]); 

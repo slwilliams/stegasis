@@ -158,7 +158,8 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
 };
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
   std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
 
   if (file == this->fileSizes.end()) {
@@ -180,25 +181,32 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (readBytes + t.bytes >= offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
-        // TODO: If chunkoffset is not zero, keyed algs will fail...
         int chunkOffset = offset - readBytes;
-        if (chunkOffset != 0) {
-          printf("Oh dear...\n");
-          printf("Oh dear...\n");
-          printf("Oh dear...\n");
-          exit(0);
-        }
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         Chunk *c = this->decoder->getFrame(t1.frame); 
         if (size - bytesWritten < bytesLeftInChunk) {
           printf("\e[1A"); 
           printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
-          this->alg->extract(c->getFrameData(), buf + bytesWritten, size-bytesWritten, (t1.offset + chunkOffset) * 8);
+          if (chunkOffset == 0) {
+            this->alg->extract(c->getFrameData(), buf + bytesWritten, size - bytesWritten, (t1.offset + chunkOffset) * 8);
+          } else {
+            char *temp = (char *)malloc(t1.bytes*sizeof(char));
+            this->alg->extract(c->getFrameData(), temp, t1.bytes, t1.offset * 8);
+            memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
+            free(temp);
+          }
           return size;
         }
         printf("\e[1A"); 
         printf("\e[0K\rExtracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
-        this->alg->extract(c->getFrameData(), buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
+        if (chunkOffset == 0) {
+          this->alg->extract(c->getFrameData(), buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
+        } else {
+          char *temp = (char *)malloc(t1.bytes*sizeof(char));
+          this->alg->extract(c->getFrameData(), temp, t1.bytes, t1.offset * 8);
+          memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
+          free(temp);
+        }
         bytesWritten += bytesLeftInChunk;
         // just to 0 chunkOffset from here on
         // TODO find a nicer way of doing this

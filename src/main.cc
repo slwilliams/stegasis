@@ -45,11 +45,11 @@ int main(int argc, char *argv[]) {
       doFormat(alg, pass, videoPath);
     } else {
       string videoPath = argv[3];
-      doFormat(alg, NULL, videoPath);
+      doFormat(alg, "", videoPath);
     }
   } else if (command == "mount") {
     // stegasis mount --alb=lsbk --pass=123 /media/video.avi /tmp/test
-    if (argc < 4) {
+    if (argc < 5) {
       incorrectArgNumber(command);
       return 1;
     }
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
       } else {
         string videoPath = argv[4];
         string mountPoint = argv[5];
-        doMount(videoPath, mountPoint, alg, NULL, true); 
+        doMount(videoPath, mountPoint, alg, "", true); 
       }
     } else {
       string algFlag = argv[2];
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
       } else {
         string videoPath = argv[3];
         string mountPoint = argv[4];
-        doMount(videoPath, mountPoint, alg, NULL, false);
+        doMount(videoPath, mountPoint, alg, "", false);
       }
     }
   } else if (command == "unmount") {
