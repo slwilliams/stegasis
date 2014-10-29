@@ -26,6 +26,8 @@ Notes
 
 To build Stegasis from source you will need the FUSE package installed <http://fuse.sourceforge.net>
 
+sudo addgroup <username> fuse
+
 libc6-dev-i386
 
 sudo apt-get install gcc-4.8-multilib g++-4.8-multilib

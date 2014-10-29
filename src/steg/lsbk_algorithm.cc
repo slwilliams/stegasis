@@ -27,6 +27,7 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)key, 128);
+      pool.IncorporateEntropy((const unsigned char *)&offset, 4);
 
       int i = 0;
       int j = 0;
@@ -47,6 +48,7 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
     virtual void extract(char *frame, char *output, int dataBytes, int offset) {
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)key, 128);
+      pool.IncorporateEntropy((const unsigned char *)&offset, 4);
 
       int i = 0;
       int j = 0;
