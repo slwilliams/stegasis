@@ -7,6 +7,7 @@
 #include <whrlpool.h>
 
 #include "steganographic_algorithm.h"
+#include "lcg.cc"
 
 class LSBKAlgorithm : public SteganographicAlgorithm {
   private:
@@ -28,6 +29,7 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)key, 128);
       pool.IncorporateEntropy((const unsigned char *)&offset, 4);
+      LCG lcg(10, 10, 10, 10);
 
       int i = 0;
       int j = 0;
