@@ -270,7 +270,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.frame = nextFrame;
         triple.offset = nextOffset;
         printf("\e[1A"); 
-        printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset);
+        printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset * 8);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);
@@ -282,7 +282,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.frame = nextFrame;
         triple.offset = nextOffset;
         printf("\e[1A"); 
-        printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset);
+        printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset * 8);
         this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);

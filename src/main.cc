@@ -9,11 +9,9 @@
 #include "steg/steganographic_algorithm.h"
 #include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
-#include "steg/lcg.h"
 #include "steg/lsb_algorithm.cc"
 #include "steg/lsbk_algorithm.cc"
-
-// TEMP:
+#include "steg/lsbp_algorithm.cc"
 
 using namespace std;
 
@@ -26,24 +24,6 @@ bool algRequiresPass(string alg);
 SteganographicAlgorithm *getAlg(string alg, string pass);
 
 int main(int argc, char *argv[]) {
-  LCG lcg(100);
-  lcg.setSeed(50);
-  lcg.debug();
-  set<int> nums;
-  int i = 0;
-  for (i = 0; i < 100; i ++) {
-    int out = lcg.iterate();
-    printf("num: %d\n", out);
-    if (nums.find(out) != nums.end()) {
-      printf("oh no\n");
-    }
-    nums.insert(out);
-  }
-  printf("size: %d\n", nums.size());
-
-  return 0;
-
-
   printName();
   if (argc < 2) {
     printf("Error: Insufficient arguments specified.\n");
@@ -167,7 +147,7 @@ void doFormat(string algorithm, string pass, string videoPath) {
 }
 
 bool algRequiresPass(string alg) {
-  return alg == "lsbk";
+  return alg == "lsbk" || alg == "lsbp";
 }
 
 SteganographicAlgorithm *getAlg(string alg, string pass) {
@@ -175,6 +155,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass) {
     return new LSBAlgorithm;
   } else if (alg == "lsbk") {
     return new LSBKAlgorithm(pass);
+  } else if (alg=="lsbp") {
+    return new LSBPAlgorithm(pass);
   }
 }
 

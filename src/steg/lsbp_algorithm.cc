@@ -5,18 +5,24 @@
 #include <cryptlib.h>
 #include <randpool.h>
 #include <whrlpool.h>
+#include <set>
+#include <mutex> 
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"
 
-class LSBKAlgorithm : public SteganographicAlgorithm {
+class LSBPAlgorithm : public SteganographicAlgorithm {
   private:
     char *key;
     // TODO: make salt dependant on feature of the video...
     char salt[10] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'};
+    // TODO not hard code this
+    LCG lcg = LCG(2764800);
+    // Need to lock embed and extract since concurrent calls to LCG are not safe
+    mutex mux;
 
   public:
-    LSBKAlgorithm(std::string password) {
+    LSBPAlgorithm(std::string password) {
       this->password = password;
       this->key = (char *)malloc(128 * sizeof(char));
       CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
@@ -26,45 +32,55 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
 
     };
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
-      CryptoPP::RandomPool pool;
-      pool.IncorporateEntropy((const unsigned char *)key, 128);
-      pool.IncorporateEntropy((const unsigned char *)&offset, 4);
-
+      this->mux.lock();
+      // Reset the psudo random permutation and find the correct offset within
+      // the sequence
+      // Fix performance with a hasmap from offsets -> seed values
+      lcg.setSeed(0);
       int i = 0;
+      for (i = 0; i < offset; i ++) {
+        lcg.iterate();
+      }      
+      
       int j = 0;
-      int frameByte = offset;
+      int frameByte = lcg.iterate();
       char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
-        char toXor = pool.GenerateByte();
         for (j = 7; j >= 0; j --) {
-          if ((((mask << j) & (data[i] ^ toXor)) >> j) == 1) {
+          if ((((mask << j) & (data[i])) >> j) == 1) {
             frame[frameByte] |= 1;
           } else {
             frame[frameByte] &= ~1;
           }
-          frameByte ++;
+          frameByte = lcg.iterate();
         }
       }
+      this->mux.unlock();
     };
     virtual void extract(char *frame, char *output, int dataBytes, int offset) {
-      CryptoPP::RandomPool pool;
-      pool.IncorporateEntropy((const unsigned char *)key, 128);
-      pool.IncorporateEntropy((const unsigned char *)&offset, 4);
-
+      this->mux.lock();
+      // Reset the psudo random permutation and find the correct offset within
+      // the sequence
+      lcg.setSeed(0);
       int i = 0;
+      for (i = 0; i < offset; i ++) {
+        lcg.iterate();
+      }      
+
       int j = 0;
-      int frameByte = offset;
+      int frameByte = lcg.iterate();
+      char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (j = 7; j >= 0; j --) {
           output[i] |= ((frame[frameByte] & 1) << j);
-          frameByte ++;
+          frameByte = lcg.iterate();
         }
-        output[i] ^= pool.GenerateByte();
       }
+      this->mux.unlock();
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'L', 'S', 'B', 'K'};
+      char tmp[4] = {'L', 'S', 'B', 'P'};
       memcpy(out, tmp, 4);
     };
 };
