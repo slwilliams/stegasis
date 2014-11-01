@@ -7,13 +7,14 @@
 #include <whrlpool.h>
 
 #include "steganographic_algorithm.h"
-#include "lcg.cc"
+#include "lcg.h"
 
 class LSBKAlgorithm : public SteganographicAlgorithm {
   private:
     char *key;
     // TODO: make salt dependant on feature of the video...
     char salt[10] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'};
+    LCG lcg = LCG(921600);
 
   public:
     LSBKAlgorithm(std::string password) {
@@ -29,7 +30,6 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)key, 128);
       pool.IncorporateEntropy((const unsigned char *)&offset, 4);
-      LCG lcg(10, 10, 10, 10);
 
       int i = 0;
       int j = 0;
