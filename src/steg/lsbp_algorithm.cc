@@ -44,10 +44,9 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
       int i = 0;
       int j = 0;
       int frameByte = myLCG.iterate();
-      char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
         for (j = 7; j >= 0; j --) {
-          if ((((mask << j) & (data[i])) >> j) == 1) {
+          if ((((1 << j) & data[i]) >> j) == 1) {
             frame[frameByte] |= 1;
           } else {
             frame[frameByte] &= ~1;

@@ -6,7 +6,7 @@ Stegasis allows files to be steganographically hidden inside video files via a f
 
 Stegasis provides a number of steganographic algorithms, encryption functionality and (currently) supports uncompressed AVI video files.
 
-Useage
+Usage
 ------
     # Prepare an existing video file
     $ stegasis format –-alg=lsbk --pass=password123 video.avi

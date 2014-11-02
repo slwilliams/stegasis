@@ -306,12 +306,6 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   return size;
 };
 
-int SteganographicFileSystem::fsync(const char *path, int datasync, struct fuse_file_info *fi) {
-  // Flush any dirty frames we're holding
-  printf("fsync called: datasync: %d\n", datasync);
-  return 0;
-};
-
 int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
   // This implementation is needed
   return 0;
@@ -336,7 +330,7 @@ void SteganographicFileSystem::writeHeader() {
     }
     headerBytes += f.first.length() + 1;
     headerBytes += 4;
-    headerBytes += 4*3*f.second.size();
+    headerBytes += sizeof(tripleT)*f.second.size();
   }
   this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4) * 8); 
   this->alg->embed(headerFrame->getFrameData(), header, headerBytes, (4+4+4) * 8); 
@@ -353,6 +347,7 @@ int SteganographicFileSystem::unlink(const char *path) {
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
   printf("flush called: %s\n", path);
   if (!this->performance) {
+    this->writeHeader();
     this->decoder->writeBack();
   }
   return 0; 

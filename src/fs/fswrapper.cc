@@ -37,10 +37,6 @@ int wrap_utime(const char *path, struct utimbuf *ubuf) {
   return SteganographicFileSystem::Instance()->utime(path, ubuf);
 }
 
-int wrap_fsync(const char *path, int datasync, struct fuse_file_info *fi) {
-  return SteganographicFileSystem::Instance()->fsync(path, datasync, fi);
-}
-
 int wrap_unlink(const char *path) {
   return SteganographicFileSystem::Instance()->unlink(path);
 }
@@ -73,7 +69,6 @@ void wrap_mount(std::string mountPoint) {
   fs_oper.truncate = wrap_truncate;
   fs_oper.create   = wrap_create;
   fs_oper.utime    = wrap_utime;
-  fs_oper.fsync    = wrap_fsync;
   fs_oper.unlink   = wrap_unlink;
   fs_oper.flush    = wrap_flush;
 
