@@ -245,7 +245,8 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         break;
       }
       // Otherwise we can just write into the entire chunk
-      this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(), (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
+      this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(),
+          (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
       this->decoder->getFrame(t.frame)->setDirty(); 
       bytesWritten += bytesLeftInChunk;
       // Force chunkOffset to be 0 next time round
@@ -270,8 +271,10 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.frame = nextFrame;
         triple.offset = nextOffset;
         printf("\e[1A"); 
-        printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n", nextFrame, size-bytesWritten, nextOffset * 8);
-        this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
+        printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n",
+            nextFrame, size-bytesWritten, nextOffset * 8);
+        this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(),
+            (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);
         this->decoder->setNextFrameOffset(nextFrame, nextOffset + size-bytesWritten);
@@ -282,8 +285,10 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         triple.frame = nextFrame;
         triple.offset = nextOffset;
         printf("\e[1A"); 
-        printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n", nextFrame, bytesLeftInFrame / 8, nextOffset * 8);
-        this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(), (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
+        printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n",
+            nextFrame, bytesLeftInFrame / 8, nextOffset * 8);
+        this->alg->embed(this->decoder->getFrame(nextFrame)->getFrameData(),
+            (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         this->decoder->getFrame(nextFrame)->setDirty(); 
         this->fileIndex[path].push_back(triple);
         bytesWritten += bytesLeftInFrame / 8;

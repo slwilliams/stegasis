@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
       doFormat(alg, "", videoPath);
     }
   } else if (command == "mount") {
-    // stegasis mount --alb=lsbk --pass=123 /media/video.avi /tmp/test
+    // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
     if (argc < 5) {
       incorrectArgNumber(command);
       return 1;

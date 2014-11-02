@@ -52,7 +52,10 @@ LCG::LCG(int targetM, int key) {
   
   // To sasify Hull-Dobell Theorem
   int tmpA = key % this->m;
+  // Force it to be a multiple of 4
   tmpA += (4 - (tmpA % 4));
+  if (tmpA > this->m) tmpA -= 4;
+  if (tmpA == 0) tmpA += 4;
   this->a = tmpA + 1;
 
   // Populate the seed->offset map

@@ -3,10 +3,12 @@
 #include "video/avi_decoder.cc"
 #include "video/video_decoder.h"
 
+// ./main.o /media/vid.avi test.ppm 3 rgb
 int main(int argc, char **argv) {
   string videoPath = argv[1];
   string outputFile = argv[2];
   int frame = atoi(argv[3]);
+  string rgb = argv[4];
   FILE *f = fopen(outputFile.c_str(), "wb");
   AVIDecoder *dec = new AVIDecoder(videoPath);
   
@@ -28,11 +30,16 @@ int main(int argc, char **argv) {
   fwrite(tempAscii, 1, length, f);
   fwrite((char *)&space, 1, 1, f);
 
-  char one = '2';
-  fwrite((char *)&one, 1, 1, f);
-  one = '5';
-  fwrite((char *)&one, 1, 1, f);
-  fwrite((char *)&one, 1, 1, f);
+  if (rgb == "rgb") {
+    char c = '2';
+    fwrite((char *)&c, 1, 1, f);
+    c = '5';
+    fwrite((char *)&c, 1, 1, f);
+    fwrite((char *)&c, 1, 1, f);
+  } else {
+    char c = '1';
+    fwrite((char *)&c, 1, 1, f);
+  }
   fwrite((char *)&space, 1, 1, f);
  
   int frameSize = dec->frameSize();
@@ -43,21 +50,26 @@ int main(int argc, char **argv) {
     char blue = c->getFrameData()[j];
     char green = c->getFrameData()[j+1];
     char red = c->getFrameData()[j+2];
-    fwrite(&red, 1, 1, f);
-    fwrite(&green, 1, 1, f);
-    fwrite(&blue, 1, 1, f);
-    char blueLsb = blue & 1;
-    char greenLsb = green & 1;
-    char redLsb = red & 1;
-    //fwrite(&redLsb, 1, 1, f);
-    //fwrite(&redLsb, 1, 1, f);
-    //fwrite(&redLsb, 1, 1, f);
-    /*fwrite(&greenLsb, 1, 1, f);
-    fwrite(&greenLsb, 1, 1, f);
-    fwrite(&greenLsb, 1, 1, f);
-    fwrite(&blueLsb, 1, 1, f);
-    fwrite(&blueLsb, 1, 1, f);
-    fwrite(&blueLsb, 1, 1, f);*/
+    if (rgb == "rgb") {
+      fwrite(&red, 1, 1, f);
+      fwrite(&green, 1, 1, f);
+      fwrite(&blue, 1, 1, f);
+    } else {
+      char blueLsb = blue & 1;
+      char greenLsb = green & 1;
+      char redLsb = red & 1;
+      char toWrite;
+      if (rgb == "r") {
+        toWrite = redLsb;
+      } else if (rgb == "g") {
+        toWrite = greenLsb;
+      } else if (rgb == "b") {
+        toWrite = blueLsb;
+      }
+      fwrite(&toWrite, 1, 1, f);
+      fwrite(&toWrite, 1, 1, f);
+      fwrite(&toWrite, 1, 1, f);
+    }
   }
   fclose(f);
 }
