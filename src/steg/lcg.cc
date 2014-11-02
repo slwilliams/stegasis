@@ -30,7 +30,7 @@ int LCG::gcd(int u, int v) {
   return u << shift;
 };
 
-LCG::LCG(int targetM) {
+LCG::LCG(int targetM, int key) {
   this->trueM = targetM;
   int n = 2;
   while (true) {
@@ -51,8 +51,9 @@ LCG::LCG(int targetM) {
   this->c = tmpC;
   
   // To sasify Hull-Dobell Theorem
-  // TODO make this dependent on this->m
-  this->a = 5;
+  int tmpA = key % this->m;
+  tmpA += (4 - (tmpA % 4));
+  this->a = tmpA + 1;
 
   // Populate the seed->offset map
   int i = 0;

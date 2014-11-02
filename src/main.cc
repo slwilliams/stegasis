@@ -21,7 +21,7 @@ void incorrectArgNumber(string command);
 void doFormat(string algorithm, string pass, string videoPath);
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
 bool algRequiresPass(string alg);
-SteganographicAlgorithm *getAlg(string alg, string pass);
+SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
 
 int main(int argc, char *argv[]) {
   printName();
@@ -105,8 +105,8 @@ int main(int argc, char *argv[]) {
 }
 
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance) {
-  SteganographicAlgorithm *lsb = getAlg(alg, pass); 
   VideoDecoder *dec = new AVIDecoder(videoPath);
+  SteganographicAlgorithm *lsb = getAlg(alg, pass, dec); 
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
   printf("Mounting...\n");
@@ -120,8 +120,8 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 }
 
 void doFormat(string algorithm, string pass, string videoPath) {
-  SteganographicAlgorithm *alg = getAlg(algorithm, pass);
   VideoDecoder *dec = new AVIDecoder(videoPath);
+  SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
   char header[4] = {'S', 'T', 'E', 'G'};
 
   Chunk *headerFrame = dec->getFrame(0);
@@ -150,13 +150,13 @@ bool algRequiresPass(string alg) {
   return alg == "lsbk" || alg == "lsbp";
 }
 
-SteganographicAlgorithm *getAlg(string alg, string pass) {
+SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   if (alg == "lsb") {
     return new LSBAlgorithm;
   } else if (alg == "lsbk") {
-    return new LSBKAlgorithm(pass);
+    return new LSBKAlgorithm(pass, dec);
   } else if (alg=="lsbp") {
-    return new LSBPAlgorithm(pass);
+    return new LSBPAlgorithm(pass, dec);
   }
 }
 

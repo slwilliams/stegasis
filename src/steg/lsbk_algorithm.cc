@@ -10,17 +10,25 @@
 class LSBKAlgorithm : public SteganographicAlgorithm {
   private:
     char *key;
-    // TODO: make salt dependant on feature of the video...
-    char salt[10] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'};
 
   public:
-    LSBKAlgorithm(std::string password) {
+    LSBKAlgorithm(std::string password, VideoDecoder *dec) {
       this->password = password;
+      this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
+      char salt[16];
+      int fileSize = this->dec->getFileSize();
+      int numFrames = this->dec->numberOfFrames();
+      int height = this->dec->frameHeight();
+      int width = this->dec->frameWidth();
+      memcpy(salt, &fileSize, 4); 
+      memcpy(salt + 4, &numFrames, 4); 
+      memcpy(salt + 8, &height, 4); 
+      memcpy(salt + 12, &width, 4); 
       CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
       keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
           (const unsigned char *)this->password.c_str(), this->password.length(),
-          (const unsigned char *)this->salt, 10, 32, 0) ;
+          (const unsigned char *)salt, 16, 32, 0) ;
 
     };
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
