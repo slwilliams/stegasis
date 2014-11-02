@@ -53,7 +53,17 @@ LCG::LCG(int targetM) {
   // To sasify Hull-Dobell Theorem
   // TODO make this dependent on this->m
   this->a = 5;
+
+  // Populate the seed->offset map
+  int i = 0;
+  this->setSeed(0);
+  this->map[0] = 0;
+  for (i = 1; i < this->trueM; i ++) {
+    this->map[i] = this->iterate();
+  }
 };
+
+LCG::LCG(int m, int c, int a, int trueM): m(m), c(c), a(a), trueM(trueM) {};
 
 void LCG::setSeed(int seed) {
   this->seed = seed;
@@ -68,4 +78,8 @@ int LCG::iterate() {
 
 void LCG::debug() {
   printf("m: %d, a: %d, c: %d\n", this->m, this->a, this->c);
+};
+
+LCG LCG::getLCG() {
+  return LCG(this->m, this->c, this->a, this->trueM);
 };

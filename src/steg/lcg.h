@@ -1,7 +1,7 @@
 #ifndef lcg_h
 #define lcg_h
 
-#include <set>
+#include <unordered_map>
 
 class LCG {
   private:
@@ -12,8 +12,11 @@ class LCG {
     int gcd(int u, int v);
   public:
     LCG(int m);
+    LCG(int m, int c, int a, int trueM);
     void setSeed(int seed);
     int iterate();
     void debug();
+    LCG getLCG();
+    std::unordered_map<int, int> map;
 };
 #endif

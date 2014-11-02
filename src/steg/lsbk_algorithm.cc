@@ -2,12 +2,10 @@
 #include <string.h>
 #include <string>
 #include <pwdbased.h>
-#include <cryptlib.h>
 #include <randpool.h>
 #include <whrlpool.h>
 
 #include "steganographic_algorithm.h"
-#include "lcg.h"
 
 class LSBKAlgorithm : public SteganographicAlgorithm {
   private:

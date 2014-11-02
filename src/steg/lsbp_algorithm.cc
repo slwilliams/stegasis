@@ -6,7 +6,6 @@
 #include <randpool.h>
 #include <whrlpool.h>
 #include <set>
-#include <mutex> 
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"
@@ -18,8 +17,6 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
     char salt[10] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'A'};
     // TODO not hard code this
     LCG lcg = LCG(2764800);
-    // Need to lock embed and extract since concurrent calls to LCG are not safe
-    mutex mux;
 
   public:
     LSBPAlgorithm(std::string password) {
@@ -32,18 +29,13 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
 
     };
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
-      this->mux.lock();
-      // Reset the psudo random permutation and find the correct offset within
-      // the sequence
-      // Fix performance with a hasmap from offsets -> seed values
-      lcg.setSeed(0);
+      LCG myLCG = this->lcg.getLCG();
+      // Set the seed using the 'global' lcg map
+      myLCG.setSeed(lcg.map[offset]);
+
       int i = 0;
-      for (i = 0; i < offset; i ++) {
-        lcg.iterate();
-      }      
-      
       int j = 0;
-      int frameByte = lcg.iterate();
+      int frameByte = myLCG.iterate();
       char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
         for (j = 7; j >= 0; j --) {
@@ -52,32 +44,26 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
           } else {
             frame[frameByte] &= ~1;
           }
-          frameByte = lcg.iterate();
+          frameByte = myLCG.iterate();
         }
       }
-      this->mux.unlock();
     };
     virtual void extract(char *frame, char *output, int dataBytes, int offset) {
-      this->mux.lock();
-      // Reset the psudo random permutation and find the correct offset within
-      // the sequence
-      lcg.setSeed(0);
-      int i = 0;
-      for (i = 0; i < offset; i ++) {
-        lcg.iterate();
-      }      
+      LCG myLCG = this->lcg.getLCG();
+      // Set the seed using the 'global' lcg map
+      myLCG.setSeed(lcg.map[offset]);
 
+      int i = 0;
       int j = 0;
-      int frameByte = lcg.iterate();
+      int frameByte = myLCG.iterate();
       char mask = 1;
       for (i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (j = 7; j >= 0; j --) {
           output[i] |= ((frame[frameByte] & 1) << j);
-          frameByte = lcg.iterate();
+          frameByte = myLCG.iterate();
         }
       }
-      this->mux.unlock();
     };
     virtual void getAlgorithmCode(char out[4]) {
       char tmp[4] = {'L', 'S', 'B', 'P'};
