@@ -8,7 +8,7 @@ class LCG {
     int m, c;
     int trueM;
     int a;
-    int seed;
+    long long seed;
     int gcd(int u, int v);
   public:
     LCG() {};

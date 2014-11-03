@@ -12,6 +12,7 @@
 #include "steg/lsb_algorithm.cc"
 #include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
+#include "steg/lsb2_algorithm.cc"
 
 using namespace std;
 
@@ -147,7 +148,7 @@ void doFormat(string algorithm, string pass, string videoPath) {
 }
 
 bool algRequiresPass(string alg) {
-  return alg == "lsbk" || alg == "lsbp";
+  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2";
 }
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
@@ -155,8 +156,13 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new LSBAlgorithm;
   } else if (alg == "lsbk") {
     return new LSBKAlgorithm(pass, dec);
-  } else if (alg=="lsbp") {
+  } else if (alg == "lsbp") {
     return new LSBPAlgorithm(pass, dec);
+  } else if (alg == "lsb2") {
+    return new LSB2Algorithm(pass, dec);
+  } else {
+    printf("Unknown algorithm\n");
+    exit(0);
   }
 }
 

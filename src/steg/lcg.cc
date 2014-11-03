@@ -42,7 +42,7 @@ LCG::LCG(int targetM, int key) {
   this->m = n;
 
   // To sasify Hull-Dobell Theorem
-  int tmpC = this->m-1;
+  int tmpC = this->m-2;
   while(true) {
     if (gcd(tmpC, this->m) == 1)
       break;
@@ -70,18 +70,18 @@ LCG::LCG(int targetM, int key) {
 LCG::LCG(int m, int c, int a, int trueM): m(m), c(c), a(a), trueM(trueM) {};
 
 void LCG::setSeed(int seed) {
-  this->seed = seed;
+  this->seed = (long long)seed;
 };
 
 int LCG::iterate() {
   do {
     this->seed = (a * seed + c) % m;
   } while(this->seed >= this->trueM);
-  return this->seed;
+  return (int)this->seed;
 };
 
 void LCG::debug() {
-  printf("m: %d, a: %d, c: %d\n", this->m, this->a, this->c);
+  printf("m: %d, a: %d, c: %d, trueM: %d\n", this->m, this->a, this->c, this->trueM);
 };
 
 LCG LCG::getLCG() {
