@@ -224,7 +224,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 
 //117MB limit if using 4096 chunks with a singe header frame
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
   bool needMoreChunks = true;
@@ -257,6 +258,12 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   }
   
   if (needMoreChunks == true) {
+    if (this->fileIndex[path].size() > 0) {
+      struct tripleT last = this->fileIndex[path].back();
+      if (last.offset + last.bytes == offset) {
+        // We can extend a previous chunk
+      }
+    }
     // Need to allocate some new chunks
     while (bytesWritten < size) {
       int nextFrame = 0;
@@ -312,6 +319,7 @@ int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
 };
 
 void SteganographicFileSystem::writeHeader() {
+  this->compactHeader();
   char *header = (char *)malloc(this->decoder->frameSize() * sizeof(char));
   int headerBytes = 0;
   int offset = 0;
@@ -319,6 +327,8 @@ void SteganographicFileSystem::writeHeader() {
   for (auto f : this->fileIndex) {
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
+    printf("I thnk triples are: %d\n", f.second.size());
+    printf("I thnk triples are: %d\n", f.second.size());
     int triples = f.second.size();
     memcpy(header + offset, (char *)&triples, 4);
     offset += 4;
@@ -344,8 +354,39 @@ int SteganographicFileSystem::unlink(const char *path) {
   return 0;
 };
 
+void SteganographicFileSystem::compactHeader() {
+  printf("Compacting header\n");
+  printf("Compacting header\n");
+  for (auto f : this->fileIndex) {
+    int i = 0;
+    int size = f.second.size();
+    printf("before: %d\n", f.second.size());
+    printf("before: %d\n", f.second.size());
+    while (i < size - 1) {
+      struct tripleT current = f.second.at(i);
+      struct tripleT next = f.second.at(i+1);
+      if (current.offset + current.bytes == next.offset) {
+        //printf("actully moding\n");
+        //printf("actully moding\n");
+        current.bytes += next.bytes;
+        f.second.at(i) = current;
+        f.second.erase(f.second.begin() + i+1);
+        size --;
+      } else {
+        i ++;
+      }
+    }
+    this->fileIndex[f.first] = f.second;
+    printf("after: %d\n", f.second.size());
+    printf("after: %d\n", f.second.size());
+  }
+  this->decoder->getFrame(0)->setDirty();
+};
+
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
   printf("flush called: %s\n", path);
+  // Compact header
+  this->compactHeader(); 
   if (!this->performance) {
     this->writeHeader();
     this->decoder->writeBack();

@@ -49,6 +49,7 @@ class SteganographicFileSystem {
     int flush(const char *path, struct fuse_file_info *fi);
 
     void writeHeader();
+    void compactHeader();
 
     void readHeader(char *headerBytes, int byteC);
 };
