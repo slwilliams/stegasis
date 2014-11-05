@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 #include "common/logging.h"
 #include "video/video_decoder.h"
@@ -29,6 +30,7 @@ class SteganographicFileSystem {
     Logger *log;
     std::unordered_map<std::string, int> fileSizes; 
     std::unordered_map<std::string, std::vector<struct tripleT> > fileIndex; 
+    std::mutex mux;
     
   public:
     static SteganographicFileSystem *_instance;

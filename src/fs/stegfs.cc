@@ -178,13 +178,13 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   int readBytes = 0;
   int i = 0;
   for (struct tripleT t : triples) {
-    if (readBytes + t.bytes >= offset) {
+    if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
         int chunkOffset = offset - readBytes;
         int bytesLeftInChunk = t1.bytes - chunkOffset;
         Chunk *c = this->decoder->getFrame(t1.frame); 
-        if (size - bytesWritten < bytesLeftInChunk) {
+        if (size - bytesWritten <= bytesLeftInChunk) {
           printf("\e[1A"); 
           printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
           if (chunkOffset == 0) {
@@ -327,8 +327,6 @@ void SteganographicFileSystem::writeHeader() {
   for (auto f : this->fileIndex) {
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
-    printf("I thnk triples are: %d\n", f.second.size());
-    printf("I thnk triples are: %d\n", f.second.size());
     int triples = f.second.size();
     memcpy(header + offset, (char *)&triples, 4);
     offset += 4;
@@ -354,22 +352,19 @@ int SteganographicFileSystem::unlink(const char *path) {
   return 0;
 };
 
+// TODO: This breaks LCG offset stuff..... since we're resizing the chunks and not
+// changing the LCG start offset...
 void SteganographicFileSystem::compactHeader() {
-  printf("Compacting header\n");
-  printf("Compacting header\n");
+  this->mux.lock();
   for (auto f : this->fileIndex) {
     int i = 0;
     int size = f.second.size();
-    printf("before: %d\n", f.second.size());
-    printf("before: %d\n", f.second.size());
     while (i < size - 1) {
       struct tripleT current = f.second.at(i);
       struct tripleT next = f.second.at(i+1);
-      if (current.offset + current.bytes == next.offset) {
-        //printf("actully moding\n");
-        //printf("actully moding\n");
+      if (current.frame == next.frame && current.offset + current.bytes == next.offset) {
         current.bytes += next.bytes;
-        f.second.at(i) = current;
+        f.second[i] = current;
         f.second.erase(f.second.begin() + i+1);
         size --;
       } else {
@@ -377,16 +372,13 @@ void SteganographicFileSystem::compactHeader() {
       }
     }
     this->fileIndex[f.first] = f.second;
-    printf("after: %d\n", f.second.size());
-    printf("after: %d\n", f.second.size());
   }
   this->decoder->getFrame(0)->setDirty();
+  this->mux.unlock();
 };
 
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
   printf("flush called: %s\n", path);
-  // Compact header
-  this->compactHeader(); 
   if (!this->performance) {
     this->writeHeader();
     this->decoder->writeBack();
