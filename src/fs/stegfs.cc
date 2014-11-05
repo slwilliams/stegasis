@@ -352,17 +352,20 @@ int SteganographicFileSystem::unlink(const char *path) {
   return 0;
 };
 
-// TODO: This breaks LCG offset stuff..... since we're resizing the chunks and not
-// changing the LCG start offset...
+// Way to fix is to when removeing a chunk log the offset we will hit whilst 
+// iterating over the new large chunk resetting the "local" LCG and the have
+// a global LCG for the entire new block re encrpyt the data
 void SteganographicFileSystem::compactHeader() {
   this->mux.lock();
   for (auto f : this->fileIndex) {
     int i = 0;
+    std::unordered_map<int, std::vector<int> > chunkOffsets = std::unordered_map<int, std::vector<int> >();
     int size = f.second.size();
     while (i < size - 1) {
       struct tripleT current = f.second.at(i);
       struct tripleT next = f.second.at(i+1);
       if (current.frame == next.frame && current.offset + current.bytes == next.offset) {
+        chunkOffsets[i].push_back(next.offset);
         current.bytes += next.bytes;
         f.second[i] = current;
         f.second.erase(f.second.begin() + i+1);
@@ -371,6 +374,24 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
+    char *tmp = (char *)malloc(this->decoder->frameSize());
+    for (i = 0; i < f.second.size(); i ++) {
+      if (chunkOffsets[i].size() != 0) {
+        struct tripleT t = f.second[i];
+        int bytesRead = 0;
+        for (int j : chunkOffsets[i]) {
+          int relOffset = j - t.offset;
+          this->alg->extract(this->decoder->getFrame(t.frame)->getFrameData(), 
+              tmp + bytesRead, relOffset - bytesRead, (t.offset + bytesRead) * 8);
+          bytesRead += (relOffset - bytesRead);
+        }
+        this->alg->extract(this->decoder->getFrame(t.frame)->getFrameData(), 
+            tmp + bytesRead, t.bytes - bytesRead, (t.offset + bytesRead) * 8);
+        this->alg->embed(this->decoder->getFrame(t.frame)->getFrameData(),
+            tmp, t.bytes, t.offset * 8);
+      }
+    }
+    free(tmp);
     this->fileIndex[f.first] = f.second;
   }
   this->decoder->getFrame(0)->setDirty();
