@@ -7,7 +7,7 @@ clean:
 	        rm -rf obj
 
 main: obj obj/fswrapper.o obj/bar.o obj/main.o
-	        g++ -O3 -m64 -g -o stegasis obj/* $(LINKFLAGS) 
+	        g++ -O3 -m64 -g -o stegasis.o obj/* $(LINKFLAGS) 
 
 obj:
 	        mkdir -p obj
