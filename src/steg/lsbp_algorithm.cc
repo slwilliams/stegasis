@@ -34,7 +34,8 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
           (const unsigned char *)salt, 16, 32, 0) ;
       int lcgKey = key[0] | key[1] << 8 | key[2] << 16 | key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
-      this->lcg = LCG(this->dec->frameSize(), lcgKey);
+      int frameSize = this->dec->frameSize();
+      this->lcg = LCG(frameSize, lcgKey);
     };
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
       int i = 0;

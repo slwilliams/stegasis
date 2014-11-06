@@ -122,7 +122,6 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 
 void doFormat(string algorithm, string pass, string videoPath, char capacity) {
   VideoDecoder *dec = new AVIDecoder(videoPath);
-  dec->setCapacity(capacity);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
   char header[4] = {'S', 'T', 'E', 'G'};
 
