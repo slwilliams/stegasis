@@ -32,16 +32,20 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   char algE[4] = {0,0,0,0};
   this->alg->extract(headerFrame->getFrameData(), algE, 4, 4 * 8);
 
+  char capacity = 0;
+  this->alg->extract(headerFrame->getFrameData(), &capacity, 4, 8 * 8);
+  this->decoder->setCapacity(capacity);
+
   union {
     uint32_t num;
     char byte[4];
   } headerBytes;
   headerBytes.num = 0;
-  this->alg->extract(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
+  this->alg->extract(headerFrame->getFrameData(), headerBytes.byte, 4, 9 * 8);
   printf("Total headerbytes: %d\n", headerBytes.num);
 
   char *headerData = (char *)calloc(sizeof(char), headerBytes.num);
-  this->alg->extract(headerFrame->getFrameData(), headerData, headerBytes.num, 12 * 8);
+  this->alg->extract(headerFrame->getFrameData(), headerData, headerBytes.num, 13 * 8);
   this->readHeader(headerData, headerBytes.num); 
 };
 
@@ -272,6 +276,8 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       
       struct tripleT triple;
       int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
+      printf("bytesLeftInFrame: %d\n", bytesLeftInFrame);
+      printf("bytesLeftInFrame: %d\n", bytesLeftInFrame);
       // *8 since it takes 8 bytes to embed one byte
       if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
@@ -340,8 +346,8 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += 4;
     headerBytes += sizeof(tripleT)*f.second.size();
   }
-  this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4) * 8); 
-  this->alg->embed(headerFrame->getFrameData(), header, headerBytes, (4+4+4) * 8); 
+  this->alg->embed(headerFrame->getFrameData(), (char *)&headerBytes, 4, (4+4+1) * 8); 
+  this->alg->embed(headerFrame->getFrameData(), header, headerBytes, (4+4+4+1) * 8); 
   headerFrame->setDirty();
 };
 

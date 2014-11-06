@@ -37,13 +37,9 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
       this->lcg = LCG(this->dec->frameSize(), lcgKey);
     };
     virtual void embed(char *frame, char *data, int dataBytes, int offset) {
-      LCG myLCG = this->lcg.getLCG();
-      // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);
-
       int i = 0;
       int j = 0;
-      int frameByte = myLCG.iterate();
+      int frameByte = lcg.map[offset++]; 
       for (i = 0; i < dataBytes; i ++) {
         for (j = 7; j >= 0; j --) {
           if ((((1 << j) & data[i]) >> j) == 1) {
@@ -51,23 +47,25 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
           } else {
             frame[frameByte] &= ~1;
           }
-          frameByte = myLCG.iterate();
+          frameByte = lcg.map[offset++];
         }
       }
     };
     virtual void extract(char *frame, char *output, int dataBytes, int offset) {
-      LCG myLCG = this->lcg.getLCG();
+      /*LCG myLCG = this->lcg.getLCG();
       // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);
+      myLCG.setSeed(lcg.map[offset]);*/
 
       int i = 0;
       int j = 0;
-      int frameByte = myLCG.iterate();
+      //int frameByte = myLCG.iterate();
+      int frameByte = lcg.map[offset++]; 
       for (i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (j = 7; j >= 0; j --) {
           output[i] |= ((frame[frameByte] & 1) << j);
-          frameByte = myLCG.iterate();
+          //frameByte = myLCG.iterate();
+          frameByte = lcg.map[offset++];
         }
       }
     };

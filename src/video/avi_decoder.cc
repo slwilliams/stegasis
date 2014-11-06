@@ -2,6 +2,7 @@
 #include <string.h>
 #include <string>
 #include <mutex> 
+#include <math.h>
 
 #include "video_decoder.h"
 
@@ -132,6 +133,7 @@ class AVIDecoder : public VideoDecoder {
     long chunksOffset;
     int nextFrame = 1;
     int nextOffset = 0;
+    char capacity = 100;
 
   public:
     AVIDecoder(string filePath): filePath(filePath) {
@@ -276,8 +278,12 @@ class AVIDecoder : public VideoDecoder {
    virtual int frameWidth() {
      return this->aviHeader.width; 
    };
+   virtual void setCapacity(char capacity) { 
+     this->capacity = capacity;
+   };
    virtual int frameSize() {
      // 24 bits per pixel
-     return this->aviHeader.width * this->aviHeader.height * 3;
+     printf("reting: %d\n", (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0)));
+     return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
    };
 };

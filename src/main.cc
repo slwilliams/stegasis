@@ -19,7 +19,7 @@ using namespace std;
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
-void doFormat(string algorithm, string pass, string videoPath);
+void doFormat(string algorithm, string pass, string videoPath, char capacity);
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
 bool algRequiresPass(string alg);
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
@@ -45,10 +45,10 @@ int main(int argc, char *argv[]) {
       string passFlag = argv[3];
       string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
       string videoPath = argv[4];
-      doFormat(alg, pass, videoPath);
+      doFormat(alg, pass, videoPath, 50);
     } else {
       string videoPath = argv[3];
-      doFormat(alg, "", videoPath);
+      doFormat(alg, "", videoPath, 50);
     }
   } else if (command == "mount") {
     // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
@@ -120,8 +120,9 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   printf("Sucsessfully unmounted\n");
 }
 
-void doFormat(string algorithm, string pass, string videoPath) {
+void doFormat(string algorithm, string pass, string videoPath, char capacity) {
   VideoDecoder *dec = new AVIDecoder(videoPath);
+  dec->setCapacity(capacity);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
   char header[4] = {'S', 'T', 'E', 'G'};
 
@@ -132,13 +133,15 @@ void doFormat(string algorithm, string pass, string videoPath) {
   alg->getAlgorithmCode(algCode);
   alg->embed(headerFrame->getFrameData(), algCode, 4, 4 * 8);
 
+  alg->embed(headerFrame->getFrameData(), &capacity, 1, 8 * 8);
+
   union {
     uint32_t num;
     char byte[4];
   } headerBytes;
   headerBytes.num = 0;
 
-  alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 8 * 8);
+  alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 9 * 8);
   
   // Make sure the header is written back
   headerFrame->setDirty();

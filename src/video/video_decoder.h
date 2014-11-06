@@ -20,6 +20,7 @@ class VideoDecoder {
     virtual int frameHeight() = 0;
     virtual int frameWidth() = 0;
     virtual void writeBack() = 0;
+    virtual void setCapacity(char capacity) = 0;
     virtual ~VideoDecoder() {};
 };
 
