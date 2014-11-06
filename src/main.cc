@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string>
 #include <fuse.h>
+#include <math.h>
 #include <set>
 
 #include "fs/fswrapper.h"
@@ -19,7 +20,7 @@ using namespace std;
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
-void doFormat(string algorithm, string pass, string videoPath, char capacity);
+void doFormat(string algorithm, string pass, string capacity, string videoPath);
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
 bool algRequiresPass(string alg);
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
@@ -34,8 +35,8 @@ int main(int argc, char *argv[]) {
 
   string command = argv[1];
   if (command == "format") {
-    // stegasis format --alg=lsbk --pass=123 /media/video.avi
-    if (argc < 4) {
+    // stegasis format --alg=lsbk --pass=123 --cap=10 /media/video.avi
+    if (argc < 5) {
       incorrectArgNumber(command);
       return 1;
     }
@@ -44,11 +45,15 @@ int main(int argc, char *argv[]) {
     if (algRequiresPass(alg)) {
       string passFlag = argv[3];
       string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
-      string videoPath = argv[4];
-      doFormat(alg, pass, videoPath, 50);
+      string capacityFlag = argv[4];
+      string capacity = capacityFlag.substr(capacityFlag.find("=") + 1, capacityFlag.length());
+      string videoPath = argv[5];
+      doFormat(alg, pass, capacity, videoPath);
     } else {
-      string videoPath = argv[3];
-      doFormat(alg, "", videoPath, 50);
+      string capacityFlag = argv[3];
+      string capacity = capacityFlag.substr(capacityFlag.find("=") + 1, capacityFlag.length());
+      string videoPath = argv[4];
+      doFormat(alg, "", capacity, videoPath);
     }
   } else if (command == "mount") {
     // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
@@ -120,7 +125,7 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   printf("Sucsessfully unmounted\n");
 }
 
-void doFormat(string algorithm, string pass, string videoPath, char capacity) {
+void doFormat(string algorithm, string pass, string capacity, string videoPath) {
   VideoDecoder *dec = new AVIDecoder(videoPath);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
   char header[4] = {'S', 'T', 'E', 'G'};
@@ -132,7 +137,8 @@ void doFormat(string algorithm, string pass, string videoPath, char capacity) {
   alg->getAlgorithmCode(algCode);
   alg->embed(headerFrame->getFrameData(), algCode, 4, 4 * 8);
 
-  alg->embed(headerFrame->getFrameData(), &capacity, 1, 8 * 8);
+  char capacityB = (char)atoi(capacity.c_str());
+  alg->embed(headerFrame->getFrameData(), &capacityB, 1, 8 * 8);
 
   union {
     uint32_t num;
@@ -145,8 +151,12 @@ void doFormat(string algorithm, string pass, string videoPath, char capacity) {
   // Make sure the header is written back
   headerFrame->setDirty();
 
+  int totalCapacity = (int)floor((dec->numberOfFrames() * dec->frameSize() * (capacityB / 100.0)) / 8);
+  printf("Volume capacity: %.2fMB\n", totalCapacity/1000000.0); 
+  printf("Volume capacity: %.2fMB\n", totalCapacity/1000000.0); 
+
   delete dec;
-  delete alg;
+  printf("Format successful!\n");
 }
 
 bool algRequiresPass(string alg) {

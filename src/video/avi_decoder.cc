@@ -283,7 +283,6 @@ class AVIDecoder : public VideoDecoder {
    };
    virtual int frameSize() {
      // 24 bits per pixel
-     printf("reting: %d\n", (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0)));
      return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
    };
 };
