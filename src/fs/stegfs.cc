@@ -11,6 +11,7 @@
 
 #include "fs/stegfs.h"
 #include "common/logging.h"
+#include "common/progress_bar.h"
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
 
@@ -64,17 +65,13 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     printf("File name: %s\n", name);
     std::string fileName((const char *)name);
     free(name);
-    union {
-      uint32_t num;
-      char byte[4];
-    } triples;
-    triples.num = 0;
+    uint32_t triples = 0;
     memcpy(&triples, headerBytes + offset + i, 4);
-    printf("File has %u triples\n", triples.num);
+    printf("File has %u triples\n", triples);
     int j = 0;
     int fileSize = 0;
     this->fileIndex[fileName.c_str()] = std::vector<tripleT>();
-    for (j = 0; j < triples.num; j ++) {
+    for (j = 0; j < triples; j ++) {
       struct tripleT triple;
       memcpy(&triple, headerBytes + offset + i + j*sizeof(tripleT) + 4, sizeof(tripleT)); 
       this->fileIndex[fileName.c_str()].push_back(triple);
@@ -155,15 +152,13 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
 };
 
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
-  // write new file to the header here 
   this->fileSizes[path] = 0;
   this->fileIndex[path] = std::vector<struct tripleT>();
   return 0;
 };
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
-  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+  //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
   std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
 
   if (file == this->fileSizes.end()) {
@@ -212,8 +207,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
           free(temp);
         }
         bytesWritten += bytesLeftInChunk;
-        // just to 0 chunkOffset from here on
-        // TODO find a nicer way of doing this
+        // Just to 0 chunkOffset from here on
         readBytes = offset;
         i ++;
       }
@@ -228,8 +222,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 
 //117MB limit if using 4096 chunks with a singe header frame
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
-  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+  //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
   bool needMoreChunks = true;
@@ -262,12 +255,6 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   }
   
   if (needMoreChunks == true) {
-    if (this->fileIndex[path].size() > 0) {
-      struct tripleT last = this->fileIndex[path].back();
-      if (last.offset + last.bytes == offset) {
-        // We can extend a previous chunk
-      }
-    }
     // Need to allocate some new chunks
     while (bytesWritten < size) {
       int nextFrame = 0;
@@ -276,8 +263,6 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       
       struct tripleT triple;
       int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
-      printf("bytesLeftInFrame: %d\n", bytesLeftInFrame);
-      printf("bytesLeftInFrame: %d\n", bytesLeftInFrame);
       // *8 since it takes 8 bytes to embed one byte
       if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
@@ -352,15 +337,11 @@ void SteganographicFileSystem::writeHeader() {
 };
 
 int SteganographicFileSystem::unlink(const char *path) {
-  printf("Unlink called with path: %s\n", path);
   this->fileIndex.erase(this->fileIndex.find(path));
   this->fileSizes.erase(this->fileSizes.find(path));
   return 0;
 };
 
-// Way to fix is to when removeing a chunk log the offset we will hit whilst 
-// iterating over the new large chunk resetting the "local" LCG and the have
-// a global LCG for the entire new block re encrpyt the data
 void SteganographicFileSystem::compactHeader() {
   this->mux.lock();
   for (auto f : this->fileIndex) {
@@ -381,7 +362,9 @@ void SteganographicFileSystem::compactHeader() {
       }
     }
     char *tmp = (char *)malloc(this->decoder->frameSize());
+    printf("Compacting chunks for: %s\n", f.first.c_str());
     for (i = 0; i < f.second.size(); i ++) {
+      loadBar(i, f.second.size() - 1, 50);
       if (chunkOffsets[i].size() != 0) {
         struct tripleT t = f.second[i];
         int bytesRead = 0;
@@ -405,7 +388,7 @@ void SteganographicFileSystem::compactHeader() {
 };
 
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
-  printf("flush called: %s\n", path);
+  printf("Flush called: %s\n", path);
   if (!this->performance) {
     this->writeHeader();
     this->decoder->writeBack();

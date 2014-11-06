@@ -153,7 +153,6 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
 
   int totalCapacity = (int)floor((dec->numberOfFrames() * dec->frameSize() * (capacityB / 100.0)) / 8);
   printf("Volume capacity: %.2fMB\n", totalCapacity/1000000.0); 
-  printf("Volume capacity: %.2fMB\n", totalCapacity/1000000.0); 
 
   delete dec;
   printf("Format successful!\n");
@@ -190,7 +189,7 @@ void printName() {
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");
   printf("  ____) | ||  __/ (_| | (_| \\__ \\ \\__ \\ \n");
   printf(" |_____/ \\__\\___|\\__, |\\__,_|___/_|___/ \n");
-  printf("                  __/ | v0.1                \n");
+  printf("                  __/ | v1.0a               \n");
   printf("                 |___/                      \n");
 }
 
@@ -198,9 +197,13 @@ void printUsage() {
   printf("\nStegasis usage:\n");
   printf("---------------------------\n");
   printf("Example commands:\n");
-  printf("\tstegasis format --alg=lsbk --pass=password123 /media/video.avi\n");
+  printf("\tstegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");
   printf("\tstegasis mount --alg=lsbk --password123 /media/video.avi /tmp/test\n"); 
+  printf("Required Flags:\n");
+  printf("\t--alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2]\n");
+  printf("\t--cap  Percentage of frame to embed within in percent\n");
   printf("Optional flags:\n");
-  printf("\t-p Do not flush writes to disk until unmount\n");
-  printf("\t-g Use green channel for embedding\n");
+  printf("\t--pass  Passphrase used for encrypting and permuting data, required for [lsbk, lsbp, lsb2]\n");
+  printf("\t-p  Do not flush writes to disk until unmount\n");
+  printf("\t-g  Use green channel for embedding\n");
 }
