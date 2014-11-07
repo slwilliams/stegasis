@@ -168,11 +168,10 @@ class AVIDecoder : public VideoDecoder {
       struct AviStreamHeader videoStreamHeader;
       read = fread(&videoStreamHeader, 1, sizeof(AviStreamHeader), f);
       read = fread(&this->bitmapInfoHeader, 1, sizeof(BitmapInfoHeader), f); 
+      printf("fcchandler: %.4s\n", videoStreamHeader.fccHandler);
+      printf("compression: %d\n", this->bitmapInfoHeader.compression);
      
-      // TODO: Is this junk chunk in all AVI files?
-      struct JunkChunk junk;
-      read = fread(&junk, 1, sizeof(JunkChunk), f);
-      fseek(f, junk.size, SEEK_CUR);
+      this->readJunk();
 
       read = fread(&aviStreamList, 4, 3, f);
 
@@ -182,17 +181,17 @@ class AVIDecoder : public VideoDecoder {
       struct WaveFormatEX audioInfoHeader;
       read = fread(&audioInfoHeader, 1, sizeof(WaveFormatEX), f);
 
-      read = fread(&junk, 1, sizeof(JunkChunk), f);
-      fseek(f, junk.size, SEEK_CUR);
-     
+      this->readJunk();
+
       read = fread(&aviList, 1, sizeof(AviList), f);
       fseek(f, aviList.listSize - 4, SEEK_CUR);
 
-      read = fread(&junk, 1, sizeof(JunkChunk), f);
-      fseek(f, junk.size, SEEK_CUR);
+      this->readJunk();
 
       // Now we are at the start of the movi chunks
       read = fread(&aviList, 1, sizeof(AviList), f);
+      printf("aviList: %.4s\n", aviList.fourCC);
+      printf("chunkOffset: %lu\n", ftell(f));
       this->chunksOffset = ftell(f);
 
       this->frameChunks = (AviChunk *)malloc(sizeof(AviChunk) * this->aviHeader.totalFrames);
@@ -206,7 +205,7 @@ class AVIDecoder : public VideoDecoder {
         read = fread(&tempChunk, 1, 4 + 4, f);
         //printf("\e[1A"); 
         //printf("\e[0K\rReading chunk '%d', type: %.4s, size: %d\n", i, tempChunk.fourCC, tempChunk.chunkSize);
-        if (strncmp(tempChunk.fourCC, "00db", 4) == 0) {
+        if (strncmp(tempChunk.fourCC, "00db", 4) == 0 || strncmp(tempChunk.fourCC, "00dc", 4)) {
           fseek(f, -8, SEEK_CUR);
           read = fread(&frameChunks[i], 1, 4 + 4, f);
           frameChunks[i].frameData = (char *)malloc(frameChunks[i].chunkSize);
@@ -218,6 +217,15 @@ class AVIDecoder : public VideoDecoder {
         }
       }
       printf("Finished parsing AVI file\n");
+    };
+    void readJunk() {
+      struct JunkChunk junk;
+      int read = fread(&junk, 1, sizeof(JunkChunk), f);
+      if (strncmp(junk.fourCC, "JUNK", 4) == 0) {
+        fseek(f, junk.size, SEEK_CUR);
+      } else {
+        fseek(f, -sizeof(JunkChunk), SEEK_CUR);
+      }
     };
     virtual ~AVIDecoder() {
       this->writeBack();
@@ -240,7 +248,7 @@ class AVIDecoder : public VideoDecoder {
           mtx.unlock();
           return;
         }
-        if (strncmp(fourCC, "00db", 4) == 0) {
+        if (strncmp(fourCC, "00db", 4) == 0 || strncmp(fourCC, "00dc", 4) == 0) {
           fseek(f, -4, SEEK_CUR);
           fwrite(&this->frameChunks[i], 1, 8, f);
           if (this->frameChunks[i].dirty) {
