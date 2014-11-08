@@ -1,0 +1,2 @@
+plot "output.txt" using 1:2 title "Probability of embedding for lsb using 50% capactiy" xlabel "Percentage of pixels" ylabel "Probability of embedding";
+

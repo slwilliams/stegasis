@@ -19,7 +19,6 @@ while True:
     if b == " ":
         break
     width += b
-print width
 
 height = ""
 while True:
@@ -28,7 +27,6 @@ while True:
     if b == " ":
         break
     height += b
-print height
 
 max_pixel_val = ""
 while True:
@@ -37,11 +35,12 @@ while True:
     if b == " ":
         break
     max_pixel_val += b
-print max_pixel_val 
+
+output = [0]*100
 
 # pos is now on the first pixel red byte
 frameStart = pos
-for h in range(100):
+for h in range(1, 100):
     pos = frameStart
     totalPixels = math.floor((h/100.0)*int(width)*int(height))
     X = [0]*(128*3) # X[k] = frequency(2k)
@@ -62,7 +61,7 @@ for h in range(100):
     for i in range(len(Z)):
         Z[i] = (X[i] + Y[i]) / 2.0
 
-    n = 128 - 1
+    n = 128
     for k in range(127):
         if X[k] + Y[k] <= 4:
             X[k] = 0
@@ -73,14 +72,12 @@ for h in range(100):
     for i in range(128):
         if Z[i] == 0:
             continue
-        print "X[i]: " + str(X[i]) + " Y[i]: " + str(Y[i])
-        print "Z[i]: " + str(Z[i])
-        print "----"
         X2 += ((X[i] - Z[i])**2) / Z[i]
 
-    print "X2: " + str(X2)
-
     p = 1.0 - special.gammainc((n-1)/2.0, X2/2.0)
-    print str(h) + "%: " + str(p)
+    output[h] = p
 
+
+for i in range(1, len(output)):
+    print str(i) + " " + str(output[i])
 
