@@ -42,10 +42,11 @@ int main(int argc, char **argv) {
   }
   fwrite((char *)&space, 1, 1, f);
  
+  dec->setCapacity(100);
   int frameSize = dec->frameSize();
+  printf("framesize: %d\n", frameSize);
   Chunk *c = dec->getFrame(frame);
   int j = 0;
-
   for (j = 0; j < frameSize; j += 3) {
     char blue = c->getFrameData()[j];
     char green = c->getFrameData()[j+1];

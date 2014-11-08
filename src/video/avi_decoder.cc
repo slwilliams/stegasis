@@ -205,7 +205,7 @@ class AVIDecoder : public VideoDecoder {
         read = fread(&tempChunk, 1, 4 + 4, f);
         //printf("\e[1A"); 
         //printf("\e[0K\rReading chunk '%d', type: %.4s, size: %d\n", i, tempChunk.fourCC, tempChunk.chunkSize);
-        if (strncmp(tempChunk.fourCC, "00db", 4) == 0 || strncmp(tempChunk.fourCC, "00dc", 4)) {
+        if (strncmp(tempChunk.fourCC, "00db", 4) == 0) {
           fseek(f, -8, SEEK_CUR);
           read = fread(&frameChunks[i], 1, 4 + 4, f);
           frameChunks[i].frameData = (char *)malloc(frameChunks[i].chunkSize);
@@ -248,7 +248,7 @@ class AVIDecoder : public VideoDecoder {
           mtx.unlock();
           return;
         }
-        if (strncmp(fourCC, "00db", 4) == 0 || strncmp(fourCC, "00dc", 4) == 0) {
+        if (strncmp(fourCC, "00db", 4) == 0) {
           fseek(f, -4, SEEK_CUR);
           fwrite(&this->frameChunks[i], 1, 8, f);
           if (this->frameChunks[i].dirty) {
