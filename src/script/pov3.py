@@ -1,6 +1,5 @@
 import sys
 import math
-import struct
 from scipy import integrate, special
 
 
@@ -47,7 +46,7 @@ for h in range(1, 100):
     Y = [0]*(128*3) # Y[k] = frequeincy(2k+1)
     Z = [0.0]*(128*3)
 
-# Populate the frequency arrays
+    # Populate the frequency arrays
     end = pos + totalPixels*3
     while pos < end:
         b = ord(file_bytes[pos])
@@ -57,7 +56,7 @@ for h in range(1, 100):
             Y[(b-1)/2] += 1
         pos += 1
 
-# calculate theoretically expected frequency
+    # calculate theoretically expected frequency
     for i in range(len(Z)):
         Z[i] = (X[i] + Y[i]) / 2.0
 
