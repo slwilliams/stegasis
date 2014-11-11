@@ -34,6 +34,19 @@ class JPEGChunkWrapper : public Chunk {
     };
 };
 
+string exec(char *cmd) {
+    FILE *pipe = popen(cmd, "r");
+    if (!pipe) return "ERROR";
+    char buffer[128];
+    string result = "";
+    while (!feof(pipe)) {
+      if (fgets(buffer, 128, pipe) != NULL)
+        result += buffer;
+    }
+    pclose(pipe);
+    return result;
+}
+
 class JPEGDecoder : public VideoDecoder {
   private:
     string filePath;
@@ -50,13 +63,32 @@ class JPEGDecoder : public VideoDecoder {
     int fileSize;
     int width;
     int height;
+    int fps;
 
   public:
     JPEGDecoder(string filePath): filePath(filePath) {
       // int fps = ffmpeg -i ../vid.mp4 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"
-      // ffmpeg -r [fps] -i vid.mp4 -f image2 image-%3d.jpeg
-      // ffmpeg -i vid.mp4 audio.mp3
-      // ffmpeg -r [fps] -i image-%3d.jpeg -i audio.mp3 -codec copy output.mkv
+      string fpsCommand = "ffmpeg -i " + filePath + " 2>&1 | sed -n \"s/.*, \\(.*\\) fp.*/\\1/p\"";
+      this->fps = (int)floor(atof(exec((char *)fpsCommand.c_str()).c_str()));
+      printf("fps: %d\n", this->fps);
+
+      // Make /tmp/output
+      string mkdir = "mkdir /tmp/output";
+      exec((char *)mkdir.c_str());
+
+      // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
+      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg";
+      exec((char *)extractCommand.c_str());
+
+      // ffmpeg -i vid.mp4 /tmp/output/audio.mp3
+      // TODO: Change this to .mp3
+      string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.wav";
+      exec((char *)getAudioCommand.c_str());
+
+      // ffmpeg -r [fps] -i /tmp/output/image-%3d.jpeg -i /tmp/output/audio.mp3 -codec copy output.mkv
+      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%3d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
+      exec((char *)muxCommand.c_str());
+      exit(0);
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
