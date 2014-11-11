@@ -75,10 +75,18 @@ class JPEGDecoder : public VideoDecoder {
       // Make /tmp/output
       string mkdir = "mkdir /tmp/output";
       exec((char *)mkdir.c_str());
+      // Remove any files
+      string rm = "rm -rf /tmp/output/*";
+      exec((char *)rm.c_str());
 
       // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
       string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg";
       exec((char *)extractCommand.c_str());
+
+      // Get total number of frames
+      string totalFramesCommand = "ls /tmp/output | wc -l";
+      this->totalFrames = atoi(exec((char *)totalFramesCommand.c_str()).c_str());
+      printf("totalframes: %d\n", this->totalFrames);
 
       // ffmpeg -i vid.mp4 /tmp/output/audio.mp3
       // TODO: Change this to .mp3
