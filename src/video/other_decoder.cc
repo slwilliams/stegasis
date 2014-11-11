@@ -3,6 +3,8 @@
 #include <string>
 #include <mutex> 
 #include <math.h>
+#include <jpeglib.h>
+#include <transupp.h>  
 
 #include "common/progress_bar.h"
 #include "video_decoder.h"
@@ -46,6 +48,10 @@ string exec(char *cmd) {
     pclose(pipe);
     return result;
 }
+
+struct jpeg_decompress_struct srcinfo;
+struct jpeg_compress_struct dstinfo;
+struct jpeg_error_mgr jsrcerr, jdsterr;
 
 class JPEGDecoder : public VideoDecoder {
   private:
