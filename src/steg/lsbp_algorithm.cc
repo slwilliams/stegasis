@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include <pwdbased.h>
-#include <cryptlib.h>
-#include <randpool.h>
-#include <whrlpool.h>
+#include "crypto/pwdbased.h"
+#include "crypto/cryptlib.h"
+#include "crypto/randpool.h"
+#include "crypto/whrlpool.h"
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"

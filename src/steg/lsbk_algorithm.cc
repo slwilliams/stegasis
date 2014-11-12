@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include <pwdbased.h>
-#include <randpool.h>
-#include <whrlpool.h>
+#include "crypto/pwdbased.h"
+#include "crypto/randpool.h"
+#include "crypto/whrlpool.h"
 
 #include "steganographic_algorithm.h"
 

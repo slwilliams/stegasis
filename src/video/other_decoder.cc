@@ -1,11 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <string>
 #include <mutex> 
 #include <math.h>
-#include <jpeglib.h>
-#include <transupp.h>  
-
+extern "C" {
+  #include "libjpeg/jpeglib.h"
+  #include "libjpeg/transupp.h"  
+}
 #include "common/progress_bar.h"
 #include "video_decoder.h"
 
@@ -49,9 +51,6 @@ string exec(char *cmd) {
     return result;
 }
 
-struct jpeg_decompress_struct srcinfo;
-struct jpeg_compress_struct dstinfo;
-struct jpeg_error_mgr jsrcerr, jdsterr;
 
 class JPEGDecoder : public VideoDecoder {
   private:
@@ -86,7 +85,7 @@ class JPEGDecoder : public VideoDecoder {
       exec((char *)rm.c_str());
 
       // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
-      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg";
+      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
       exec((char *)extractCommand.c_str());
 
       // Get total number of frames
@@ -99,8 +98,77 @@ class JPEGDecoder : public VideoDecoder {
       string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.wav";
       exec((char *)getAudioCommand.c_str());
 
+
+      printf("Loading frames...\n");
+      // Load each JPEG frame into ram:
+      FILE *fp = NULL;
+      int i = 0;
+      for (i = 1; i <= this->totalFrames; i ++) {
+        loadBar(i, this->totalFrames, 50);
+        string fileName = "/tmp/output/image-" + std::to_string(i) + ".jpeg";
+        fp = fopen(fileName.c_str(), "rb");
+        struct jpeg_decompress_struct srcinfo;
+        struct jpeg_compress_struct dstinfo;
+        struct jpeg_error_mgr jsrcerr, jdsterr;
+
+        static jpeg_transform_info transformoption; /* image transformation options */
+        transformoption.transform = JXFORM_NONE;
+        transformoption.trim = FALSE;
+        transformoption.force_grayscale = FALSE;
+
+        jvirt_barray_ptr * src_coef_arrays;
+        jvirt_barray_ptr * dst_coef_arrays;
+
+        /* Initialize the JPEG decompression object with default error handling. */
+        srcinfo.err = jpeg_std_error(&jsrcerr);
+        jpeg_create_decompress(&srcinfo);
+        /* Initialize the JPEG compression object with default error handling. */
+        dstinfo.err = jpeg_std_error(&jdsterr);
+        jpeg_create_compress(&dstinfo);
+
+        /* Specify data source for decompression */
+        jpeg_stdio_src(&srcinfo, fp);
+
+        /* Enable saving of extra markers that we want to copy */
+        jcopy_markers_setup(&srcinfo, JCOPYOPT_ALL);
+
+        /* Read file header */
+        (void) jpeg_read_header(&srcinfo, TRUE);
+
+        jtransform_request_workspace(&srcinfo, &transformoption);
+        src_coef_arrays = jpeg_read_coefficients(&srcinfo);
+        jpeg_copy_critical_parameters(&srcinfo, &dstinfo);
+
+        /* Do your DCT shenanigans here on src_coef_arrays like this (I've moved it into a separate function): */
+
+        //moveDCTAround(&srcinfo, &dstinfo, 0, src_coef_arrays);
+/*
+        // ..when done with DCT, do this:
+        dst_coef_arrays = jtransform_adjust_parameters(&srcinfo, &dstinfo, src_coef_arrays, &transformoption);
+        fclose(fp);
+
+        // And write everything back
+        fp = fopen(fileName.c_str(), "wb");
+
+        // Specify data destination for compression
+        jpeg_stdio_dest(&dstinfo, fp);
+
+        // Start compressor (note no image data is actually written here)
+        jpeg_write_coefficients(&dstinfo, dst_coef_arrays);
+
+        // Copy to the output file any extra markers that we want to preserve 
+        jcopy_markers_execute(&srcinfo, &dstinfo, JCOPYOPT_ALL);
+
+        jpeg_finish_compress(&dstinfo);
+        jpeg_destroy_compress(&dstinfo);
+        (void) jpeg_finish_decompress(&srcinfo);
+        jpeg_destroy_decompress(&srcinfo);
+*/
+        fclose(fp);
+      }
+
       // ffmpeg -r [fps] -i /tmp/output/image-%3d.jpeg -i /tmp/output/audio.mp3 -codec copy output.mkv
-      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%3d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
+      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
       exec((char *)muxCommand.c_str());
       exit(0);
     };
