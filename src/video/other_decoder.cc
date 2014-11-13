@@ -139,9 +139,10 @@ class JPEGDecoder : public VideoDecoder {
         jpeg_copy_critical_parameters(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo);
 
         this->storeDCT(i-1, &this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays);
-
+/*
         // ..when done with DCT, do this:
-        this->frameChunks[i-1].dst_coef_arrays = jtransform_adjust_parameters(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays, &transformoption);
+        this->frameChunks[i-1].dst_coef_arrays = jtransform_adjust_parameters(&this->frameChunks[i-1].srcinfo,
+            &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays, &transformoption);
         fclose(fp);
 
         // And write everything back
@@ -160,15 +161,15 @@ class JPEGDecoder : public VideoDecoder {
         jpeg_destroy_compress(&this->frameChunks[i-1].dstinfo);
         (void)jpeg_finish_decompress(&this->frameChunks[i-1].srcinfo);
         jpeg_destroy_decompress(&this->frameChunks[i-1].srcinfo);
-
+*/
         fclose(fp);
-//        this->frameChunks[i-1].dirty = true;
+        this->frameChunks[i-1].dirty = true;
       }
 
       // ffmpeg -r [fps] -i /tmp/output/image-%3d.jpeg -i /tmp/output/audio.mp3 -codec copy output.mkv
       string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
-      exec((char *)muxCommand.c_str());
-      exit(0); 
+      //exec((char *)muxCommand.c_str());
+      //exit(0); 
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
@@ -182,26 +183,40 @@ class JPEGDecoder : public VideoDecoder {
       FILE *fp = NULL;
       int i = 1;
       while (i <= this->totalFrames) {
-        string fileName = "/tmp/output/image-" + std::to_string(i) + ".jpeg";
-        loadBar(i, this->totalFrames - 1, 50);
-        // Write everything back
-        fp = fopen(fileName.c_str(), "wb");
+        if (this->frameChunks[i-1].dirty) {
+          string fileName = "/tmp/output/image-" + std::to_string(i) + ".jpeg";
+          loadBar(i, this->totalFrames - 1, 50);
+          // Write everything back
+          fp = fopen(fileName.c_str(), "wb");
+          static jpeg_transform_info transformoption;
+          transformoption.transform = JXFORM_NONE;
+          transformoption.trim = FALSE;
+          transformoption.force_grayscale = FALSE;
+          jtransform_request_workspace(&this->frameChunks[i-1].srcinfo, &transformoption);
+          this->frameChunks[i-1].dst_coef_arrays = jtransform_adjust_parameters(&this->frameChunks[i-1].srcinfo,
+              &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays, &transformoption);
+          printf("cool\n");
 
-        // Specify data destination for compression
-        jpeg_stdio_dest(&this->frameChunks[i-1].dstinfo, fp);
+          // Specify data destination for compression
+          jpeg_stdio_dest(&this->frameChunks[i-1].dstinfo, fp);
+          printf("cool1\n");
 
-        // Start compressor (note no image data is actually written here)
-        jpeg_write_coefficients(&this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].dst_coef_arrays);
+          // Start compressor (note no image data is actually written here)
+          jpeg_write_coefficients(&this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].dst_coef_arrays);
+          printf("cool2\n");
 
-        // Copy to the output file any extra markers that we want to preserve 
-        jcopy_markers_execute(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, JCOPYOPT_ALL);
+          // Copy to the output file any extra markers that we want to preserve 
+          jcopy_markers_execute(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, JCOPYOPT_ALL);
+          printf("cool3\n");
 
-        jpeg_finish_compress(&this->frameChunks[i-1].dstinfo);
-        jpeg_destroy_compress(&this->frameChunks[i-1].dstinfo);
-        (void)jpeg_finish_decompress(&this->frameChunks[i-1].srcinfo);
-        jpeg_destroy_decompress(&this->frameChunks[i-1].srcinfo);
+          jpeg_finish_compress(&this->frameChunks[i-1].dstinfo);
+          jpeg_destroy_compress(&this->frameChunks[i-1].dstinfo);
+          (void)jpeg_finish_decompress(&this->frameChunks[i-1].srcinfo);
+          jpeg_destroy_decompress(&this->frameChunks[i-1].srcinfo);
 
-        fclose(fp);
+          fclose(fp);
+          this->frameChunks[i-1].dirty = false;
+        }
         i ++;
       }
       string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
@@ -212,8 +227,6 @@ class JPEGDecoder : public VideoDecoder {
       size_t block_row_size;
       JBLOCKARRAY *coef_buffers = (JBLOCKARRAY *)malloc(sizeof(JBLOCKARRAY) * srcinfo->num_components);
       JBLOCKARRAY *row_ptrs = (JBLOCKARRAY *)malloc(sizeof(JBLOCKARRAY) * srcinfo->num_components);
-
-      //printf("MAX_COM: %d, nun_comp: %d\n", MAX_COMPONENTS, srcinfo->num_components);
 
       // Allocate DCT array buffers
       for (JDIMENSION compnum = 0; compnum < srcinfo->num_components; compnum ++) {
@@ -226,16 +239,16 @@ class JPEGDecoder : public VideoDecoder {
         block_row_size = (size_t)sizeof(JCOEF)*DCTSIZE2*srcinfo->comp_info[compnum].width_in_blocks;
         // ...iterate over rows,
         for (JDIMENSION rownum = 0; rownum < srcinfo->comp_info[compnum].height_in_blocks; rownum ++) {
-            row_ptrs[compnum] = ((dstinfo)->mem->access_virt_barray)((j_common_ptr)&dstinfo, src_coef_arrays[compnum],
-                                rownum, (JDIMENSION) 1, FALSE);
-            // ...and for each block in a row,
-            for (JDIMENSION blocknum = 0; blocknum < srcinfo->comp_info[compnum].width_in_blocks; blocknum ++) {
-                // ...iterate over DCT coefficients
-                for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
-                        // Manipulate your DCT coefficients here. For instance, the code here inverts the image.
-                        coef_buffers[compnum][rownum][blocknum][i] = -row_ptrs[compnum][0][blocknum][i];
-                }
+          row_ptrs[compnum] = ((dstinfo)->mem->access_virt_barray)((j_common_ptr)&dstinfo, src_coef_arrays[compnum],
+                              rownum, (JDIMENSION) 1, FALSE);
+          // ...and for each block in a row,
+          for (JDIMENSION blocknum = 0; blocknum < srcinfo->comp_info[compnum].width_in_blocks; blocknum ++) {
+            // ...iterate over DCT coefficients
+            for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
+              // Manipulate your DCT coefficients here. For instance, the code here inverts the image.
+              coef_buffers[compnum][rownum][blocknum][i] = -row_ptrs[compnum][0][blocknum][i];
             }
+          }
         }
       }
 
@@ -252,7 +265,19 @@ class JPEGDecoder : public VideoDecoder {
       }   
     };
     virtual Chunk *getFrame(int frame) {
-      return new JPEGChunkWrapper(&this->frameChunks[frame]); 
+      static jpeg_transform_info transformoption;
+      transformoption.transform = JXFORM_NONE;
+      transformoption.trim = FALSE;
+      transformoption.force_grayscale = FALSE;
+
+      int i = frame;
+      jtransform_request_workspace(&this->frameChunks[i-1].srcinfo, &transformoption);
+      this->frameChunks[i-1].src_coef_arrays = jpeg_read_coefficients(&this->frameChunks[i-1].srcinfo);
+      jpeg_copy_critical_parameters(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo);
+
+      //this->storeDCT(i-1, &this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays);
+
+      return new JPEGChunkWrapper(&this->frameChunks[i-1]); 
     };                                     
     virtual int getFileSize() {
       return this->fileSize; 
