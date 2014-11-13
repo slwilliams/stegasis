@@ -104,6 +104,10 @@ class JPEGDecoder : public VideoDecoder {
       printf("Loading frames...\n");
       // Load each JPEG frame into ram:
       FILE *fp = NULL;
+      static jpeg_transform_info transformoption;
+      transformoption.transform = JXFORM_NONE;
+      transformoption.trim = FALSE;
+      transformoption.force_grayscale = FALSE;
       int i = 0;
       this->frameChunks = (struct JPEGChunk *)malloc(sizeof(struct JPEGChunk) * this->totalFrames);
       for (i = 1; i <= this->totalFrames; i ++) {
@@ -111,53 +115,32 @@ class JPEGDecoder : public VideoDecoder {
         string fileName = "/tmp/output/image-" + std::to_string(i) + ".jpeg";
         fp = fopen(fileName.c_str(), "rb");
 
-        struct jpeg_decompress_struct srcinfo;
-        struct jpeg_compress_struct dstinfo;
         struct jpeg_error_mgr jsrcerr, jdsterr;
 
-        static jpeg_transform_info transformoption; /* image transformation options */
-        transformoption.transform = JXFORM_NONE;
-        transformoption.trim = FALSE;
-        transformoption.force_grayscale = FALSE;
-
-        jvirt_barray_ptr *src_coef_arrays;
-        jvirt_barray_ptr *dst_coef_arrays;
-
         /* Initialize the JPEG decompression object with default error handling. */
-        //srcinfo.err = jpeg_std_error(&jsrcerr);
         this->frameChunks[i-1].srcinfo.err = jpeg_std_error(&jsrcerr);
 
-        //jpeg_create_decompress(&srcinfo);
         jpeg_create_decompress(&this->frameChunks[i-1].srcinfo);
         /* Initialize the JPEG compression object with default error handling. */
         this->frameChunks[i-1].dstinfo.err = jpeg_std_error(&jdsterr);
-        //jpeg_create_compress(&dstinfo);
         jpeg_create_compress(&this->frameChunks[i-1].dstinfo);
 
         /* Specify data source for decompression */
-        //jpeg_stdio_src(&srcinfo, fp);
         jpeg_stdio_src(&this->frameChunks[i-1].srcinfo, fp);
 
         /* Enable saving of extra markers that we want to copy */
-        //jcopy_markers_setup(&srcinfo, JCOPYOPT_ALL);
         jcopy_markers_setup(&this->frameChunks[i-1].srcinfo, JCOPYOPT_ALL);
 
         /* Read file header */
-        //(void)jpeg_read_header(&srcinfo, TRUE);
         (void)jpeg_read_header(&this->frameChunks[i-1].srcinfo, TRUE);
 
-        //jtransform_request_workspace(&srcinfo, &transformoption);
         jtransform_request_workspace(&this->frameChunks[i-1].srcinfo, &transformoption);
-        //src_coef_arrays = jpeg_read_coefficients(&srcinfo);
         this->frameChunks[i-1].src_coef_arrays = jpeg_read_coefficients(&this->frameChunks[i-1].srcinfo);
-        //jpeg_copy_critical_parameters(&srcinfo, &dstinfo);
         jpeg_copy_critical_parameters(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo);
 
-        //this->storeDCT(i-1, &srcinfo, &dstinfo, src_coef_arrays);
         this->storeDCT(i-1, &this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays);
 
         // ..when done with DCT, do this:
-        //dst_coef_arrays = jtransform_adjust_parameters(&srcinfo, &dstinfo, src_coef_arrays, &transformoption);
         this->frameChunks[i-1].dst_coef_arrays = jtransform_adjust_parameters(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].src_coef_arrays, &transformoption);
         fclose(fp);
 
@@ -179,12 +162,13 @@ class JPEGDecoder : public VideoDecoder {
         jpeg_destroy_decompress(&this->frameChunks[i-1].srcinfo);
 
         fclose(fp);
+//        this->frameChunks[i-1].dirty = true;
       }
 
       // ffmpeg -r [fps] -i /tmp/output/image-%3d.jpeg -i /tmp/output/audio.mp3 -codec copy output.mkv
       string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
       exec((char *)muxCommand.c_str());
-      exit(0);
+      exit(0); 
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
@@ -195,11 +179,33 @@ class JPEGDecoder : public VideoDecoder {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
       printf("Writing back to disc...\n");
-      int i = 0;
-      while (i < this->totalFrames) {
+      FILE *fp = NULL;
+      int i = 1;
+      while (i <= this->totalFrames) {
+        string fileName = "/tmp/output/image-" + std::to_string(i) + ".jpeg";
         loadBar(i, this->totalFrames - 1, 50);
+        // Write everything back
+        fp = fopen(fileName.c_str(), "wb");
+
+        // Specify data destination for compression
+        jpeg_stdio_dest(&this->frameChunks[i-1].dstinfo, fp);
+
+        // Start compressor (note no image data is actually written here)
+        jpeg_write_coefficients(&this->frameChunks[i-1].dstinfo, this->frameChunks[i-1].dst_coef_arrays);
+
+        // Copy to the output file any extra markers that we want to preserve 
+        jcopy_markers_execute(&this->frameChunks[i-1].srcinfo, &this->frameChunks[i-1].dstinfo, JCOPYOPT_ALL);
+
+        jpeg_finish_compress(&this->frameChunks[i-1].dstinfo);
+        jpeg_destroy_compress(&this->frameChunks[i-1].dstinfo);
+        (void)jpeg_finish_decompress(&this->frameChunks[i-1].srcinfo);
+        jpeg_destroy_decompress(&this->frameChunks[i-1].srcinfo);
+
+        fclose(fp);
         i ++;
       }
+      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
+      exec((char *)muxCommand.c_str());
       mtx.unlock();
     };
     void storeDCT(int frame, j_decompress_ptr srcinfo, j_compress_ptr dstinfo, jvirt_barray_ptr *src_coef_arrays) {
