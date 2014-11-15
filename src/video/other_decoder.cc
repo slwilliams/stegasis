@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include <vector>
+#include <list>
 #include <mutex> 
 #include <math.h>
+#include <sys/stat.h>
 extern "C" {
   #include "libjpeg/jpeglib.h"
   #include "libjpeg/transupp.h"  
@@ -64,7 +65,9 @@ class JPEGDecoder : public VideoDecoder {
     // Lock around filehandler access
     mutex mtx; 
 
-    std::vector<struct JPEGChunk> frameChunks;
+    list<struct JPEGChunk> frameChunks;
+    int *jpegSizes;
+    char **jpegs;
 
     int nextFrame = 1;
     int nextOffset = 0;
@@ -108,7 +111,24 @@ class JPEGDecoder : public VideoDecoder {
       transformoption.trim = FALSE;
       transformoption.force_grayscale = FALSE;
 
+      this->jpegSizes = (int *)malloc(sizeof(int) * this->totalFrames);
+      this->jpegs = (char **)malloc(sizeof(char *) * this->totalFrames);
+
+      printf("Reading JPEGs into ram...\n");
       int i = 0;
+      int read = 0;
+      for (i = 0; i < this->totalFrames; i ++) {
+        loadBar(i, this->totalFrames - 1, 50);
+        string fileName = "/tmp/output/image-" + std::to_string(i+1) + ".jpeg";
+        FILE *fp = fopen(fileName.c_str(), "rb");
+        struct stat file_info;
+        stat(fileName.c_str(), &file_info);
+        this->jpegSizes[i] = file_info.st_size;
+        this->jpegs[i] = (char *)malloc(file_info.st_size);   
+        read = fread(this->jpegs[i], file_info.st_size, 1, fp);
+        fclose(fp);
+      }
+
       printf("modifiying frames...\n");
       for (i = 100; i < 2000; i ++) {
         loadBar(i-100, 2000, 50);
@@ -124,15 +144,14 @@ class JPEGDecoder : public VideoDecoder {
       string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
       exec((char *)muxCommand.c_str());
     };
-    // TODO: Should have a vector of jpegchunks that are currently live... not malloc the entire thing
+    // TODO write back should write back to my ram buffer, not to disk...
     virtual void writeBack() {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
       FILE *fp = NULL;
-      int i = 1;
-      int size = this->frameChunks.size();
+      // 35s
       for (auto c : this->frameChunks) {
-        string fileName = "/tmp/output/image-" + std::to_string(c.frame) + ".jpeg";
+        string fileName = "/tmp/output/image-" + std::to_string(c.frame+1) + ".jpeg";
 
         fp = fopen(fileName.c_str(), "wb");
         jtransform_request_workspace(&c.srcinfo, &transformoption);
@@ -153,7 +172,6 @@ class JPEGDecoder : public VideoDecoder {
         jpeg_destroy_decompress(&c.srcinfo);
 
         fclose(fp);
-        i ++;
       }
       this->frameChunks.clear();
       mtx.unlock();
@@ -193,10 +211,13 @@ class JPEGDecoder : public VideoDecoder {
         }
       }
     };
+    // TODO: possbile concurrent isses with .back()...
     virtual Chunk *getFrame(int frame) {
-      this->writeBack();
-      string fileName = "/tmp/output/image-" + std::to_string(frame+1) + ".jpeg";
-      FILE *fp = fopen(fileName.c_str(), "rb");
+      if (this->frameChunks.size() > 100) {
+        this->writeBack();
+      }
+      //string fileName = "/tmp/output/image-" + std::to_string(frame+1) + ".jpeg";
+      //FILE *fp = fopen(fileName.c_str(), "rb");
       struct JPEGChunk c;
       c.frame = frame;
       this->frameChunks.push_back(c);
@@ -208,7 +229,8 @@ class JPEGDecoder : public VideoDecoder {
       jpeg_create_compress(&this->frameChunks.back().dstinfo);
 
       // Specify data source for decompression
-      jpeg_stdio_src(&this->frameChunks.back().srcinfo, fp);
+      //jpeg_stdio_src(&this->frameChunks.front().srcinfo, fp);
+      jpeg_mem_src(&this->frameChunks.back().srcinfo, (unsigned char *)this->jpegs[frame], this->jpegSizes[frame]);
 
       jcopy_markers_setup(&this->frameChunks.back().srcinfo, JCOPYOPT_ALL);
 
@@ -218,11 +240,7 @@ class JPEGDecoder : public VideoDecoder {
       this->frameChunks.back().src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);
       jpeg_copy_critical_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo);
 
-      fclose(fp);
-      jtransform_request_workspace(&this->frameChunks.back().srcinfo, &transformoption);
-      c.src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);
-      jpeg_copy_critical_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo);
-
+      ///fclose(fp);
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
     virtual int getFileSize() {
