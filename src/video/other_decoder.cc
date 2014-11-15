@@ -67,7 +67,7 @@ class JPEGDecoder : public VideoDecoder {
 
     list<struct JPEGChunk> frameChunks;
     int *jpegSizes;
-    char **jpegs;
+    unsigned char **jpegs;
 
     int nextFrame = 1;
     int nextOffset = 0;
@@ -112,7 +112,7 @@ class JPEGDecoder : public VideoDecoder {
       transformoption.force_grayscale = FALSE;
 
       this->jpegSizes = (int *)malloc(sizeof(int) * this->totalFrames);
-      this->jpegs = (char **)malloc(sizeof(char *) * this->totalFrames);
+      this->jpegs = (unsigned char **)malloc(sizeof(unsigned char *) * this->totalFrames);
 
       printf("Reading JPEGs into ram...\n");
       int i = 0;
@@ -124,7 +124,7 @@ class JPEGDecoder : public VideoDecoder {
         struct stat file_info;
         stat(fileName.c_str(), &file_info);
         this->jpegSizes[i] = file_info.st_size;
-        this->jpegs[i] = (char *)malloc(file_info.st_size);   
+        this->jpegs[i] = (unsigned char *)malloc(sizeof(unsigned char) * file_info.st_size);   
         read = fread(this->jpegs[i], file_info.st_size, 1, fp);
         fclose(fp);
       }
@@ -141,6 +141,17 @@ class JPEGDecoder : public VideoDecoder {
       this->mux();
     };
     void mux() {
+      int i = 0;
+      int read = 0;
+      FILE *fp = NULL;
+      printf("Writing back to disk...\n");
+      for (i = 0; i < this->totalFrames; i ++) {
+        loadBar(i, this->totalFrames - 1, 50);
+        string fileName = "/tmp/output/image-" + std::to_string(i+1) + ".jpeg";
+        fp = fopen(fileName.c_str(), "wb");
+        read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
+        fclose(fp);
+      }
       string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
       exec((char *)muxCommand.c_str());
     };
@@ -148,30 +159,26 @@ class JPEGDecoder : public VideoDecoder {
     virtual void writeBack() {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
-      FILE *fp = NULL;
-      // 35s
-      for (auto c : this->frameChunks) {
-        string fileName = "/tmp/output/image-" + std::to_string(c.frame+1) + ".jpeg";
-
-        fp = fopen(fileName.c_str(), "wb");
+      for (struct JPEGChunk c : this->frameChunks) {
         jtransform_request_workspace(&c.srcinfo, &transformoption);
         c.dst_coef_arrays = jtransform_adjust_parameters(&c.srcinfo, &c.dstinfo, c.src_coef_arrays, &transformoption);
 
         // Specify data destination for compression
-        jpeg_stdio_dest(&c.dstinfo, fp);
+        unsigned long size = (unsigned long)this->jpegSizes[c.frame];
+        jpeg_mem_dest(&c.dstinfo, &this->jpegs[c.frame], &size);
 
         // Start compressor (note no image data is actually written here)
         jpeg_write_coefficients(&c.dstinfo, c.dst_coef_arrays);
 
         // Copy to the output file any extra markers that we want to preserve 
         jcopy_markers_execute(&c.srcinfo, &c.dstinfo, JCOPYOPT_ALL);
-
+        
         jpeg_finish_compress(&c.dstinfo);
         jpeg_destroy_compress(&c.dstinfo);
         (void)jpeg_finish_decompress(&c.srcinfo);
         jpeg_destroy_decompress(&c.srcinfo);
 
-        fclose(fp);
+        this->jpegSizes[c.frame] = (int)size;
       }
       this->frameChunks.clear();
       mtx.unlock();
@@ -185,7 +192,6 @@ class JPEGDecoder : public VideoDecoder {
           if ((i + 1) % 8 == 0)
             printf("\n");
       }*/
-
 
       size_t block_row_size;
       JBLOCKARRAY *row_ptrs = (JBLOCKARRAY *)malloc(sizeof(JBLOCKARRAY) * srcinfo->num_components);
@@ -230,7 +236,7 @@ class JPEGDecoder : public VideoDecoder {
 
       // Specify data source for decompression
       //jpeg_stdio_src(&this->frameChunks.front().srcinfo, fp);
-      jpeg_mem_src(&this->frameChunks.back().srcinfo, (unsigned char *)this->jpegs[frame], this->jpegSizes[frame]);
+      jpeg_mem_src(&this->frameChunks.back().srcinfo, this->jpegs[frame], this->jpegSizes[frame]);
 
       jcopy_markers_setup(&this->frameChunks.back().srcinfo, JCOPYOPT_ALL);
 
