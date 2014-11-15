@@ -10,8 +10,8 @@ class SteganographicAlgorithm {
     std::string password;
     VideoDecoder *dec;
   public:                                                                       
-    virtual void embed(char *frame, char *data, int dataBytes, int offset) = 0;
-    virtual void extract(char *frame, char *output, int dataBytes, int offset) = 0;                                 
+    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) = 0;
+    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) = 0;                                 
     virtual void getAlgorithmCode(char out[4]) = 0;
 };
 #endif

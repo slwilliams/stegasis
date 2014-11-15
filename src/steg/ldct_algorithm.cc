@@ -3,7 +3,7 @@
 
 #include "steganographic_algorithm.h"
 
-class LSBAlgorithm : public SteganographicAlgorithm {
+class LDCTAlgorithm : public SteganographicAlgorithm {
   public:
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
       char *frame = c->getFrameData();
@@ -36,7 +36,7 @@ class LSBAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'L', 'S', 'B', ' '};
+      char tmp[4] = {'L', 'D', 'C', 'T'};
       memcpy(out, tmp, 4);
     };
 };

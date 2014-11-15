@@ -34,7 +34,15 @@ class JPEGChunkWrapper : public Chunk {
       //return c->chunkSize;
     };
     virtual char *getFrameData() {
-      //return c->frameData;
+      printf("cool\n");
+      char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
+          0, (JDIMENSION)1, TRUE);
+      printf("cool2\n");
+      return out;
+      //return (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
+      //    0, (JDIMENSION)this->c->srcinfo.comp_info[1].height_in_blocks, TRUE);
+     //     row_ptrs[compnum] = dstinfo->mem->access_virt_barray((j_common_ptr)&dstinfo, src_coef_arrays[compnum], 
+      //        rownum, (JDIMENSION)1, FALSE);
     };
     virtual bool isDirty() {
       return c->dirty;
@@ -93,7 +101,7 @@ class JPEGDecoder : public VideoDecoder {
       exec((char *)rm.c_str());
 
       // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
-      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 5 -f image2 /tmp/output/image-%d.jpeg";
+      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
       exec((char *)extractCommand.c_str());
 
       // Get total number of frames
@@ -129,12 +137,12 @@ class JPEGDecoder : public VideoDecoder {
         fclose(fp);
       }
 
-      printf("modifiying frames...\n");
-      for (i = 100; i < 2000; i ++) {
-        loadBar(i-100, 2000, 50);
+    /*  printf("modifiying frames...\n");
+      for (i = 10; i < 200; i ++) {
+        loadBar(i-10, 200, 50);
         this->getFrame(i);
         this->storeDCT(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays);
-      }
+      }*/
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
@@ -193,12 +201,16 @@ class JPEGDecoder : public VideoDecoder {
             printf("\n");
       }*/
 
-      size_t block_row_size;
       JBLOCKARRAY *row_ptrs = (JBLOCKARRAY *)malloc(sizeof(JBLOCKARRAY) * srcinfo->num_components);
+      //printf("height: %d, width: %d\n", srcinfo->comp_info[2].height_in_blocks, srcinfo->comp_info[2].width_in_blocks);
 
+      int compnum = 2;
+      // Only use component 2
+      // Use 23 instead of 1 to get all blocks
+      // row_ptrs is then row_ptr[rownum][blocknum][i] don't even need compnum
+      
       // For each component,
-      for (JDIMENSION compnum = 0; compnum < srcinfo->num_components; compnum ++) {
-        block_row_size = (size_t)sizeof(JCOEF)*DCTSIZE2*srcinfo->comp_info[compnum].width_in_blocks;
+     // for (JDIMENSION compnum = 0; compnum < srcinfo->num_components; compnum ++) {
         // ...iterate over rows,
         for (JDIMENSION rownum = 0; rownum < srcinfo->comp_info[compnum].height_in_blocks; rownum ++) {
           row_ptrs[compnum] = dstinfo->mem->access_virt_barray((j_common_ptr)&dstinfo, src_coef_arrays[compnum], 
@@ -206,16 +218,17 @@ class JPEGDecoder : public VideoDecoder {
           // ...and for each block in a row,
           for (JDIMENSION blocknum = 0; blocknum < srcinfo->comp_info[compnum].width_in_blocks; blocknum ++) {
             // ...iterate over DCT coefficients
-            for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
+            // Don't modify the DC term
+            for (JDIMENSION i = 1; i < DCTSIZE2; i ++) {
               // Manipulate your DCT coefficients here. For instance, the code here inverts the image.
               //coef_buffers[compnum][rownum][blocknum][i] = -row_ptrs[compnum][0][blocknum][i];
               if (row_ptrs[compnum][0][blocknum][i] > 0) { 
-                row_ptrs[compnum][0][blocknum][i] += 10;
+                row_ptrs[compnum][0][blocknum][i] += 1;
               }
             }
           }
         }
-      }
+      //}
     };
     // TODO: possbile concurrent isses with .back()...
     virtual Chunk *getFrame(int frame) {
@@ -235,7 +248,6 @@ class JPEGDecoder : public VideoDecoder {
       jpeg_create_compress(&this->frameChunks.back().dstinfo);
 
       // Specify data source for decompression
-      //jpeg_stdio_src(&this->frameChunks.front().srcinfo, fp);
       jpeg_mem_src(&this->frameChunks.back().srcinfo, this->jpegs[frame], this->jpegSizes[frame]);
 
       jcopy_markers_setup(&this->frameChunks.back().srcinfo, JCOPYOPT_ALL);
@@ -246,7 +258,6 @@ class JPEGDecoder : public VideoDecoder {
       this->frameChunks.back().src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);
       jpeg_copy_critical_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo);
 
-      ///fclose(fp);
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
     virtual int getFileSize() {
@@ -259,20 +270,28 @@ class JPEGDecoder : public VideoDecoder {
       *frame = this->nextFrame;
       *offset = this->nextOffset;
     };
-   virtual void setNextFrameOffset(int frame, int offset) {
+    virtual void setNextFrameOffset(int frame, int offset) {
       this->nextFrame = frame;
       this->nextOffset = offset;
-   };
-   virtual int frameHeight() {
-     return this->height;  
-   };
-   virtual int frameWidth() {
-     return this->width; 
-   };
-   virtual void setCapacity(char capacity) { 
-     this->capacity = capacity;
-   };
-   virtual int frameSize() {
-     return (int)floor(this->width * this->height * 3 * (this->capacity / 100.0));
-   };
+    };
+    virtual int frameHeight() {
+      return this->height;  
+    };
+    virtual int frameWidth() {
+      return this->width; 
+    };
+    virtual void setCapacity(char capacity) { 
+      this->capacity = capacity;
+    };
+    virtual int frameSize() {
+      struct JPEGChunk c;
+      if (this->frameChunks.size() > 0) {
+        c = this->frameChunks.front();
+      } else {
+        // This will cause frameChunks to get an element
+        this->getFrame(0);
+        c = this->frameChunks.front();
+      }
+      return c.srcinfo.comp_info[2].height_in_blocks * c.srcinfo.comp_info[2].width_in_blocks;
+    };
 };

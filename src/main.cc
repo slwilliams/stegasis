@@ -130,17 +130,17 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
   VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath): (VideoDecoder *)new JPEGDecoder(videoPath);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
-  /*char header[4] = {'S', 'T', 'E', 'G'};
+  char header[4] = {'S', 'T', 'E', 'G'};
 
   Chunk *headerFrame = dec->getFrame(0);
-  alg->embed(headerFrame->getFrameData(), header, 4, 0);
+  alg->embed(headerFrame, header, 4, 0);
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
-  alg->embed(headerFrame->getFrameData(), algCode, 4, 4 * 8);
+  alg->embed(headerFrame, algCode, 4, 4 * 8);
 
   char capacityB = (char)atoi(capacity.c_str());
-  alg->embed(headerFrame->getFrameData(), &capacityB, 1, 8 * 8);
+  alg->embed(headerFrame, &capacityB, 1, 8 * 8);
 
   union {
     uint32_t num;
@@ -148,14 +148,14 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
   } headerBytes;
   headerBytes.num = 0;
 
-  alg->embed(headerFrame->getFrameData(), headerBytes.byte, 4, 9 * 8);
+  alg->embed(headerFrame, headerBytes.byte, 4, 9 * 8);
   
   // Make sure the header is written back
   headerFrame->setDirty();
 
   int totalCapacity = (int)floor((dec->numberOfFrames() * dec->frameSize() * (capacityB / 100.0)) / 8);
   printf("Volume capacity: %.2fMB\n", totalCapacity/1000000.0); 
-*/
+
   delete dec;
   printf("Format successful!\n");
 }

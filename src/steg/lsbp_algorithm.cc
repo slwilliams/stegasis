@@ -37,7 +37,9 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
       int frameSize = this->dec->frameSize();
       this->lcg = LCG(frameSize, lcgKey);
     };
-    virtual void embed(char *frame, char *data, int dataBytes, int offset) {
+    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+      char *frame = c->getFrameData();
+
       int i = 0;
       int j = 0;
       int frameByte = lcg.map[offset++]; 
@@ -52,14 +54,11 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
         }
       }
     };
-    virtual void extract(char *frame, char *output, int dataBytes, int offset) {
-      /*LCG myLCG = this->lcg.getLCG();
-      // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);*/
+    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+      char *frame = c->getFrameData();
 
       int i = 0;
       int j = 0;
-      //int frameByte = myLCG.iterate();
       int frameByte = lcg.map[offset++]; 
       for (i = 0; i < dataBytes; i ++) {
         output[i] = 0;
