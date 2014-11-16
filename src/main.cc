@@ -15,6 +15,7 @@
 #include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
 #include "steg/lsb2_algorithm.cc"
+#include "steg/ldct_algorithm.cc"
 
 using namespace std;
 
@@ -112,7 +113,8 @@ int main(int argc, char *argv[]) {
 }
 
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance) {
-  VideoDecoder *dec = new AVIDecoder(videoPath);
+  string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
+  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath): (VideoDecoder *)new JPEGDecoder(videoPath);
   SteganographicAlgorithm *lsb = getAlg(alg, pass, dec); 
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
@@ -130,6 +132,7 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
   VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath): (VideoDecoder *)new JPEGDecoder(videoPath);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
+  
   char header[4] = {'S', 'T', 'E', 'G'};
 
   Chunk *headerFrame = dec->getFrame(0);
@@ -173,6 +176,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new LSBPAlgorithm(pass, dec);
   } else if (alg == "lsb2") {
     return new LSB2Algorithm(pass, dec);
+  } else if (alg == "ldct") {
+    return new LDCTAlgorithm;
   } else {
     printf("Unknown algorithm\n");
     exit(0);

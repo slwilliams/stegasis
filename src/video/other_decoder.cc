@@ -34,15 +34,9 @@ class JPEGChunkWrapper : public Chunk {
       //return c->chunkSize;
     };
     virtual char *getFrameData() {
-      printf("cool\n");
       char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
-          0, (JDIMENSION)1, TRUE);
-      printf("cool2\n");
+          0, (JDIMENSION)1, FALSE);
       return out;
-      //return (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
-      //    0, (JDIMENSION)this->c->srcinfo.comp_info[1].height_in_blocks, TRUE);
-     //     row_ptrs[compnum] = dstinfo->mem->access_virt_barray((j_common_ptr)&dstinfo, src_coef_arrays[compnum], 
-      //        rownum, (JDIMENSION)1, FALSE);
     };
     virtual bool isDirty() {
       return c->dirty;
@@ -101,7 +95,8 @@ class JPEGDecoder : public VideoDecoder {
       exec((char *)rm.c_str());
 
       // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
-      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
+      //string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
+      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
       exec((char *)extractCommand.c_str());
 
       // Get total number of frames
@@ -137,12 +132,11 @@ class JPEGDecoder : public VideoDecoder {
         fclose(fp);
       }
 
-    /*  printf("modifiying frames...\n");
-      for (i = 10; i < 200; i ++) {
-        loadBar(i-10, 200, 50);
+      printf("modifiying frames...\n");
+      for (i = 0; i < 1; i ++) {
         this->getFrame(i);
         this->storeDCT(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays);
-      }*/
+      }
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
@@ -169,6 +163,11 @@ class JPEGDecoder : public VideoDecoder {
       mtx.lock();
       for (struct JPEGChunk c : this->frameChunks) {
         jtransform_request_workspace(&c.srcinfo, &transformoption);
+        jpeg_component_info *ci_ptr = &c.srcinfo.comp_info[1];
+        JQUANT_TBL *tbl = ci_ptr->quant_table;
+        for (int i = 0; i < DCTSIZE2; i ++) {
+            tbl->quantval[i] = 1;
+        }
         c.dst_coef_arrays = jtransform_adjust_parameters(&c.srcinfo, &c.dstinfo, c.src_coef_arrays, &transformoption);
 
         // Specify data destination for compression
@@ -202,9 +201,9 @@ class JPEGDecoder : public VideoDecoder {
       }*/
 
       JBLOCKARRAY *row_ptrs = (JBLOCKARRAY *)malloc(sizeof(JBLOCKARRAY) * srcinfo->num_components);
-      //printf("height: %d, width: %d\n", srcinfo->comp_info[2].height_in_blocks, srcinfo->comp_info[2].width_in_blocks);
+      printf("height: %d, width: %d\n", srcinfo->comp_info[2].height_in_blocks, srcinfo->comp_info[2].width_in_blocks);
 
-      int compnum = 2;
+      int compnum = 1;
       // Only use component 2
       // Use 23 instead of 1 to get all blocks
       // row_ptrs is then row_ptr[rownum][blocknum][i] don't even need compnum
@@ -219,13 +218,16 @@ class JPEGDecoder : public VideoDecoder {
           for (JDIMENSION blocknum = 0; blocknum < srcinfo->comp_info[compnum].width_in_blocks; blocknum ++) {
             // ...iterate over DCT coefficients
             // Don't modify the DC term
-            for (JDIMENSION i = 1; i < DCTSIZE2; i ++) {
+            for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
               // Manipulate your DCT coefficients here. For instance, the code here inverts the image.
               //coef_buffers[compnum][rownum][blocknum][i] = -row_ptrs[compnum][0][blocknum][i];
+              printf("%d, ", row_ptrs[compnum][0][blocknum][i]);
               if (row_ptrs[compnum][0][blocknum][i] > 0) { 
-                row_ptrs[compnum][0][blocknum][i] += 1;
+              //  row_ptrs[compnum][0][blocknum][i] += 1;
               }
             }
+            printf("\n");
+            return;
           }
         }
       //}
