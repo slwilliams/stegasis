@@ -12,13 +12,11 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
       printf("embedd: bytes: %d, offset: %d\n", dataBytes, offset);
       if (dataBytes == 0) return;
-      // 2 per pair
       offset *= 2;
       JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData();
       JQUANT_TBL *table = (JQUANT_TBL *)c->getChunkSize();
       int dataByte = 0;
       int j = 7;
-      int frameByte = offset;
       char mask = 1;
       for (JDIMENSION blocknum = 0; blocknum < 30; blocknum ++) {
         printf("embedd::=-------\n");
@@ -29,9 +27,9 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
         break;
       } 
 
-      int block = frameByte / 64;
+      int block = offset / 64;
       printf("block: %d\n", block);
-      int co = frameByte % 64;
+      int co = offset % 64;
       // c[0] > c[1] -> 1
       for (JDIMENSION blocknum = block; blocknum < 30; blocknum ++) {
         for (JDIMENSION i = co; i < DCTSIZE2; i += 2) {
@@ -80,15 +78,15 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData();
       int dataByte = 0;
       int j = 7;
-      int frameByte = offset;
-      int block = frameByte / 64;
-      int co = frameByte % 64;
+      int block = offset / 64;
+      int co = offset % 64;
       for (JDIMENSION blocknum = block; blocknum < 30; blocknum ++) {
         for (JDIMENSION i = co; i < DCTSIZE2; i += 2) {
           if (frame[0][blocknum][i] > frame[0][blocknum][i+1]) {
-            // data bit is 1
+            // Data bit is 1
             output[dataByte] |= (1 << j);
           } else {
+            // Data bit is 0
             output[dataByte] &= ~(1 << j);
           }
           j --;
