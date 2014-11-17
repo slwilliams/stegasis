@@ -30,8 +30,10 @@ class JPEGChunkWrapper : public Chunk {
     JPEGChunk *c;
   public:
     JPEGChunkWrapper(JPEGChunk *c): c(c) {};
-    virtual int getChunkSize() {
-      //return c->chunkSize;
+    virtual long getChunkSize() {
+      jpeg_component_info *ci_ptr = &this->c->srcinfo.comp_info[1];
+      JQUANT_TBL *tbl = ci_ptr->quant_table;
+      return (long)tbl;
     };
     virtual char *getFrameData() {
       char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
@@ -82,6 +84,7 @@ class JPEGDecoder : public VideoDecoder {
 
   public:
     JPEGDecoder(string filePath): filePath(filePath) {
+      printf("size:::: %lu\n", sizeof(JQUANT_TBL *));
       // int fps = ffmpeg -i ../vid.mp4 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"
       string fpsCommand = "ffmpeg -i " + filePath + " 2>&1 | sed -n \"s/.*, \\(.*\\) fp.*/\\1/p\"";
       this->fps = (int)floor(atof(exec((char *)fpsCommand.c_str()).c_str()));
@@ -135,7 +138,7 @@ class JPEGDecoder : public VideoDecoder {
       printf("modifiying frames...\n");
       for (i = 0; i < 1; i ++) {
         this->getFrame(i);
-        this->storeDCT(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays);
+        //this->storeDCT(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays);
       }
     };
     virtual ~JPEGDecoder() {
@@ -143,6 +146,7 @@ class JPEGDecoder : public VideoDecoder {
       this->mux();
     };
     void mux() {
+      printf("muxing\n");
       int i = 0;
       int read = 0;
       FILE *fp = NULL;
@@ -157,17 +161,14 @@ class JPEGDecoder : public VideoDecoder {
       string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
       exec((char *)muxCommand.c_str());
     };
-    // TODO write back should write back to my ram buffer, not to disk...
     virtual void writeBack() {
       // Lock needed for the case in which flush is called twice in quick sucsession
+      if (this->frameChunks.size() == 0) return;
       mtx.lock();
+      printf("wirteh=back\n");
       for (struct JPEGChunk c : this->frameChunks) {
         jtransform_request_workspace(&c.srcinfo, &transformoption);
         jpeg_component_info *ci_ptr = &c.srcinfo.comp_info[1];
-        JQUANT_TBL *tbl = ci_ptr->quant_table;
-        for (int i = 0; i < DCTSIZE2; i ++) {
-            tbl->quantval[i] = 1;
-        }
         c.dst_coef_arrays = jtransform_adjust_parameters(&c.srcinfo, &c.dstinfo, c.src_coef_arrays, &transformoption);
 
         // Specify data destination for compression
@@ -180,6 +181,7 @@ class JPEGDecoder : public VideoDecoder {
         // Copy to the output file any extra markers that we want to preserve 
         jcopy_markers_execute(&c.srcinfo, &c.dstinfo, JCOPYOPT_ALL);
         
+        // THISOPNE----
         jpeg_finish_compress(&c.dstinfo);
         jpeg_destroy_compress(&c.dstinfo);
         (void)jpeg_finish_decompress(&c.srcinfo);
@@ -234,9 +236,9 @@ class JPEGDecoder : public VideoDecoder {
     };
     // TODO: possbile concurrent isses with .back()...
     virtual Chunk *getFrame(int frame) {
-      if (this->frameChunks.size() > 100) {
+     // if (this->frameChunks.size() > 100) {
         this->writeBack();
-      }
+    //  }
       //string fileName = "/tmp/output/image-" + std::to_string(frame+1) + ".jpeg";
       //FILE *fp = fopen(fileName.c_str(), "rb");
       struct JPEGChunk c;
@@ -251,6 +253,7 @@ class JPEGDecoder : public VideoDecoder {
 
       // Specify data source for decompression
       jpeg_mem_src(&this->frameChunks.back().srcinfo, this->jpegs[frame], this->jpegSizes[frame]);
+      jpeg_set_quality(&this->frameChunks.back().dstinfo, 100, FALSE);
 
       jcopy_markers_setup(&this->frameChunks.back().srcinfo, JCOPYOPT_ALL);
 
@@ -294,6 +297,6 @@ class JPEGDecoder : public VideoDecoder {
         this->getFrame(0);
         c = this->frameChunks.front();
       }
-      return c.srcinfo.comp_info[2].height_in_blocks * c.srcinfo.comp_info[2].width_in_blocks;
+      return c.srcinfo.comp_info[1].height_in_blocks * c.srcinfo.comp_info[1].width_in_blocks * 64 * 4;
     };
 };

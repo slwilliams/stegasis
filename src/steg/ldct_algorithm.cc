@@ -10,7 +10,11 @@ extern "C" {
 class LDCTAlgorithm : public SteganographicAlgorithm {
   public:
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+      printf("embedd: bytes: %d, offset: %d\n", dataBytes, offset);
+      // 2 per pair
+      offset *= 2;
       JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData();
+      JQUANT_TBL *table = (JQUANT_TBL *)c->getChunkSize();
       int dataByte = 0;
       int j = 7;
       int frameByte = offset;
@@ -22,52 +26,69 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
         }
         printf("\n");
         break;
-
       } 
-      for (JDIMENSION blocknum = 0; blocknum < 30; blocknum ++) {
-        for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
+
+      int block = frameByte / 64;
+      printf("block: %d\n", block);
+      int co = frameByte % 64;
+      // c[0] > c[1] -> 1
+      for (JDIMENSION blocknum = block; blocknum < 30; blocknum ++) {
+        for (JDIMENSION i = co; i < DCTSIZE2; i += 2) {
+          int c1 = frame[0][blocknum][i];
+          int c2 = frame[0][blocknum][i+1];
           if ((((mask << j) & data[dataByte]) >> j) == 1) {
-            printf("before: %d\n", frame[0][blocknum][i]);
-            frame[0][blocknum][i] |= 1 << 2;
-            printf("after: %d\n", frame[0][blocknum][i]);
+            if (c1 <= c2) {
+              if (c1 < c2) {
+                frame[0][blocknum][i] = c2;
+                frame[0][blocknum][i+1] = c1;
+              } else {
+                // c1 == c2
+                // force c1 to be bigger than c2
+                frame[0][blocknum][i] += (int)table->quantval[i];
+              }
+            } 
           } else {
-            printf("before: %d\n", frame[0][blocknum][i]);
-            frame[0][blocknum][i] &= ~(1 << 2);
-            printf("after: %d\n", frame[0][blocknum][i]);
+            if (c1 > c2) {
+              frame[0][blocknum][i] = c2;
+              frame[0][blocknum][i+1] = c1;
+            }
           }
           j --;
           if (j == -1) {
             j = 7;
             dataByte ++;
             if (dataByte == dataBytes) {
+              for (JDIMENSION blocknum = 0; blocknum < 30; blocknum ++) {
+                printf("embeddAFTYER::=-------\n");
+                for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
+                  printf("%d, ", frame[0][blocknum][i]);
+                }
+                printf("\n");
+                break;
+              } 
               return;
             }
           }
         }
+        co = 0;
       }
-    /*  int i = 0;
-      int j = 0;
-      int frameByte = offset;
-      char mask = 1;
-      for (i = 0; i < dataBytes; i ++) {
-        for (j = 7; j >= 0; j --) {
-          if ((((mask << j) & data[i]) >> j) == 1) {
-            frame[frameByte] |= 1;
-          } else {
-            frame[frameByte] &= ~1;
-          }
-          frameByte ++;
-        }
-      }*/
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+      offset *= 2;
       JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData();
       int dataByte = 0;
       int j = 7;
       int frameByte = offset;
-      for (JDIMENSION blocknum = 0; blocknum < 30; blocknum ++) {
-        for (JDIMENSION i = 1; i < DCTSIZE2; i ++) {
-          output[dataByte] |= ((frame[0][blocknum][i] & (1 << 2)) << j);
+      int block = frameByte / 64;
+      int co = frameByte % 64;
+      for (JDIMENSION blocknum = block; blocknum < 30; blocknum ++) {
+        for (JDIMENSION i = co; i < DCTSIZE2; i += 2) {
+          if (frame[0][blocknum][i] > frame[0][blocknum][i+1]) {
+            // data bit is 1
+            output[dataByte] |= (1 << j);
+          } else {
+            output[dataByte] &= ~(1 << j);
+          }
           j --;
           if (j == -1) {
             j = 7;
@@ -77,17 +98,8 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
             }
           }
         }
+        co = 0;
       }
-      /*int i = 0;
-      int j = 0;
-      int frameByte = offset;
-      for (i = 0; i < dataBytes; i ++) {
-        output[i] = 0;
-        for (j = 7; j >= 0; j --) {
-          output[i] |= ((frame[frameByte] & 1) << j);
-          frameByte ++;
-        }
-      }*/
     };
     virtual void getAlgorithmCode(char out[4]) {
       char tmp[4] = {'L', 'D', 'C', 'T'};

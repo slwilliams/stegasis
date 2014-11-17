@@ -27,7 +27,7 @@ class AviChunkWrapper : public Chunk {
     AviChunk *c;
   public:
     AviChunkWrapper(AviChunk *c): c(c) {};
-    virtual int getChunkSize() {
+    virtual long getChunkSize() {
       return c->chunkSize;
     };
     virtual char *getFrameData() {

@@ -3,7 +3,7 @@
 
 class Chunk {
   public:
-    virtual int getChunkSize() = 0;
+    virtual long getChunkSize() = 0;
     virtual char *getFrameData() = 0;
     virtual bool isDirty() = 0;
     virtual void setDirty() = 0;
