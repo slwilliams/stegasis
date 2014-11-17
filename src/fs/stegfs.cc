@@ -362,10 +362,11 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
-    char *tmp = (char *)malloc(this->decoder->frameSize());
-    printf("Compacting chunks for: %s\n", f.first.c_str());
+    char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+    printf("Compacting chunks for: %s size: %d\n", f.first.c_str(), f.second.size());
     for (i = 0; i < f.second.size(); i ++) {
-      loadBar(i, f.second.size() - 1, 50);
+      printf("i : %d\n", i);
+      //loadBar(i, f.second.size() - 1, 50);
       if (chunkOffsets[i].size() != 0) {
         struct tripleT t = f.second[i];
         int bytesRead = 0;

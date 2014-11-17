@@ -11,6 +11,7 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
   public:
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
       printf("embedd: bytes: %d, offset: %d\n", dataBytes, offset);
+      if (dataBytes == 0) return;
       // 2 per pair
       offset *= 2;
       JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData();
@@ -74,6 +75,7 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+      if (dataBytes == 0) return;
       offset *= 2;
       JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData();
       int dataByte = 0;

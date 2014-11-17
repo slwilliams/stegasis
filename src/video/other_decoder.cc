@@ -241,6 +241,7 @@ class JPEGDecoder : public VideoDecoder {
     //  }
       //string fileName = "/tmp/output/image-" + std::to_string(frame+1) + ".jpeg";
       //FILE *fp = fopen(fileName.c_str(), "rb");
+      mtx.lock();
       struct JPEGChunk c;
       c.frame = frame;
       this->frameChunks.push_back(c);
@@ -263,6 +264,7 @@ class JPEGDecoder : public VideoDecoder {
       this->frameChunks.back().src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);
       jpeg_copy_critical_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo);
 
+      mtx.unlock();
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
     virtual int getFileSize() {
