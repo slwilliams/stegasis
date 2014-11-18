@@ -71,6 +71,7 @@ class JPEGDecoder : public VideoDecoder {
     list<struct JPEGChunk> frameChunks;
     int *jpegSizes;
     unsigned char **jpegs;
+    bool format;
 
     int nextFrame = 1;
     int nextOffset = 0;
@@ -82,8 +83,7 @@ class JPEGDecoder : public VideoDecoder {
     int fps;
 
   public:
-    JPEGDecoder(string filePath): filePath(filePath) {
-      printf("size:::: %lu\n", sizeof(JQUANT_TBL *));
+    JPEGDecoder(string filePath, bool format): filePath(filePath), format(format) {
       string fpsCommand = "ffmpeg -i " + filePath + " 2>&1 | sed -n \"s/.*, \\(.*\\) fp.*/\\1/p\"";
       this->fps = (int)floor(atof(exec((char *)fpsCommand.c_str()).c_str()));
       printf("fps: %d\n", this->fps);
@@ -94,8 +94,12 @@ class JPEGDecoder : public VideoDecoder {
       exec((char *)rm.c_str());
 
       // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
-      //string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
-      string extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
+      string extractCommand;
+      if (this->format) {
+        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
+      } else {
+        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
+      }
       exec((char *)extractCommand.c_str());
 
       string totalFramesCommand = "ls /tmp/output | wc -l";
@@ -254,6 +258,7 @@ class JPEGDecoder : public VideoDecoder {
         this->getFrame(0);
         c = this->frameChunks.front();
       }
-      return c.srcinfo.comp_info[1].height_in_blocks * c.srcinfo.comp_info[1].width_in_blocks * 64 * 4;
+      //return c.srcinfo.comp_info[1].height_in_blocks * c.srcinfo.comp_info[1].width_in_blocks * 64 * 4;
+      return c.srcinfo.comp_info[1].width_in_blocks * 64 / 2;
     };
 };

@@ -363,7 +363,6 @@ void SteganographicFileSystem::compactHeader() {
       }
     }
     char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
-    printf("Compacting chunks for: %s size: %d\n", f.first.c_str(), f.second.size());
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
