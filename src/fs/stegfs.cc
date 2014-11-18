@@ -301,7 +301,6 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   } else {
     this->fileSizes[path] += size;
   }
-
   return size;
 };
 

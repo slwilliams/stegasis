@@ -35,8 +35,8 @@ class JPEGChunkWrapper : public Chunk {
       JQUANT_TBL *tbl = ci_ptr->quant_table;
       return (long)tbl;
     };
-    virtual char *getFrameData(int n) {
-      char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
+    virtual char *getFrameData(int n, int c) {
+      char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->dst_coef_arrays[c], 
           n, (JDIMENSION)1, FALSE);
       return out;
     };
@@ -161,9 +161,6 @@ class JPEGDecoder : public VideoDecoder {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
       for (struct JPEGChunk c : this->frameChunks) {
-        jtransform_request_workspace(&c.srcinfo, &transformoption);
-        jpeg_component_info *ci_ptr = &c.srcinfo.comp_info[1];
-        c.dst_coef_arrays = jtransform_adjust_parameters(&c.srcinfo, &c.dstinfo, c.src_coef_arrays, &transformoption);
 
         unsigned long size = (unsigned long)this->jpegSizes[c.frame];
         jpeg_mem_dest(&c.dstinfo, &this->jpegs[c.frame], &size);
@@ -223,6 +220,9 @@ class JPEGDecoder : public VideoDecoder {
       this->frameChunks.back().src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);
       jpeg_copy_critical_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo);
 
+      jtransform_request_workspace(&this->frameChunks.back().srcinfo, &transformoption);
+      this->frameChunks.back().dst_coef_arrays = jtransform_adjust_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays, &transformoption);
+
       mtx.unlock();
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
@@ -259,6 +259,6 @@ class JPEGDecoder : public VideoDecoder {
         c = this->frameChunks.front();
       }
       //return c.srcinfo.comp_info[1].height_in_blocks * c.srcinfo.comp_info[1].width_in_blocks * 64 * 4;
-      return c.srcinfo.comp_info[1].width_in_blocks * 23 * 64 / 2;
+      return c.srcinfo.comp_info[1].width_in_blocks * 23 * 64 ;
     };
 };

@@ -30,7 +30,7 @@ class AviChunkWrapper : public Chunk {
     virtual long getChunkSize() {
       return c->chunkSize;
     };
-    virtual char *getFrameData(int n) {
+    virtual char *getFrameData(int n, int com) {
       return c->frameData;
     };
     virtual bool isDirty() {
