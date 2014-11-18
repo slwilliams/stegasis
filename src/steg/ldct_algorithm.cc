@@ -10,19 +10,20 @@ extern "C" {
 class LDCTAlgorithm : public SteganographicAlgorithm {
   public:
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-      //printf("embedd: bytes: %d, offset: %d\n", dataBytes, offset);
+      printf("embedd: bytes: %d, offset: %d\n", dataBytes, offset);
       if (dataBytes == 0) return;
       int dataByte = 0;
       int j = 7;
-      int row = offset / (64 * 30);
-      int block = (offset - row * 30 * 64) / 64;
+      int row = offset / (64 * 80);
+      int block = (offset - row * 80 * 64) / 64;
       if (block < 0) block = 0;
       int co = offset % 64;
-      //printf("row: %d, block: %d, co: %d\n", row, block, co);
-      for (int r = row; r < 23; r ++) {
+      printf("row: %d, block: %d, co: %d\n", row, block, co);
+      for (int r = row; r < 45; r ++) {
         JBLOCKARRAY frame1 = (JBLOCKARRAY)c->getFrameData(r, 1);
-        for (JDIMENSION blocknum = block; blocknum < 30; blocknum ++) {
+        for (JDIMENSION blocknum = block; blocknum < 80; blocknum ++) {
           for (JDIMENSION i = co; i < DCTSIZE2; i += 1) {
+            if (i == 0) i ++;
             if ((((1 << j) & data[dataByte]) >> j) == 1) {
               frame1[0][blocknum][i] |= 1;
             } else {
@@ -43,29 +44,31 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
-      //printf("extract: bytes: %d, offset: %d\n", dataBytes, offset);
+      printf("extract: bytes: %d, offset: %d\n", dataBytes, offset);
       if (dataBytes == 0) return;
       int dataByte = 0;
       int j = 7;
-      int row = offset / (64 * 30);
-      int block = (offset - row * 30 * 64) / 64;
+      int row = offset / (64 * 80);
+      int block = (offset - row * 80 * 64) / 64;
       if (block < 0) block = 0;
       int co = offset % 64;
-      //printf("row: %d, block: %d, co: %d\n", row, block, co);
+      printf("row: %d, block: %d, co: %d\n", row, block, co);
       output[dataByte] = 0;
-      for (int r = row; r < 23; r ++) {
+      // TODO: now hard code these
+      for (int r = row; r < 45; r ++) {
         JBLOCKARRAY frame1 = (JBLOCKARRAY)c->getFrameData(r, 1);
-        for (JDIMENSION blocknum = block; blocknum < 30; blocknum ++) {
+        for (JDIMENSION blocknum = block; blocknum < 80; blocknum ++) {
           for (JDIMENSION i = co; i < DCTSIZE2; i += 1) {
-            output[dataByte] |= ((frame1[0][blocknum][i] & (1)) << j);            
+            if (i == 0) i ++;
+            output[dataByte] |= ((frame1[0][blocknum][i] & 1) << j);            
             j --;
             if (j == -1) {
               j = 7;
               dataByte ++;
-              output[dataByte] = 0;
               if (dataByte == dataBytes) {
                 return;
               }
+              output[dataByte] = 0;
             }
           }
           co = 0;
