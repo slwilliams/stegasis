@@ -4,7 +4,7 @@
 class Chunk {
   public:
     virtual long getChunkSize() = 0;
-    virtual char *getFrameData() = 0;
+    virtual char *getFrameData(int n) = 0;
     virtual bool isDirty() = 0;
     virtual void setDirty() = 0;
 };

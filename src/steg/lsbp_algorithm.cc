@@ -38,7 +38,7 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
       this->lcg = LCG(frameSize, lcgKey);
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-      char *frame = c->getFrameData();
+      char *frame = c->getFrameData(0);
 
       int i = 0;
       int j = 0;
@@ -55,7 +55,7 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
-      char *frame = c->getFrameData();
+      char *frame = c->getFrameData(0);
 
       int i = 0;
       int j = 0;

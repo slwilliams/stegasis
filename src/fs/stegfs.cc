@@ -364,7 +364,7 @@ void SteganographicFileSystem::compactHeader() {
     }
     char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
-      loadBar(i, f.second.size(), 50);
+      loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
         struct tripleT t = f.second[i];
         int bytesRead = 0;

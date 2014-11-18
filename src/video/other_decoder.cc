@@ -35,9 +35,9 @@ class JPEGChunkWrapper : public Chunk {
       JQUANT_TBL *tbl = ci_ptr->quant_table;
       return (long)tbl;
     };
-    virtual char *getFrameData() {
+    virtual char *getFrameData(int n) {
       char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->src_coef_arrays[1], 
-          0, (JDIMENSION)1, FALSE);
+          n, (JDIMENSION)1, FALSE);
       return out;
     };
     virtual bool isDirty() {
@@ -259,6 +259,6 @@ class JPEGDecoder : public VideoDecoder {
         c = this->frameChunks.front();
       }
       //return c.srcinfo.comp_info[1].height_in_blocks * c.srcinfo.comp_info[1].width_in_blocks * 64 * 4;
-      return c.srcinfo.comp_info[1].width_in_blocks * 64 / 2;
+      return c.srcinfo.comp_info[1].width_in_blocks * 23 * 64 / 2;
     };
 };
