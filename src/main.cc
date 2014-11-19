@@ -156,8 +156,8 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
   // Make sure the header is written back
   headerFrame->setDirty();
 
-  int totalCapacity = (int)floor((dec->numberOfFrames() * dec->frameSize() * (capacityB / 100.0)) / 8);
-  printf("Volume capacity: %.2fMB\n", totalCapacity/1000000.0); 
+  int totalCapacity = (int)floor((dec->numberOfFrames() * (dec->frameSize() / 8000) * (capacityB / 100.0)));
+  printf("Volume capacity: %.2fMB\n", totalCapacity/1000.0); 
 
   delete dec;
   printf("Format successful!\n");

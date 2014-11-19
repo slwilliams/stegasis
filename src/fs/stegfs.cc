@@ -272,9 +272,11 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         printf("\e[1A"); 
         printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n",
             nextFrame, size-bytesWritten, nextOffset * 8);
-        this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten),
+        Chunk *c = this->decoder->getFrame(nextFrame);
+        this->alg->embed(c, (char *)(buf + bytesWritten),
            triple.bytes, nextOffset * 8);
-        this->decoder->getFrame(nextFrame)->setDirty(); 
+        c->setDirty(); 
+        delete c;
         this->fileIndex[path].push_back(triple);
         this->decoder->setNextFrameOffset(nextFrame, nextOffset + size-bytesWritten);
         bytesWritten += size-bytesWritten;
@@ -286,9 +288,11 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         printf("\e[1A"); 
         printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n",
             nextFrame, bytesLeftInFrame / 8, nextOffset * 8);
-        this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten),
+        Chunk *c = this->decoder->getFrame(nextFrame);
+        this->alg->embed(c, (char *)(buf + bytesWritten),
            triple.bytes, nextOffset * 8);
-        this->decoder->getFrame(nextFrame)->setDirty(); 
+        c->setDirty(); 
+        delete c;
         this->fileIndex[path].push_back(triple);
         bytesWritten += bytesLeftInFrame / 8;
         this->decoder->setNextFrameOffset(nextFrame + 1, 0);
@@ -362,7 +366,7 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
-    char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+    /*char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
@@ -379,7 +383,7 @@ void SteganographicFileSystem::compactHeader() {
         this->alg->embed(this->decoder->getFrame(t.frame), tmp, t.bytes, t.offset * 8);
       }
     }
-    free(tmp);
+    free(tmp);*/
     this->fileIndex[f.first] = f.second;
   }
   this->decoder->getFrame(0)->setDirty();
