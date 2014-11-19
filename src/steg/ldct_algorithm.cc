@@ -19,13 +19,14 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       int block = (offset - row * 80 * 64) / 64;
       if (block < 0) block = 0;
       int co = offset % 64;
-      printf("row: %d, block: %d, co: %d\n", row, block, co);
+      printf("row: %d, block: %d, co: %d, offset: %d\n", row, block, co, offset);
+      printf("row: %d, block: %d, co: %d, offset: %d\n", row, block, co, offset);
       for (int r = row; r < 45; r ++) {
         JBLOCKARRAY frame1 = (JBLOCKARRAY)c->getFrameData(r, 1);
         JBLOCKARRAY frame2 = (JBLOCKARRAY)c->getFrameData(r, 2);
         for (JDIMENSION blocknum = block; blocknum < 80; blocknum ++) {
           for (JDIMENSION i = co; i < DCTSIZE2; i += 1) {
-           // if (i == 0) i ++;
+            //if (i == 0) i ++;
             if ((((1 << j) & data[dataByte]) >> j) == 1) {
               frame1[0][blocknum][i] |= 1;
             } else {
@@ -52,6 +53,7 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+      // offset += num of blocks touched
       printf("extract: bytes: %d, offset: %d\n", dataBytes, offset);
       if (dataBytes == 0) return;
       offset /= 2;
@@ -61,9 +63,10 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       int block = (offset - row * 80 * 64) / 64;
       if (block < 0) block = 0;
       int co = offset % 64;
-      printf("row: %d, block: %d, co: %d\n", row, block, co);
+      printf("row: %d, block: %d, co: %d, offset: %d\n", row, block, co, offset);
+      printf("row: %d, block: %d, co: %d, offset: %d\n", row, block, co, offset);
       output[dataByte] = 0;
-      // TODO: now hard code these
+      // TODO: not hard code these
       for (int r = row; r < 45; r ++) {
         JBLOCKARRAY frame1 = (JBLOCKARRAY)c->getFrameData(r, 1);
         JBLOCKARRAY frame2 = (JBLOCKARRAY)c->getFrameData(r, 2);

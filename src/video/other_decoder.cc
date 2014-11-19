@@ -259,6 +259,6 @@ class JPEGDecoder : public VideoDecoder {
         c = this->frameChunks.front();
       }
 //      printf("width: %d, hrighty: %d\n", c.srcinfo.comp_info[1].width_in_blocks, c.srcinfo.comp_info[1].height_in_blocks);
-      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 64 * 2;
+      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * 2;
     };
 };
