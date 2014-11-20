@@ -9,10 +9,11 @@ class LCG {
     int trueM;
     int a;
     long long seed;
+    bool zero;
     int gcd(int u, int v);
   public:
     LCG() {};
-    LCG(int m, int key);
+    LCG(int m, int key, bool zero=false);
     LCG(int m, int c, int a, int trueM);
     void setSeed(int seed);
     int iterate();

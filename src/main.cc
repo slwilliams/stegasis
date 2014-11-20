@@ -16,6 +16,7 @@
 #include "steg/lsbp_algorithm.cc"
 #include "steg/lsb2_algorithm.cc"
 #include "steg/ldct_algorithm.cc"
+#include "steg/pdct_algorithm.cc"
 
 using namespace std;
 
@@ -164,7 +165,7 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
 }
 
 bool algRequiresPass(string alg) {
-  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2";
+  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2" || alg == "pdct";
 }
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
@@ -178,6 +179,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new LSB2Algorithm(pass, dec);
   } else if (alg == "ldct") {
     return new LDCTAlgorithm;
+  } else if (alg == "pdct") {
+    return new PDCTAlgorithm(pass, dec);
   } else {
     printf("Unknown algorithm\n");
     exit(0);

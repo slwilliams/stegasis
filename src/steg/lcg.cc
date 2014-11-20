@@ -30,7 +30,10 @@ int LCG::gcd(int u, int v) {
   return u << shift;
 };
 
-LCG::LCG(int targetM, int key) {
+LCG::LCG(int targetM, int key, bool zero) {
+  printf("ROFL\n");
+  this->zero = zero;
+  printf("ROFLCOPTER\n");
   this->trueM = targetM;
   int n = 2;
   while (true) {
@@ -74,9 +77,16 @@ void LCG::setSeed(int seed) {
 };
 
 int LCG::iterate() {
-  do {
-    this->seed = (a * seed + c) % m;
-  } while(this->seed >= this->trueM);
+  printf("ITERAE!!\n");
+  if (this->zero == true) {
+    do {
+      this->seed = (a * seed + c) % m;
+    } while(this->seed >= this->trueM || this->seed == 0);
+  } else {
+    do {
+      this->seed = (a * seed + c) % m;
+    } while(this->seed >= this->trueM);
+  }
   return (int)this->seed;
 };
 

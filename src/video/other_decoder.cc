@@ -107,7 +107,7 @@ class JPEGDecoder : public VideoDecoder {
       printf("totalframes: %d\n", this->totalFrames);
 
       // TODO: Change this to .mp3
-      string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.mp3";
+      string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.wav";
       exec((char *)getAudioCommand.c_str());
 
       transformoption.transform = JXFORM_NONE;
@@ -154,7 +154,7 @@ class JPEGDecoder : public VideoDecoder {
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
       }
-      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.mp3 -codec copy output.mkv";
+      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy output.mkv";
       exec((char *)muxCommand.c_str());
     };
     virtual void writeBack() {
@@ -259,6 +259,6 @@ class JPEGDecoder : public VideoDecoder {
         c = this->frameChunks.front();
       }
 //      printf("width: %d, hrighty: %d\n", c.srcinfo.comp_info[1].width_in_blocks, c.srcinfo.comp_info[1].height_in_blocks);
-      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * 2;
+      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0);
     };
 };
