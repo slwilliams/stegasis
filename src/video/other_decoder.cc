@@ -132,6 +132,17 @@ class JPEGDecoder : public VideoDecoder {
         fclose(fp);
       }
 
+      struct JPEGChunk c;
+      if (this->frameChunks.size() > 0) {
+        c = this->frameChunks.front();
+      } else {
+        // This will cause frameChunks to get an element
+        this->getFrame(0);
+        c = this->frameChunks.front();
+      }
+      this->width = c.srcinfo.comp_info[1].width_in_blocks;
+      this->height = c.srcinfo.comp_info[1].height_in_blocks;
+
      /* printf("modifiying frames...\n");
       for (i = 0; i < 1; i ++) {
         this->getFrame(i);
@@ -227,7 +238,7 @@ class JPEGDecoder : public VideoDecoder {
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
     virtual int getFileSize() {
-      return this->fileSize; 
+      return this->jpegSizes[0]; 
     };                                                 
     virtual int numberOfFrames() {
       return this->totalFrames; 
@@ -241,7 +252,7 @@ class JPEGDecoder : public VideoDecoder {
       this->nextOffset = offset;
     };
     virtual int frameHeight() {
-      return this->height;  
+      return this->height; 
     };
     virtual int frameWidth() {
       return this->width; 
@@ -258,7 +269,7 @@ class JPEGDecoder : public VideoDecoder {
         this->getFrame(0);
         c = this->frameChunks.front();
       }
-//      printf("width: %d, hrighty: %d\n", c.srcinfo.comp_info[1].width_in_blocks, c.srcinfo.comp_info[1].height_in_blocks);
+      // 63 since we don't want to write to the DC coefficient
       return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0);
     };
 };
