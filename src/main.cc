@@ -199,7 +199,7 @@ void printName() {
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");
   printf("  ____) | ||  __/ (_| | (_| \\__ \\ \\__ \\ \n");
   printf(" |_____/ \\__\\___|\\__, |\\__,_|___/_|___/ \n");
-  printf("                  __/ | v1.0a               \n");
+  printf("                  __/ | v2.0a               \n");
   printf("                 |___/                      \n");
 }
 
@@ -210,7 +210,7 @@ void printUsage() {
   printf("\tstegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");
   printf("\tstegasis mount --alg=lsbk --password123 /media/video.avi /tmp/test\n"); 
   printf("Required Flags:\n");
-  printf("\t--alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2]\n");
+  printf("\t--alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2, ldct, pdct]\n");
   printf("\t--cap  Percentage of frame to embed within in percent\n");
   printf("Optional flags:\n");
   printf("\t--pass  Passphrase used for encrypting and permuting data, required for [lsbk, lsbp, lsb2]\n");
