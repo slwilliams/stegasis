@@ -266,8 +266,9 @@ class JPEGDecoder : public VideoDecoder {
         c = this->frameChunks.front();
       } else {
         // This will cause frameChunks to get an element
-        this->getFrame(0);
+        Chunk *tmp = this->getFrame(0);
         c = this->frameChunks.front();
+        delete tmp;
       }
       // 63 since we don't want to write to the DC coefficient
       return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0);

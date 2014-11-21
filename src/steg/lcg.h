@@ -17,7 +17,6 @@ class LCG {
     LCG(int m, int c, int a, int trueM);
     void setSeed(int seed);
     int iterate();
-    void debug();
     LCG getLCG();
     std::unordered_map<int, int> map;
 };

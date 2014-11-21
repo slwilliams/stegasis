@@ -61,8 +61,8 @@ LCG::LCG(int targetM, int key, bool zero) {
 
   // Populate the seed->offset map
   int i = 0;
-  this->setSeed(0);
-  this->map[0] = 0;
+  this->setSeed(1);
+  this->map[0] = 1;
   for (i = 1; i < this->trueM; i ++) {
     this->map[i] = this->iterate();
   }
@@ -78,17 +78,13 @@ int LCG::iterate() {
   if (this->zero == true) {
     do {
       this->seed = (a * seed + c) % m;
-    } while(this->seed >= this->trueM || this->seed == 0);
+    } while(this->seed >= this->trueM || this->seed % 64 == 0);
   } else {
     do {
       this->seed = (a * seed + c) % m;
     } while(this->seed >= this->trueM);
   }
   return (int)this->seed;
-};
-
-void LCG::debug() {
-  printf("m: %d, a: %d, c: %d, trueM: %d\n", this->m, this->a, this->c, this->trueM);
 };
 
 LCG LCG::getLCG() {

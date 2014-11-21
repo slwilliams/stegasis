@@ -74,6 +74,7 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     for (j = 0; j < triples; j ++) {
       struct tripleT triple;
       memcpy(&triple, headerBytes + offset + i + j*sizeof(tripleT) + 4, sizeof(tripleT)); 
+      printf("Triple: frame: %d, offset: %d, bytes: %d\n", triple.frame, triple.offset, triple.bytes);
       this->fileIndex[fileName.c_str()].push_back(triple);
       // Work out where we should start writing i.e. largest frame + offset
       if (triple.frame > nextFrame) {
@@ -324,21 +325,31 @@ void SteganographicFileSystem::writeHeader() {
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
     int triples = f.second.size();
-    memcpy(header + offset, (char *)&triples, 4);
+    char *tripleOffset = header + offset;
+    // Fill this in later
     offset += 4;
     
     // Embed all the triples
+    int embedded = 0;
     for (struct tripleT t : f.second) {
+      if (offset > (this->decoder->frameSize() / 8) - 50) break;
       memcpy(header + offset, (char *)&t, sizeof(tripleT));
       offset += sizeof(tripleT);
+      embedded ++;
     }
+    memcpy(tripleOffset, (char *)&embedded, 4);
+
     headerBytes += f.first.length() + 1;
     headerBytes += 4;
-    headerBytes += sizeof(tripleT)*f.second.size();
+    headerBytes += sizeof(tripleT)*embedded;
+    if (offset > (this->decoder->frameSize() / 8) - 50) break;
   }
+  printf("header bygtes: %d, framesize: %d\n", headerBytes, this->decoder->frameSize());
   this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
   this->alg->embed(headerFrame, header, headerBytes, (4+4+4+1) * 8); 
   headerFrame->setDirty();
+  free(header);
+  delete headerFrame;
 };
 
 int SteganographicFileSystem::unlink(const char *path) {
@@ -348,7 +359,9 @@ int SteganographicFileSystem::unlink(const char *path) {
 };
 
 void SteganographicFileSystem::compactHeader() {
+  return;
   this->mux.lock();
+  printf("Compacting header...\n");
   for (auto f : this->fileIndex) {
     int i = 0;
     std::unordered_map<int, std::vector<int> > chunkOffsets = std::unordered_map<int, std::vector<int> >();
@@ -366,7 +379,7 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
-    /*char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+   /* char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {

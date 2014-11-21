@@ -49,11 +49,13 @@ class PDCTAlgorithm : public SteganographicAlgorithm {
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
       int frameByte = lcg.map[offset++];
       int row, block, co;
+      int comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         for (int j = 7; j >= 0; j --) {
           this->getCoef(frameByte, &row, &block, &co);
-          frame = (JBLOCKARRAY)c->getFrameData(row, 1);
+          comp = (co % 2 == 0) ? 1 : 2;
+          frame = (JBLOCKARRAY)c->getFrameData(row, comp);
           if ((((1 << j) & data[i]) >> j) == 1) {
             frame[0][block][co] |= 1;
           } else {
@@ -66,12 +68,14 @@ class PDCTAlgorithm : public SteganographicAlgorithm {
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
       int frameByte = lcg.map[offset++];
       int row, block, co;
+      int comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (int j = 7; j >= 0; j --) {
           this->getCoef(frameByte, &row, &block, &co);
-          frame = (JBLOCKARRAY)c->getFrameData(row, 1);
+          comp = (co % 2 == 0) ? 1 : 2;
+          frame = (JBLOCKARRAY)c->getFrameData(row, comp);
           output[i] |= ((frame[0][block][co] & 1) << j); 
           frameByte = lcg.map[offset++];
         }
