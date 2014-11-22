@@ -359,7 +359,6 @@ int SteganographicFileSystem::unlink(const char *path) {
 };
 
 void SteganographicFileSystem::compactHeader() {
-  return;
   this->mux.lock();
   printf("Compacting header...\n");
   for (auto f : this->fileIndex) {
@@ -379,7 +378,7 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
-   /* char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+   char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
@@ -396,7 +395,7 @@ void SteganographicFileSystem::compactHeader() {
         this->alg->embed(this->decoder->getFrame(t.frame), tmp, t.bytes, t.offset * 8);
       }
     }
-    free(tmp);*/
+    free(tmp);
     this->fileIndex[f.first] = f.second;
   }
   this->decoder->getFrame(0)->setDirty();

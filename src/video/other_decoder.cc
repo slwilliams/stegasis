@@ -36,9 +36,8 @@ class JPEGChunkWrapper : public Chunk {
       return (long)tbl;
     };
     virtual char *getFrameData(int n, int c) {
-      char *out = (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo, this->c->dst_coef_arrays[c], 
-          n, (JDIMENSION)1, FALSE);
-      return out;
+      return (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo,
+         this->c->dst_coef_arrays[c], n, (JDIMENSION)1, FALSE);
     };
     virtual bool isDirty() {
       return c->dirty;
@@ -93,7 +92,6 @@ class JPEGDecoder : public VideoDecoder {
       string rm = "rm -rf /tmp/output/*";
       exec((char *)rm.c_str());
 
-      // ffmpeg -r [fps] -i vid.mp4 -qscale:v 2 -f image2 /tmp/output/image-%3d.jpeg
       string extractCommand;
       if (this->format) {
         extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
@@ -271,6 +269,6 @@ class JPEGDecoder : public VideoDecoder {
         delete tmp;
       }
       // 63 since we don't want to write to the DC coefficient
-      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0);
+      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0) * 2;
     };
 };

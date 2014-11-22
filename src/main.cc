@@ -178,7 +178,7 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   } else if (alg == "lsb2") {
     return new LSB2Algorithm(pass, dec);
   } else if (alg == "ldct") {
-    return new LDCTAlgorithm;
+    return new LDCTAlgorithm(dec);
   } else if (alg == "pdct") {
     return new PDCTAlgorithm(pass, dec);
   } else {
