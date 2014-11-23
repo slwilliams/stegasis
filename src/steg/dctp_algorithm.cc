@@ -13,13 +13,13 @@ extern "C" {
 #include "steganographic_algorithm.h"
 #include "lcg.h"
 
-class PDCTAlgorithm : public SteganographicAlgorithm {
+class DCTPAlgorithm : public SteganographicAlgorithm {
   private:
     char *key;
     LCG lcg;
 
   public:
-    PDCTAlgorithm(std::string password, VideoDecoder *dec) {
+    DCTPAlgorithm(std::string password, VideoDecoder *dec) {
       this->password = password;
       this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
@@ -82,7 +82,7 @@ class PDCTAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'P', 'D', 'C', 'T'};
+      char tmp[4] = {'D', 'C', 'T', 'P'};
       memcpy(out, tmp, 4);
     };
 };

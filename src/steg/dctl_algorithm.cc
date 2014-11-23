@@ -8,9 +8,9 @@ extern "C" {
 #include "steganographic_algorithm.h"
 #include "video/video_decoder.h"
 
-class LDCTAlgorithm : public SteganographicAlgorithm {
+class DCTLAlgorithm : public SteganographicAlgorithm {
   public:
-    LDCTAlgorithm(VideoDecoder *dec) {
+    DCTLAlgorithm(VideoDecoder *dec) {
       this->dec = dec;
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
@@ -65,7 +65,7 @@ class LDCTAlgorithm : public SteganographicAlgorithm {
       }
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'L', 'D', 'C', 'T'};
+      char tmp[4] = {'D', 'C', 'T', 'L'};
       memcpy(out, tmp, 4);
     };
 };
