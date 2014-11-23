@@ -48,9 +48,9 @@ int main(int argc, char **argv) {
   Chunk *c = dec->getFrame(frame);
   int j = 0;
   for (j = 0; j < frameSize; j += 3) {
-    char blue = c->getFrameData()[j];
-    char green = c->getFrameData()[j+1];
-    char red = c->getFrameData()[j+2];
+    char blue = c->getFrameData(0)[j];
+    char green = c->getFrameData(0)[j+1];
+    char red = c->getFrameData(0)[j+2];
     if (rgb == "rgb") {
       fwrite(&red, 1, 1, f);
       fwrite(&green, 1, 1, f);

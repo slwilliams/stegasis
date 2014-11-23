@@ -121,8 +121,8 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 
   printf("Mounting...\n");
   wrap_mount(mountPoint);
+  printf("Unmounting...\n");
 
-  printf("Writing video...\n");
   SteganographicFileSystem::Instance()->writeHeader();
   delete dec;
 
@@ -146,13 +146,8 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
   char capacityB = (char)atoi(capacity.c_str());
   alg->embed(headerFrame, &capacityB, 1, 8 * 8);
 
-  union {
-    uint32_t num;
-    char byte[4];
-  } headerBytes;
-  headerBytes.num = 0;
-
-  alg->embed(headerFrame, headerBytes.byte, 4, 9 * 8);
+  int headerBytes = 0;
+  alg->embed(headerFrame, (char *)&headerBytes, 4, 9 * 8);
   
   // Make sure the header is written back
   headerFrame->setDirty();
@@ -208,12 +203,12 @@ void printUsage() {
   printf("---------------------------\n");
   printf("Example commands:\n");
   printf("\tstegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");
-  printf("\tstegasis mount --alg=lsbk --password123 /media/video.avi /tmp/test\n"); 
+  printf("\tstegasis mount --alg=lsbk --pass=password123 /media/video.avi /tmp/test\n"); 
   printf("Required Flags:\n");
-  printf("\t--alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2, ldct, pdct]\n");
+  printf("\t--alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2, dctl, dctp]\n");
   printf("\t--cap  Percentage of frame to embed within in percent\n");
   printf("Optional flags:\n");
-  printf("\t--pass  Passphrase used for encrypting and permuting data, required for [lsbk, lsbp, lsb2]\n");
+  printf("\t--pass  Passphrase used for encrypting and permuting data, required for [lsbk, lsbp, lsb2, dctp]\n");
   printf("\t-p  Do not flush writes to disk until unmount\n");
   printf("\t-g  Use green channel for embedding\n");
 }
