@@ -172,9 +172,9 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new LSBPAlgorithm(pass, dec);
   } else if (alg == "lsb2") {
     return new LSB2Algorithm(pass, dec);
-  } else if (alg == "ldct") {
+  } else if (alg == "dctl") {
     return new DCTLAlgorithm(dec);
-  } else if (alg == "pdct") {
+  } else if (alg == "dctp") {
     return new DCTPAlgorithm(pass, dec);
   } else {
     printf("Unknown algorithm\n");

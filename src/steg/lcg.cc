@@ -90,3 +90,7 @@ int LCG::iterate() {
 LCG LCG::getLCG() {
   return LCG(this->m, this->c, this->a, this->trueM);
 };
+
+void LCG::debug() {
+  printf("m: %d, c: %d, a: %d, trueM: %d\n", m, c, a, trueM);
+};

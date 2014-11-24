@@ -19,5 +19,6 @@ class LCG {
     int iterate();
     LCG getLCG();
     std::unordered_map<int, int> map;
+    void debug();
 };
 #endif

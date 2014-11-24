@@ -174,6 +174,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   }
   std::vector<tripleT> triples = this->fileIndex[path];
 
+  this->mux.lock();
   int bytesWritten = 0;
   int readBytes = 0;
   int i = 0;
@@ -195,6 +196,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
             memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
             free(temp);
           }
+          this->mux.unlock();
           return size;
         }
         printf("\e[1A"); 
@@ -207,22 +209,26 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
           memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
           free(temp);
         }
+        delete c;
         bytesWritten += bytesLeftInChunk;
         // Just to 0 chunkOffset from here on
         readBytes = offset;
         i ++;
       }
+      this->mux.unlock();
       return size;
     } else {
       readBytes += t.bytes;
       i ++;
     }
   }
+  this->mux.unlock();
   return -ENOENT;
 };
 
 //117MB limit if using 4096 chunks with a singe header frame
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  this->mux.lock();
   //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk

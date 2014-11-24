@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <unordered_map>
+
 #include "crypto/pwdbased.h"
 #include "crypto/cryptlib.h"
 #include "crypto/randpool.h"
@@ -47,9 +49,10 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
       *co = frameByte % DCTSIZE2;
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+      unordered_map<int, int> map;
       int frameByte = lcg.map[offset++];
-      int row, block, co;
-      int comp;
+      map[frameByte] = 1;
+      int row, block, co, comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         for (int j = 7; j >= 0; j --) {
@@ -62,13 +65,18 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
             frame[0][block][co] &= ~1;
           }
           frameByte = lcg.map[offset++];
+          if (map[frameByte] == 1) {
+            printf("BAD!!! offset: %d\n", offset);
+          }
+          map[frameByte] = 1;
         }
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+      unordered_map<int, int> map;
       int frameByte = lcg.map[offset++];
-      int row, block, co;
-      int comp;
+      map[frameByte] = 1;
+      int row, block, co, comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         output[i] = 0;
@@ -78,6 +86,10 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
           frame = (JBLOCKARRAY)c->getFrameData(row, comp);
           output[i] |= ((frame[0][block][co] & 1) << j); 
           frameByte = lcg.map[offset++];
+          if (map[frameByte] == 1) {
+            printf("BADEX!!! offset: %d\n", offset);
+          }
+          map[frameByte] = 1;
         }
       }
     };

@@ -6,6 +6,7 @@
 #include <mutex> 
 #include <math.h>
 #include <sys/stat.h>
+
 extern "C" {
   #include "libjpeg/jpeglib.h"
   #include "libjpeg/transupp.h"  
@@ -30,20 +31,22 @@ class JPEGChunkWrapper : public Chunk {
     JPEGChunk *c;
   public:
     JPEGChunkWrapper(JPEGChunk *c): c(c) {};
-    virtual long getChunkSize() {
+    virtual void *getAdditionalData() {
       jpeg_component_info *ci_ptr = &this->c->srcinfo.comp_info[1];
-      JQUANT_TBL *tbl = ci_ptr->quant_table;
-      return (long)tbl;
+      return (void *)ci_ptr->quant_table;
+    };
+    virtual long getChunkSize() {
+      return this->chunkSize;
     };
     virtual char *getFrameData(int n, int c) {
       return (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo,
          this->c->dst_coef_arrays[c], n, (JDIMENSION)1, FALSE);
     };
     virtual bool isDirty() {
-      return c->dirty;
+      return this->c->dirty;
     };
     virtual void setDirty() {
-      c->dirty = 1;
+      this->c->dirty = 1;
     };
 };
 
@@ -116,9 +119,8 @@ class JPEGDecoder : public VideoDecoder {
       this->jpegs = (unsigned char **)malloc(sizeof(unsigned char *) * this->totalFrames);
 
       printf("Reading JPEGs into ram...\n");
-      int i = 0;
       int read = 0;
-      for (i = 0; i < this->totalFrames; i ++) {
+      for (int i = 0; i < this->totalFrames; i ++) {
         loadBar(i, this->totalFrames - 1, 50);
         string fileName = "/tmp/output/image-" + std::to_string(i+1) + ".jpeg";
         FILE *fp = fopen(fileName.c_str(), "rb");
@@ -152,11 +154,10 @@ class JPEGDecoder : public VideoDecoder {
       this->mux();
     };
     void mux() {
-      int i = 0;
       int read = 0;
       FILE *fp = NULL;
       printf("Writing back to disk...\n");
-      for (i = 0; i < this->totalFrames; i ++) {
+      for (int i = 0; i < this->totalFrames; i ++) {
         loadBar(i, this->totalFrames - 1, 50);
         string fileName = "/tmp/output/image-" + std::to_string(i+1) + ".jpeg";
         fp = fopen(fileName.c_str(), "wb");
@@ -170,7 +171,6 @@ class JPEGDecoder : public VideoDecoder {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
       for (struct JPEGChunk c : this->frameChunks) {
-
         unsigned long size = (unsigned long)this->jpegSizes[c.frame];
         jpeg_mem_dest(&c.dstinfo, &this->jpegs[c.frame], &size);
 
@@ -236,6 +236,7 @@ class JPEGDecoder : public VideoDecoder {
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
     virtual int getFileSize() {
+      return 100;
       return this->jpegSizes[0]; 
     };                                                 
     virtual int numberOfFrames() {
@@ -269,6 +270,6 @@ class JPEGDecoder : public VideoDecoder {
         delete tmp;
       }
       // 63 since we don't want to write to the DC coefficient
-      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0) * 2;
+      return c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0);
     };
 };
