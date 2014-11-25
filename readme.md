@@ -4,15 +4,15 @@ Cambridge Part II Computer Science project <slw69@cam.ac.uk>
 
 Stegasis allows files to be steganographically hidden inside video files via a file system interface.
 
-Stegasis provides a number of steganographic algorithms, encryption functionality and (currently) supports uncompressed AVI video files.
+Stegasis provides a number of steganographic algorithms and encryption functionality. It currently natively supports uncompressed AVI video files, and via FFmpeg supports pretty much all other modern video formats (e.g. mp4, wmv, mkv etc.).
 
-Usage
+Example Usage
 ------
     # Prepare an existing video file
-    $ stegasis format –-alg=lsbk --pass=password123 video.avi
+    $ stegasis format –-alg=dctp --pass=password123 --cap=40 video.mp4
      
-    # Using stegasis mount we can directly mount the video file
-    $ stegasis mount --alg=lsbk --pass=password123 video.avi /mnt/volume
+    # We can now mount the video file
+    $ stegasis mount --alg=dctp --pass=password123 video.mp4 /mnt/volume
  
     # Create a file inside the file system
     $ echo "test" > /mnt/volume/test.txt
@@ -21,12 +21,23 @@ Usage
     # Unmount the file system
     $ stegasis umount /mnt/volume
 
+Detailed Options
+-----------------
+Required Flags:
+* --alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2, dctl, dctp]
+* --cap  Percentage of frame to embed within in percent
+
+Optional flags:
+* --pass  Passphrase used for encrypting and permuting data, required for [lsbk, lsbp, lsb2, dctp]
+* -p  Do not flush writes to disk until unmount
+* -g  Use green channel for embedding
+
 Notes
 ------
 
-To build Stegasis from source you will need the FUSE package installed <http://fuse.sourceforge.net>
+To run Stegasis you will need the FUSE package installed <http://fuse.sourceforge.net>
 
-sudo addgroup <username> fuse
+sudo addgroup <<username>> fuse
 
 libc6-dev-i386
 
