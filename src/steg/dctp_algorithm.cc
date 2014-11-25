@@ -43,10 +43,12 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
       this->lcg = LCG(frameSize, lcgKey, true);
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
-      *row = frameByte / (DCTSIZE2 * this->dec->frameWidth());
-      *block = (frameByte - *row * this->dec->frameWidth() * DCTSIZE2) / DCTSIZE2;
+      //height is num of rows, width is the 
+      //width is blocks per row
+      *row = frameByte / ((DCTSIZE2-1) * this->dec->frameWidth());
+      *block = (frameByte - *row * this->dec->frameWidth() * (DCTSIZE2-1)) / (DCTSIZE2-1);
       if (*block < 0) *block = 0;
-      *co = frameByte % DCTSIZE2;
+      *co = frameByte % (DCTSIZE2-1);
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
       unordered_map<int, int> map;
@@ -67,6 +69,7 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
           frameByte = lcg.map[offset++];
           if (map[frameByte] == 1) {
             printf("BAD!!! offset: %d\n", offset);
+            exit(0);
           }
           map[frameByte] = 1;
         }
@@ -88,6 +91,7 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
           frameByte = lcg.map[offset++];
           if (map[frameByte] == 1) {
             printf("BADEX!!! offset: %d\n", offset);
+            exit(0);
           }
           map[frameByte] = 1;
         }
