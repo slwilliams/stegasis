@@ -270,6 +270,6 @@ class JPEGDecoder : public VideoDecoder {
         delete tmp;
       }
       // 63 since we don't want to write to the DC coefficient
-      return (int)(c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0));
+      return (int)floor(c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0));
     };
 };
