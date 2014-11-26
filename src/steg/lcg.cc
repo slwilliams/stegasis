@@ -1,4 +1,3 @@
-#include <set>
 #include <stdio.h>
 
 #include "lcg.h"
@@ -60,10 +59,9 @@ LCG::LCG(int targetM, int key, bool zero) {
   this->a = tmpA + 1;
 
   // Populate the seed->offset map
-  int i = 0;
   this->setSeed(1);
   this->map[0] = 1;
-  for (i = 1; i < this->trueM; i ++) {
+  for (int i = 1; i < this->trueM; i ++) {
     this->map[i] = this->iterate();
   }
 };
@@ -92,5 +90,5 @@ LCG LCG::getLCG() {
 };
 
 void LCG::debug() {
-  printf("m: %d, c: %d, a: %d, trueM: %d\n", m, c, a, trueM);
+  printf("m: %lld, c: %lld, a: %lld, trueM: %d\n", m, c, a, trueM);
 };

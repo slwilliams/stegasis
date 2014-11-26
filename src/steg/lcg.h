@@ -5,9 +5,9 @@
 
 class LCG {
   private:
-    int m, c;
+    long long m, c;
     int trueM;
-    int a;
+    long long a;
     long long seed;
     bool zero;
     int gcd(int u, int v);

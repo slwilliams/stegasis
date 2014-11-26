@@ -37,7 +37,7 @@ Notes
 
 To run Stegasis you will need the FUSE package installed <http://fuse.sourceforge.net>
 
-sudo addgroup <<username>> fuse
+sudo addgroup username fuse
 
 libc6-dev-i386
 

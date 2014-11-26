@@ -40,26 +40,24 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
           (const unsigned char *)salt, 16, 32, 0);
       int lcgKey = key[0] | key[1] << 8 | key[2] << 16 | key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
-      this->lcg = LCG(frameSize, lcgKey, true);
+      this->lcg = LCG(frameSize+(dec->frameWidth() * dec->frameHeight()), lcgKey, true);
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
       //height is num of rows, width is the 
       //width is blocks per row
-      *row = frameByte / ((DCTSIZE2-1) * this->dec->frameWidth());
-      *block = (frameByte - *row * this->dec->frameWidth() * (DCTSIZE2-1)) / (DCTSIZE2-1);
+      *row = frameByte / (DCTSIZE2 * this->dec->frameWidth());
+      *block = (frameByte - *row * this->dec->frameWidth() * DCTSIZE2) / DCTSIZE2;
       if (*block < 0) *block = 0;
-      *co = frameByte % (DCTSIZE2-1);
+      *co = frameByte % DCTSIZE2;
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-      unordered_map<int, int> map;
       int frameByte = lcg.map[offset++];
-      map[frameByte] = 1;
       int row, block, co, comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         for (int j = 7; j >= 0; j --) {
           this->getCoef(frameByte, &row, &block, &co);
-          comp = (co % 2 == 0) ? 1 : 2;
+          comp = (co % 2) + 1;
           frame = (JBLOCKARRAY)c->getFrameData(row, comp);
           if ((((1 << j) & data[i]) >> j) == 1) {
             frame[0][block][co] |= 1;
@@ -67,33 +65,21 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
             frame[0][block][co] &= ~1;
           }
           frameByte = lcg.map[offset++];
-          if (map[frameByte] == 1) {
-            printf("BAD!!! offset: %d\n", offset);
-            exit(0);
-          }
-          map[frameByte] = 1;
         }
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
-      unordered_map<int, int> map;
       int frameByte = lcg.map[offset++];
-      map[frameByte] = 1;
       int row, block, co, comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (int j = 7; j >= 0; j --) {
           this->getCoef(frameByte, &row, &block, &co);
-          comp = (co % 2 == 0) ? 1 : 2;
+          comp = (co % 2) + 1;
           frame = (JBLOCKARRAY)c->getFrameData(row, comp);
           output[i] |= ((frame[0][block][co] & 1) << j); 
           frameByte = lcg.map[offset++];
-          if (map[frameByte] == 1) {
-            printf("BADEX!!! offset: %d\n", offset);
-            exit(0);
-          }
-          map[frameByte] = 1;
         }
       }
     };
