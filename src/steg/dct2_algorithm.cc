@@ -1,86 +1,97 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+
 #include "crypto/pwdbased.h"
 #include "crypto/cryptlib.h"
 #include "crypto/randpool.h"
 #include "crypto/whrlpool.h"
+extern "C" {
+//  #include "libjpeg/jpeglib.h"
+//  #include "libjpeg/transupp.h"  
+}
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"
 
-class LSB2Algorithm : public SteganographicAlgorithm {
+class DCT2Algorithm : public SteganographicAlgorithm {
   private:
     char *key;
     LCG lcg;
 
   public:
-    LSB2Algorithm(std::string password, VideoDecoder *dec) {
+    DCT2Algorithm(std::string password, VideoDecoder *dec) {
       this->password = password;
       this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
-      int fileSize = this->dec->getFileSize();
       int numFrames = this->dec->numberOfFrames();
-      int height = this->dec->frameHeight();
+      int frameSize = this->dec->frameSize();
       int width = this->dec->frameWidth();
-      memcpy(salt, &fileSize, 4); 
-      memcpy(salt + 4, &numFrames, 4); 
-      memcpy(salt + 8, &height, 4); 
-      memcpy(salt + 12, &width, 4); 
+      int height = this->dec->frameHeight();
+      memcpy(salt, &height, 4);
+      memcpy(salt + 4, &numFrames, 4);
+      memcpy(salt + 8, &frameSize, 4);
+      memcpy(salt + 12, &width, 4);
       CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
       keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
           (const unsigned char *)this->password.c_str(), this->password.length(),
-          (const unsigned char *)salt, 16, 32, 0) ;
+          (const unsigned char *)salt, 16, 32, 0);
       int lcgKey = key[0] | key[1] << 8 | key[2] << 16 | key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
-      this->lcg = LCG(this->dec->frameSize(), lcgKey);
+      this->lcg = LCG(frameSize+(dec->frameWidth() * dec->frameHeight()), lcgKey, true);
+    };
+    void getCoef(int frameByte, int *row, int *block, int *co) {
+      //height is num of rows, width is the 
+      //width is blocks per row
+      *row = frameByte / (DCTSIZE2 * this->dec->frameWidth());
+      *block = (frameByte - *row * this->dec->frameWidth() * DCTSIZE2) / DCTSIZE2;
+      if (*block < 0) *block = 0;
+      *co = frameByte % DCTSIZE2;
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-      char *frame = c->getFrameData(0);
-      LCG myLCG = this->lcg.getLCG();
-      // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);
-
+      int frameByte = lcg.map[offset++];
+      int row, block, co, comp;
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)this->key, 128);
       pool.IncorporateEntropy((const unsigned char *)&offset, 4);
-
-      int frameByte = myLCG.iterate();
+      JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         char xord = data[i] ^ pool.GenerateByte();
         for (int j = 7; j >= 0; j --) {
+          this->getCoef(frameByte, &row, &block, &co);
+          comp = (co % 2) + 1;
+          frame = (JBLOCKARRAY)c->getFrameData(row, comp);
           if ((((1 << j) & xord) >> j) == 1) {
-            frame[frameByte] |= 1;
+            frame[0][block][co] |= 1;
           } else {
-            frame[frameByte] &= ~1;
+            frame[0][block][co] &= ~1;
           }
-          frameByte = myLCG.iterate();
+          frameByte = lcg.map[offset++];
         }
       }
     };
     virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
-      char *frame = c->getFrameData(0);
-      LCG myLCG = this->lcg.getLCG();
-      // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);
-
+      int frameByte = lcg.map[offset++];
+      int row, block, co, comp;
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)this->key, 128);
       pool.IncorporateEntropy((const unsigned char *)&offset, 4);
-
-      int frameByte = myLCG.iterate();
+      JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (int j = 7; j >= 0; j --) {
-          output[i] |= ((frame[frameByte] & 1) << j);
-          frameByte = myLCG.iterate();
+          this->getCoef(frameByte, &row, &block, &co);
+          comp = (co % 2) + 1;
+          frame = (JBLOCKARRAY)c->getFrameData(row, comp);
+          output[i] |= ((frame[0][block][co] & 1) << j); 
+          frameByte = lcg.map[offset++];
         }
         output[i] ^= pool.GenerateByte();
       }
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'L', 'S', 'B', '2'};
+      char tmp[4] = {'D', 'C', 'T', '2'};
       memcpy(out, tmp, 4);
     };
 };

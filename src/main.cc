@@ -17,6 +17,7 @@
 #include "steg/lsb2_algorithm.cc"
 #include "steg/dctl_algorithm.cc"
 #include "steg/dctp_algorithm.cc"
+#include "steg/dct2_algorithm.cc"
 
 using namespace std;
 
@@ -160,7 +161,7 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
 }
 
 bool algRequiresPass(string alg) {
-  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2" || alg == "dctp";
+  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2" || alg == "dctp" || alg == "dct2";
 }
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
@@ -176,6 +177,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new DCTLAlgorithm(dec);
   } else if (alg == "dctp") {
     return new DCTPAlgorithm(pass, dec);
+  } else if (alg == "dct2") {
+    return new DCT2Algorithm(pass, dec);
   } else {
     printf("Unknown algorithm\n");
     exit(0);

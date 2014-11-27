@@ -162,19 +162,16 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
   std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
 
-  if (file == this->fileSizes.end()) {
+  if (file == this->fileSizes.end() || offset > file->second) {
     return -ENOENT;
   }
 
   if (size + offset > file->second) {
     size = file->second - offset;
   }
-  if (offset > file->second) {
-    return -ENOENT;
-  }
-  std::vector<tripleT> triples = this->fileIndex[path];
 
   this->mux.lock();
+  std::vector<tripleT> triples = this->fileIndex[path];
   int bytesWritten = 0;
   int readBytes = 0;
   int i = 0;
@@ -196,6 +193,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
             memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
             free(temp);
           }
+          delete c;
           this->mux.unlock();
           return size;
         }

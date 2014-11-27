@@ -37,4 +37,5 @@ int main(int argc, char **argv) {
     fwrite(&newLine, 1, 1, f);
   }
   fclose(f);
+  delete dec;
 }
