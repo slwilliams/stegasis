@@ -179,39 +179,83 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
-        int chunkOffset = offset - readBytes;
-        int bytesLeftInChunk = t1.bytes - chunkOffset;
-        Chunk *c = this->decoder->getFrame(t1.frame); 
-        if (size - bytesWritten <= bytesLeftInChunk) {
+        if (t1.bytes - t1.offset > this->decoder->frameSize() / 8) {
+          // This chunk spans multiple frames, deal with it seperatly
+          // chunkOffset is frame relative
+          int chunkOffset = offset - readBytes;
+          int actualFrame = t1.frame;
+          int chunkBytesInThisFrame = this->decoder->frameSize() / 8 - t1.offset;
+          if (offset > chunkBytesInThisFrame) {
+            chunkOffset = offset % (this->decoder->frameSize() / 8);
+            actualFrame += offset / (this->decoder->frameSize() / 8);
+            chunkBytesInThisFrame = this->decoder->frameSize() / 8 - chunkOffset;
+          }
+          while (bytesWritten < t1.bytes) {
+            Chunk *c = this->decoder->getFrame(actualFrame++); 
+            if (size - bytesWritten <= chunkBytesInThisFrame) {
+              if (chunkOffset == 0) {
+                this->alg->extract(c, buf + bytesWritten, size - bytesWritten, 0);
+              } else {
+                char *temp = (char *)malloc(chunkBytesInThisFrame*sizeof(char));
+                this->alg->extract(c, temp, chunkBytesInThisFrame, 0);
+                memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
+                free(temp);
+              }
+              delete c;
+              this->mux.unlock();
+              return size;
+            }
+
+            if (chunkOffset == 0) {
+              this->alg->extract(c, buf + bytesWritten, chunkBytesInThisFrame, 0);
+            } else {
+              char *temp = (char *)malloc(chunkBytesInThisFrame*sizeof(char));
+              this->alg->extract(c, temp, chunkBytesInThisFrame, 0);
+              memcpy(buf + bytesWritten, temp + chunkOffset, chunkBytesInThisFrame);
+              free(temp);
+            }
+            bytesWritten += chunkBytesInThisFrame;
+            chunkOffset = 0;
+            chunkBytesInThisFrame = this->decoder->frameSize() / 8;
+            delete c;
+          } 
+        } else {
+          // This is a standard chunk, still need 2 cases for when chunkoffset
+          // is in the middle of a chunk due to encrypting sequences
+          int chunkOffset = offset - readBytes;
+          int bytesLeftInChunk = t1.bytes - chunkOffset;
+          Chunk *c = this->decoder->getFrame(t1.frame); 
+          if (size - bytesWritten <= bytesLeftInChunk) {
+            printf("\e[1A"); 
+            printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
+            if (chunkOffset == 0) {
+              this->alg->extract(c, buf + bytesWritten, size - bytesWritten, (t1.offset + chunkOffset) * 8);
+            } else {
+              char *temp = (char *)malloc(t1.bytes*sizeof(char));
+              this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
+              memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
+              free(temp);
+            }
+            delete c;
+            this->mux.unlock();
+            return size;
+          }
           printf("\e[1A"); 
-          printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
+          printf("\e[0K\rExtracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
           if (chunkOffset == 0) {
-            this->alg->extract(c, buf + bytesWritten, size - bytesWritten, (t1.offset + chunkOffset) * 8);
+            this->alg->extract(c, buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
           } else {
             char *temp = (char *)malloc(t1.bytes*sizeof(char));
             this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
-            memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
+            memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
             free(temp);
           }
           delete c;
-          this->mux.unlock();
-          return size;
-        }
-        printf("\e[1A"); 
-        printf("\e[0K\rExtracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
-        if (chunkOffset == 0) {
-          this->alg->extract(c, buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
-        } else {
-          char *temp = (char *)malloc(t1.bytes*sizeof(char));
-          this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
-          memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
-          free(temp);
-        }
-        delete c;
-        bytesWritten += bytesLeftInChunk;
-        // Just to 0 chunkOffset from here on
-        readBytes = offset;
-        i ++;
+          bytesWritten += bytesLeftInChunk;
+          // Just to 0 chunkOffset from here on
+          readBytes = offset;
+          i ++;
+        }       
       }
       this->mux.unlock();
       return size;
@@ -348,7 +392,6 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += sizeof(tripleT)*embedded;
     if (offset > (this->decoder->frameSize() / 8) - 50) break;
   }
-  printf("header bygtes: %d, framesize: %d\n", headerBytes, this->decoder->frameSize());
   this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
   this->alg->embed(headerFrame, header, headerBytes, (4+4+4+1) * 8); 
   headerFrame->setDirty();
@@ -400,6 +443,12 @@ void SteganographicFileSystem::compactHeader() {
       }
     }
     free(tmp);
+    f.second.clear();
+    struct tripleT newT;
+    newT.frame = 1;
+    newT.bytes = this->fileSizes[f.first];
+    newT.offset = 0;
+    f.second.push_back(newT);
     this->fileIndex[f.first] = f.second;
   }
   this->decoder->getFrame(0)->setDirty();
