@@ -184,10 +184,10 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
           // chunkOffset is frame relative
           int chunkOffset = offset - readBytes;
           int actualFrame = t1.frame;
-          int chunkBytesInThisFrame = this->decoder->frameSize() / 8 - t1.offset;
-          if (offset > chunkBytesInThisFrame) {
-            chunkOffset = offset % (this->decoder->frameSize() / 8);
-            actualFrame += offset / (this->decoder->frameSize() / 8);
+          int chunkBytesInThisFrame = (this->decoder->frameSize() / 8) - chunkOffset;
+          if (chunkOffset > chunkBytesInThisFrame) {
+            chunkOffset = (offset + t1.offset) % (this->decoder->frameSize() / 8);
+            actualFrame += (offset + t1.offset) / (this->decoder->frameSize() / 8);
             chunkBytesInThisFrame = this->decoder->frameSize() / 8 - chunkOffset;
           }
           while (bytesWritten < t1.bytes) {
@@ -196,8 +196,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
               if (chunkOffset == 0) {
                 this->alg->extract(c, buf + bytesWritten, size - bytesWritten, 0);
               } else {
-                char *temp = (char *)malloc(chunkBytesInThisFrame*sizeof(char));
-                this->alg->extract(c, temp, chunkBytesInThisFrame, 0);
+                char *temp = (char *)malloc((this->decoder->frameSize() / 8 - t1.offset) * sizeof(char));
+                this->alg->extract(c, temp, this->decoder->frameSize() / 8 - t1.offset, t1.offset * 8);
                 memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
                 free(temp);
               }
@@ -209,8 +209,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
             if (chunkOffset == 0) {
               this->alg->extract(c, buf + bytesWritten, chunkBytesInThisFrame, 0);
             } else {
-              char *temp = (char *)malloc(chunkBytesInThisFrame*sizeof(char));
-              this->alg->extract(c, temp, chunkBytesInThisFrame, 0);
+              char *temp = (char *)malloc((this->decoder->frameSize() / 8 - t1.offset) * sizeof(char));
+              this->alg->extract(c, temp, this->decoder->frameSize() / 8 - t1.offset, t1.offset * 8);
               memcpy(buf + bytesWritten, temp + chunkOffset, chunkBytesInThisFrame);
               free(temp);
             }
@@ -227,11 +227,11 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
           Chunk *c = this->decoder->getFrame(t1.frame); 
           if (size - bytesWritten <= bytesLeftInChunk) {
             printf("\e[1A"); 
-            printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset+chunkOffset);
+            printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset + chunkOffset);
             if (chunkOffset == 0) {
               this->alg->extract(c, buf + bytesWritten, size - bytesWritten, (t1.offset + chunkOffset) * 8);
             } else {
-              char *temp = (char *)malloc(t1.bytes*sizeof(char));
+              char *temp = (char *)malloc(t1.bytes * sizeof(char));
               this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
               memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
               free(temp);
@@ -245,7 +245,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
           if (chunkOffset == 0) {
             this->alg->extract(c, buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
           } else {
-            char *temp = (char *)malloc(t1.bytes*sizeof(char));
+            char *temp = (char *)malloc(t1.bytes * sizeof(char));
             this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
             memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
             free(temp);
