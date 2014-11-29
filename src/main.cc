@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include <fuse.h>
 #include <math.h>
-#include <set>
 
 #include <gflags/gflags.h>
 
@@ -26,85 +24,40 @@ using namespace std;
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
-void doFormat(string algorithm, string pass, string capacity, string videoPath);
+void doFormat(string algorithm, string pass, int capacity, string videoPath);
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
 bool algRequiresPass(string alg);
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
 
-DEFINE_int32(cap, 100, "Include 'advanced' options in the menu listing");
+DEFINE_string(alg, "", "Embedding algorithm to use");
+DEFINE_string(pass, "", "Passphrase to encrypt and permute data with");
+DEFINE_int32(cap, 100, "Percentage of frame to embed within");
+DEFINE_bool(p, false, "Do not write back to disk until unmount");
 
 int main(int argc, char *argv[]) {
+  // After parsing the flags, argv[1] will the command (format, mount)
+  // argv[2] and argv[3] will be the video and mount point  
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  printf("cool?: %d\n", FLAGS_cap);   
-  exit(0);
-
   printName();
-  if (argc < 2) {
-    printf("Error: Insufficient arguments specified.\n");
-    printUsage();
-    return 1;
-  }
 
   string command = argv[1];
   if (command == "format") {
     // stegasis format --alg=lsbk --pass=123 --cap=10 /media/video.avi
-    if (argc < 5) {
+    if (argc != 3) {
       incorrectArgNumber(command);
       return 1;
     }
-    string algFlag = argv[2];
-    string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
-    if (algRequiresPass(alg)) {
-      string passFlag = argv[3];
-      string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
-      string capacityFlag = argv[4];
-      string capacity = capacityFlag.substr(capacityFlag.find("=") + 1, capacityFlag.length());
-      string videoPath = argv[5];
-      doFormat(alg, pass, capacity, videoPath);
-    } else {
-      string capacityFlag = argv[3];
-      string capacity = capacityFlag.substr(capacityFlag.find("=") + 1, capacityFlag.length());
-      string videoPath = argv[4];
-      doFormat(alg, "", capacity, videoPath);
-    }
+    string videoPath = argv[2];
+    doFormat(FLAGS_alg, FLAGS_pass, FLAGS_cap, videoPath);
   } else if (command == "mount") {
     // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
-    if (argc < 5) {
+    if (argc != 4) {
       incorrectArgNumber(command);
       return 1;
     }
-    string firstFlag = argv[2];
-    string performanceFlag("-p");
-    if (firstFlag == performanceFlag) {
-      // Optional performance flag
-      string algFlag = argv[3];
-      string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
-      if (algRequiresPass(alg)) {
-        string passFlag = argv[4];
-        string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
-        string videoPath = argv[5];
-        string mountPoint = argv[6];
-        doMount(videoPath, mountPoint, alg, pass, true); 
-      } else {
-        string videoPath = argv[4];
-        string mountPoint = argv[5];
-        doMount(videoPath, mountPoint, alg, "", true); 
-      }
-    } else {
-      string algFlag = argv[2];
-      string alg = algFlag.substr(algFlag.find("=") + 1, algFlag.length());
-      if (algRequiresPass(alg)) {
-        string passFlag = argv[3];
-        string pass = passFlag.substr(passFlag.find("=") + 1, passFlag.length());
-        string videoPath = argv[4];
-        string mountPoint = argv[5];
-        doMount(videoPath, mountPoint, alg, pass, false);
-      } else {
-        string videoPath = argv[3];
-        string mountPoint = argv[4];
-        doMount(videoPath, mountPoint, alg, "", false);
-      }
-    }
+    string videoPath = argv[2];
+    string mountPoint = argv[3];
+    doMount(videoPath, mountPoint, FLAGS_alg, FLAGS_pass, FLAGS_p); 
   } else if (command == "unmount") {
     if (argc != 3) {
       incorrectArgNumber(command);
@@ -138,7 +91,7 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   printf("Sucsessfully unmounted\n");
 }
 
-void doFormat(string algorithm, string pass, string capacity, string videoPath) {
+void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
   VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath): (VideoDecoder *)new JPEGDecoder(videoPath, true);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
@@ -152,7 +105,7 @@ void doFormat(string algorithm, string pass, string capacity, string videoPath) 
   alg->getAlgorithmCode(algCode);
   alg->embed(headerFrame, algCode, 4, 4 * 8);
 
-  char capacityB = (char)atoi(capacity.c_str());
+  char capacityB = (char)capacity;
   alg->embed(headerFrame, &capacityB, 1, 8 * 8);
 
   int headerBytes = 0;
