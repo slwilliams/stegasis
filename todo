@@ -1,8 +1,7 @@
 - Fix header to allow chunks to spread over multiple frames
  - Works but not if chink starts half way through frame
-- Also very slightly buggy - frame boundry?
 - Plausible deniability via hidden volumes
 - Implement outguess and possibly F5 JPEG embedding algorithms.
 - Implement the evaluation extension task
 - Implementation of more standard encryption algorithms e.g. AES, Twofish etc.
-- Clean up code, sort out command line argument parsing properly.
+- Clean up code

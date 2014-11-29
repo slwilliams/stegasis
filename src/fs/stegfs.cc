@@ -179,7 +179,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
-        if (t1.bytes - t1.offset > this->decoder->frameSize() / 8) {
+        bool spansMultipleFrames= ((int)t1.bytes - (int)t1.offset) > this->decoder->frameSize() / 8;
+        if (spansMultipleFrames) {
           // This chunk spans multiple frames, deal with it seperatly
           // chunkOffset is frame relative
           int chunkOffset = offset - readBytes;
@@ -242,7 +243,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
             return size;
           }
           printf("\e[1A"); 
-          printf("\e[0K\rExtracting: bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
+          printf("\e[0K\rExtracting bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
           if (chunkOffset == 0) {
             this->alg->extract(c, buf + bytesWritten, bytesLeftInChunk, (t1.offset + chunkOffset) * 8);
           } else {

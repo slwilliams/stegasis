@@ -18,6 +18,7 @@
 #include "steg/dctl_algorithm.cc"
 #include "steg/dctp_algorithm.cc"
 #include "steg/dct2_algorithm.cc"
+#include "steg/dctp_aes_algorithm.cc"
 
 using namespace std;
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
 
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
-  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath): (VideoDecoder *)new JPEGDecoder(videoPath, false);
+  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
   SteganographicAlgorithm *lsb = getAlg(alg, pass, dec); 
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
@@ -93,18 +94,19 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 
 void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
-  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath): (VideoDecoder *)new JPEGDecoder(videoPath, true);
+  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, true);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
   
-  char header[4] = {'S', 'T', 'E', 'G'};
-
   Chunk *headerFrame = dec->getFrame(0);
+  char header[4] = {'S', 'T', 'E', 'G'};
   alg->embed(headerFrame, header, 4, 0);
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
   alg->embed(headerFrame, algCode, 4, 4 * 8);
 
+  if (capacity < 0) capacity = 0;
+  if (capacity > 100) capacity = 100;
   char capacityB = (char)capacity;
   alg->embed(headerFrame, &capacityB, 1, 8 * 8);
 
@@ -114,7 +116,7 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   // Make sure the header is written back
   headerFrame->setDirty();
 
-  int totalCapacity = (int)floor((dec->numberOfFrames() * (dec->frameSize() / 8000) * (capacityB / 100.0)));
+  int totalCapacity = (int)floor((dec->numberOfFrames() * (dec->frameSize() / 8000) * (capacity / 100.0)));
   printf("Volume capacity: %.2fMB\n", totalCapacity/1000.0); 
 
   delete dec;
@@ -122,7 +124,7 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
 }
 
 bool algRequiresPass(string alg) {
-  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2" || alg == "dctp" || alg == "dct2";
+  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2" || alg == "dctp" || alg == "dct2" || "dcta";
 }
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
@@ -140,6 +142,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new DCTPAlgorithm(pass, dec);
   } else if (alg == "dct2") {
     return new DCT2Algorithm(pass, dec);
+  } else if (alg == "dcta") {
+    return new DCTAAlgorithm(pass, dec);
   } else {
     printf("Unknown algorithm\n");
     exit(0);

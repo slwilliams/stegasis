@@ -260,17 +260,6 @@ class JPEGDecoder : public VideoDecoder {
       this->capacity = capacity;
     };
     virtual int frameSize() {
-     /* struct JPEGChunk c;
-      if (this->frameChunks.size() > 0) {
-        c = this->frameChunks.front();
-      } else {
-        // This will cause frameChunks to get an element
-        Chunk *tmp = this->getFrame(0);
-        c = this->frameChunks.front();
-        delete tmp;
-      }*/
-      // 63 since we don't want to write to the DC coefficient
       return (int)floor(this->width * this->height * 63 * (capacity / 100.0));
-      //return (int)floor(c.srcinfo.comp_info[1].width_in_blocks * c.srcinfo.comp_info[1].height_in_blocks * 63 * (capacity / 100.0));
     };
 };
