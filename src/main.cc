@@ -5,6 +5,8 @@
 #include <math.h>
 #include <set>
 
+#include <gflags/gflags.h>
+
 #include "fs/fswrapper.h"
 #include "fs/stegfs.h"
 #include "steg/steganographic_algorithm.h"
@@ -29,7 +31,13 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 bool algRequiresPass(string alg);
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
 
+DEFINE_int32(cap, 100, "Include 'advanced' options in the menu listing");
+
 int main(int argc, char *argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  printf("cool?: %d\n", FLAGS_cap);   
+  exit(0);
+
   printName();
   if (argc < 2) {
     printf("Error: Insufficient arguments specified.\n");

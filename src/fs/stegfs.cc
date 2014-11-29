@@ -24,7 +24,7 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   Chunk *headerFrame = this->decoder->getFrame(0);
   char headerSig[4] = {0,0,0,0};
   this->alg->extract(headerFrame, headerSig, 4, 0);
-  printf("header: %.4s\n", headerSig);
+  printf("Header: %.4s\n", headerSig);
   if (strncmp(headerSig, "STEG", 4) != 0) {
     printf("Could not read header. Has this video been formated?\n");
     exit(0);
@@ -216,6 +216,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
             }
             bytesWritten += chunkBytesInThisFrame;
             chunkOffset = 0;
+            // Issues here with the last frame of the chunk...
             chunkBytesInThisFrame = this->decoder->frameSize() / 8;
             delete c;
           } 
@@ -282,23 +283,24 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     if (byteCount + t.bytes > offset) {
       int chunkOffset = offset - byteCount;
       int bytesLeftInChunk = t.bytes - chunkOffset;
+      Chunk *c = this->decoder->getFrame(t.frame);
       if (bytesLeftInChunk + bytesWritten >= size) {
         // This chunk will finish it
         int toWrite = size - bytesWritten;
-        this->alg->embed(this->decoder->getFrame(t.frame), (char *)(buf + bytesWritten),
-           toWrite, (chunkOffset + t.offset) * 8);
+        this->alg->embed(c, (char *)(buf + bytesWritten), toWrite, (chunkOffset + t.offset) * 8);
         this->decoder->getFrame(t.frame)->setDirty(); 
         t.bytes = toWrite;
         needMoreChunks = false;
+        delete c;
         break;
       }
       // Otherwise we can just write into the entire chunk
-      this->alg->embed(this->decoder->getFrame(t.frame), (char *)(buf + bytesWritten),
-          bytesLeftInChunk, (chunkOffset + t.offset) * 8);
+      this->alg->embed(c, (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
       this->decoder->getFrame(t.frame)->setDirty(); 
       bytesWritten += bytesLeftInChunk;
       // Force chunkOffset to be 0 next time round
       byteCount = offset;  
+      delete c;
     } else {
       byteCount += t.bytes;
     }
@@ -322,8 +324,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         printf("\e[0K\rEmbeding, nextFrame: %d, size: %zu, nextOffset: %d\n",
             nextFrame, size-bytesWritten, nextOffset * 8);
         Chunk *c = this->decoder->getFrame(nextFrame);
-        this->alg->embed(c, (char *)(buf + bytesWritten),
-           triple.bytes, nextOffset * 8);
+        this->alg->embed(c, (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         c->setDirty(); 
         delete c;
         this->fileIndex[path].push_back(triple);
@@ -338,8 +339,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         printf("\e[0K\rEmbeding, nextFrame: %d, size: %d, nextOffset: %d\n",
             nextFrame, bytesLeftInFrame / 8, nextOffset * 8);
         Chunk *c = this->decoder->getFrame(nextFrame);
-        this->alg->embed(c, (char *)(buf + bytesWritten),
-           triple.bytes, nextOffset * 8);
+        this->alg->embed(c, (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
         c->setDirty(); 
         delete c;
         this->fileIndex[path].push_back(triple);
@@ -428,18 +428,19 @@ void SteganographicFileSystem::compactHeader() {
    char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
+      // Must be in here
       if (chunkOffsets[i].size() != 0) {
         struct tripleT t = f.second[i];
         int bytesRead = 0;
+        Chunk *c = this->decoder->getFrame(t.frame);
         for (int j : chunkOffsets[i]) {
           int relOffset = j - t.offset;
-          this->alg->extract(this->decoder->getFrame(t.frame), tmp + bytesRead,
-             relOffset - bytesRead, (t.offset + bytesRead) * 8);
+          this->alg->extract(c, tmp + bytesRead, relOffset - bytesRead, (t.offset + bytesRead) * 8);
           bytesRead += (relOffset - bytesRead);
         }
-        this->alg->extract(this->decoder->getFrame(t.frame), tmp + bytesRead,
-           t.bytes - bytesRead, (t.offset + bytesRead) * 8);
-        this->alg->embed(this->decoder->getFrame(t.frame), tmp, t.bytes, t.offset * 8);
+        this->alg->extract(c, tmp + bytesRead, t.bytes - bytesRead, (t.offset + bytesRead) * 8);
+        this->alg->embed(c, tmp, t.bytes, t.offset * 8);
+        delete c;
       }
     }
     free(tmp);
