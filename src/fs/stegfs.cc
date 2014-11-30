@@ -41,7 +41,7 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   this->alg->extract(headerFrame, (char *)&headerBytes, 4, 9 * 8);
   printf("Total headerbytes: %d\n", headerBytes);
 
-  char *headerData = (char *)calloc(sizeof(char), headerBytes);
+  char *headerData = (char *)malloc(sizeof(char) * headerBytes);
   this->alg->extract(headerFrame, headerData, headerBytes, 13 * 8);
   this->readHeader(headerData, headerBytes); 
 };
@@ -73,13 +73,22 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
       printf("Triple: frame: %d, offset: %d, bytes: %d\n", triple.frame, triple.offset, triple.bytes);
       this->fileIndex[fileName.c_str()].push_back(triple);
       // Work out where we should start writing i.e. largest frame + offset
-      // TODO: This now doesn't work, just add 1 to frame + offset / gframesize
       if (triple.frame > nextFrame) {
         nextFrame = triple.frame;
         nextOffset = triple.offset + triple.bytes;
+        if (nextOffset > this->decoder->frameSize() / 8) {
+          // Chunk spanning multiple frames...
+          nextFrame += nextOffset / (this->decoder->frameSize() / 8);
+          nextOffset %= (this->decoder->frameSize() / 8); 
+        }
       } else if (triple.frame == nextFrame) {
         if (triple.offset + triple.bytes > nextOffset) {
           nextOffset = triple.offset + triple.bytes;
+          if (nextOffset > this->decoder->frameSize() / 8) {
+            // Chunk spanning multiple frames...
+            nextFrame += nextOffset / (this->decoder->frameSize() / 8);
+            nextOffset %= (this->decoder->frameSize() / 8); 
+          }
         }
       }
       fileSize += triple.bytes;
@@ -176,21 +185,24 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
-        bool spansMultipleFrames = ((int)t1.bytes + (int)t1.offset) > this->decoder->frameSize() / 8;
+        int frameSizeBytes = this->decoder->frameSize() / 8;
+        bool spansMultipleFrames = ((int)t1.bytes + (int)t1.offset) > frameSizeBytes;
         if (spansMultipleFrames) {
           // This chunk spans multiple frames, deal with it seperatly
-          // chunkOffset is frame relative to either the top of the frame, or
-          // top of the chunk
+          // chunkOffset is frame relative to either the top of the frame, or top of the chunk
           int chunkOffset, actualFrame, chunkBytesInThisFrame;
-          bool firstFrame = (offset - readBytes) < (this->decoder->frameSize() / 8) - t1.offset;
+          bool firstFrame = (offset - readBytes) < frameSizeBytes - t1.offset;
           if (firstFrame) {
             chunkOffset = offset - readBytes;
             actualFrame = t1.frame;
-            chunkBytesInThisFrame = (this->decoder->frameSize() / 8) - (chunkOffset + t1.offset); 
+            chunkBytesInThisFrame = frameSizeBytes - (chunkOffset + t1.offset); 
           } else {
-            chunkOffset = (offset - readBytes - (this->decoder->frameSize() / 8 - t1.offset)) % (this->decoder->frameSize() / 8);
-            actualFrame = t1.frame + ((offset - readBytes - (this->decoder->frameSize() / 8 - t1.offset)) / (this->decoder->frameSize() / 8)) + 1;
-            chunkBytesInThisFrame = (this->decoder->frameSize() / 8) - chunkOffset;
+            // tmpOffset is the offset from the top of the second frame of the chunk
+            // i.e. if tmpOffset == 0, we would be exactly at the top of the next frame
+            int tmpOffset = offset - readBytes - (frameSizeBytes - t1.offset);
+            chunkOffset = tmpOffset % frameSizeBytes;
+            actualFrame = t1.frame + (tmpOffset / frameSizeBytes) + 1;
+            chunkBytesInThisFrame = frameSizeBytes - chunkOffset;
             t1.offset = 0;
           }
           while (bytesWritten < t1.bytes) {
@@ -199,8 +211,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
               if (chunkOffset == 0) {
                 this->alg->extract(c, buf + bytesWritten, size - bytesWritten, t1.offset * 8);
               } else {
-                char *temp = (char *)malloc((this->decoder->frameSize() / 8 - t1.offset) * sizeof(char));
-                this->alg->extract(c, temp, this->decoder->frameSize() / 8 - t1.offset, t1.offset * 8);
+                char *temp = (char *)malloc((frameSizeBytes - t1.offset) * sizeof(char));
+                this->alg->extract(c, temp, frameSizeBytes - t1.offset, t1.offset * 8);
                 memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
                 free(temp);
               }
@@ -212,15 +224,15 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
             if (chunkOffset == 0) {
               this->alg->extract(c, buf + bytesWritten, chunkBytesInThisFrame, t1.offset * 8);
             } else {
-              char *temp = (char *)malloc((this->decoder->frameSize() / 8 - t1.offset) * sizeof(char));
-              this->alg->extract(c, temp, this->decoder->frameSize() / 8 - t1.offset, t1.offset * 8);
+              char *temp = (char *)malloc((frameSizeBytes - t1.offset) * sizeof(char));
+              this->alg->extract(c, temp, frameSizeBytes - t1.offset, t1.offset * 8);
               memcpy(buf + bytesWritten, temp + chunkOffset, chunkBytesInThisFrame);
               free(temp);
             }
             bytesWritten += chunkBytesInThisFrame;
             chunkOffset = 0;
             t1.offset = 0;
-            chunkBytesInThisFrame = this->decoder->frameSize() / 8;
+            chunkBytesInThisFrame = frameSizeBytes;
             delete c;
           } 
         } else {
@@ -447,6 +459,7 @@ void SteganographicFileSystem::compactHeader() {
     }
     free(tmp);
     i = 0;
+    // TODO: don't do the next bit if file size > 2GB...
     int framesAhead = 1;
     size = f.second.size();
     while (i < size - 1) {

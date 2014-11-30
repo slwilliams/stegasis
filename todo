@@ -1,5 +1,3 @@
-- Fix header to allow chunks to spread over multiple frames
- - Works but not if chink starts half way through frame
 - Plausible deniability via hidden volumes
 - Implement outguess and possibly F5 JPEG embedding algorithms.
 - Implement the evaluation extension task
