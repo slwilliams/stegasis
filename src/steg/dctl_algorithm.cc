@@ -1,9 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-extern "C" {
-//  #include "libjpeg/jpeglib.h"
-//  #include "libjpeg/transupp.h"  
-}
 
 #include "steganographic_algorithm.h"
 #include "video/video_decoder.h"

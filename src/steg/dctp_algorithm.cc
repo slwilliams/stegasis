@@ -1,16 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include <unordered_map>
 
-#include "crypto/pwdbased.h"
-#include "crypto/cryptlib.h"
-#include "crypto/randpool.h"
-#include "crypto/whrlpool.h"
-extern "C" {
-//  #include "libjpeg/jpeglib.h"
-//  #include "libjpeg/transupp.h"  
-}
+#include <crypto/pwdbased.h>
+#include <crypto/cryptlib.h>
+#include <crypto/randpool.h>
+#include <crypto/whrlpool.h>
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"

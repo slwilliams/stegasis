@@ -2,16 +2,12 @@
 #include <string.h>
 #include <string>
 
-#include "crypto/pwdbased.h"
-#include "crypto/cryptlib.h"
-#include "crypto/randpool.h"
-#include "crypto/whrlpool.h"
+#include <crypto/pwdbased.h>
+#include <crypto/cryptlib.h>
+#include <crypto/randpool.h>
+#include <crypto/whrlpool.h>
 #include <crypto/aes.h>
 #include <crypto/modes.h>
-extern "C" {
-  //#include "libjpeg/jpeglib.h"
-  //#include "libjpeg/transupp.h"  
-}
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"
@@ -53,14 +49,13 @@ class DCTAAlgorithm : public SteganographicAlgorithm {
       *co = frameByte % DCTSIZE2;
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-      int frameByte = lcg.map[offset++];
-      int row, block, co, comp;
-      JBLOCKARRAY frame;
-
       CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption((unsigned char *)key,
          CryptoPP::AES::DEFAULT_KEYLENGTH, (unsigned char *)(key+64));
       cfbEncryption.ProcessData((byte*)data, (byte*)data, dataBytes);
 
+      int frameByte = lcg.map[offset++];
+      int row, block, co, comp;
+      JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
         for (int j = 7; j >= 0; j --) {
           this->getCoef(frameByte, &row, &block, &co);

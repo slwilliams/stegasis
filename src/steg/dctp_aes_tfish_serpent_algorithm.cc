@@ -2,18 +2,14 @@
 #include <string.h>
 #include <string>
 
-#include "crypto/pwdbased.h"
-#include "crypto/cryptlib.h"
-#include "crypto/randpool.h"
-#include "crypto/whrlpool.h"
+#include <crypto/pwdbased.h>
+#include <crypto/cryptlib.h>
+#include <crypto/randpool.h>
+#include <crypto/whrlpool.h>
 #include <crypto/aes.h>
 #include <crypto/serpent.h>
 #include <crypto/twofish.h>
 #include <crypto/modes.h>
-extern "C" {
-  //#include "libjpeg/jpeglib.h"
-  //#include "libjpeg/transupp.h"  
-}
 
 #include "steganographic_algorithm.h"
 #include "lcg.h"
@@ -108,7 +104,7 @@ class DCT3Algorithm : public SteganographicAlgorithm {
       cfbAesDecryption.ProcessData((byte*)output, (byte*)output, dataBytes);
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'D', 'C', 'T', '2'};
+      char tmp[4] = {'D', 'C', 'T', '3'};
       memcpy(out, tmp, 4);
     };
 };
