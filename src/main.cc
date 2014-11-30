@@ -19,6 +19,7 @@
 #include "steg/dctp_algorithm.cc"
 #include "steg/dct2_algorithm.cc"
 #include "steg/dctp_aes_algorithm.cc"
+#include "steg/dctp_aes_tfish_serpent_algorithm.cc"
 
 using namespace std;
 
@@ -27,7 +28,6 @@ void printUsage();
 void incorrectArgNumber(string command);
 void doFormat(string algorithm, string pass, int capacity, string videoPath);
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
-bool algRequiresPass(string alg);
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
 
 DEFINE_string(alg, "", "Embedding algorithm to use");
@@ -123,10 +123,6 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   printf("Format successful!\n");
 }
 
-bool algRequiresPass(string alg) {
-  return alg == "lsbk" || alg == "lsbp" || alg == "lsb2" || alg == "dctp" || alg == "dct2" || "dcta";
-}
-
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   if (alg == "lsb") {
     return new LSBAlgorithm;
@@ -142,6 +138,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new DCTPAlgorithm(pass, dec);
   } else if (alg == "dct2") {
     return new DCT2Algorithm(pass, dec);
+  } else if (alg == "dct3") {
+    return new DCT3Algorithm(pass, dec);
   } else if (alg == "dcta") {
     return new DCTAAlgorithm(pass, dec);
   } else {

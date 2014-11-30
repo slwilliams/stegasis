@@ -407,8 +407,9 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += sizeof(tripleT)*embedded;
     if (offset > (this->decoder->frameSize() / 8) - 50) break;
   }
+  char tmp = headerBytes;
   this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
-  this->alg->embed(headerFrame, header, headerBytes, (4+4+4+1) * 8); 
+  this->alg->embed(headerFrame, header, tmp, (4+4+4+1) * 8); 
   headerFrame->setDirty();
   free(header);
   delete headerFrame;
