@@ -97,7 +97,7 @@ class JPEGDecoder : public VideoDecoder {
 
       string extractCommand;
       if (this->format) {
-        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
+        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 1 -f image2 /tmp/output/image-%d.jpeg";
       } else {
         extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
       }
