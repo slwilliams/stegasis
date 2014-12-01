@@ -1,5 +1,5 @@
-#ifndef wrap_hh
-#define wrap_hh
+#ifndef wrap_h
+#define wrap_h
 
 #include <ctype.h>
 #include <dirent.h>

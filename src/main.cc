@@ -7,10 +7,12 @@
 
 #include "fs/fswrapper.h"
 #include "fs/stegfs.h"
-#include "steg/steganographic_algorithm.h"
+
 #include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
 #include "video/other_decoder.cc"
+
+#include "steg/steganographic_algorithm.h"
 #include "steg/lsb_algorithm.cc"
 #include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
@@ -40,6 +42,11 @@ int main(int argc, char *argv[]) {
   // argv[2] and argv[3] will be the video and mount point  
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   printName();
+
+  if (argc < 2) {
+    printUsage();
+    return 1;
+  }
 
   string command = argv[1];
   if (command == "format") {
@@ -166,15 +173,31 @@ void printName() {
 
 void printUsage() {
   printf("\nStegasis usage:\n");
-  printf("---------------------------\n");
-  printf("Example commands:\n");
-  printf("\tstegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");
-  printf("\tstegasis mount --alg=lsbk --pass=password123 /media/video.avi /tmp/test\n"); 
+  printf("  stegasis <command> [-p,-g] --alg=<alg> --pass=<pass> --cap=<capacity> <video_path> <mount_point>\n");
+  printf("-----------------------------------------------------------------\n");
+  printf("Example useage:\n");
+  printf("  stegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");
+  printf("  stegasis mount --alg=lsbk --pass=password123 /media/video.avi /tmp/test\n"); 
+  printf("Commands:\n");
+  printf("  format  Formats a video for use with stegasis\n");
+  printf("  mount  Mounts a formatted video to a given mount point\n");
   printf("Required Flags:\n");
-  printf("\t--alg  Embedding algorithm to use, one of [lsb, lsbk, lsbp, lsb2, dctl, dctp]\n");
-  printf("\t--cap  Percentage of frame to embed within in percent\n");
+  printf("  --alg  Embedding algorithm to use, see below\n");
+  printf("  --cap  Percentage of frame to embed within in percent\n");
   printf("Optional flags:\n");
-  printf("\t--pass  Passphrase used for encrypting and permuting data, required for [lsbk, lsbp, lsb2, dctp]\n");
-  printf("\t-p  Do not flush writes to disk until unmount\n");
-  printf("\t-g  Use green channel for embedding\n");
+  printf("  --pass  Passphrase used for encrypting and permuting data\n");
+  printf("  -p  Do not flush writes to disk until unmount\n");
+  printf("  -g  Use green channel for embedding\n");
+  printf("Embedding Algorithms:\n");
+  printf("  Uncompressed AVI only:\n");
+  printf("    lsb:  Least Significant Bit Sequential Embedding\n");
+  printf("    lsbk:  LSB Sequential Embedding XOR'd with a psudo random stream\n");
+  printf("    lsbp:  LSB Permuted Embedding using a seeded LCG\n");
+  printf("    lsb2:  Combination of lsbk and lsbp\n");
+  printf("  Other video formats:\n");
+  printf("    dctl:  LSB Sequential Embedding within DCT coefficients\n");
+  printf("    dctp:  LSB Permuted Embedding within DCT coefficients\n");
+  printf("    dct2:  Combination of dctl and dctp\n");
+  printf("    dcta:  LSB Permuted Embedding encrypted with AES\n");
+  printf("    dct3:  LSB Permuted Embedding encrypted with AES->Twofish->Serpent\n");
 }

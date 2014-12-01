@@ -133,21 +133,11 @@ class JPEGDecoder : public VideoDecoder {
       }
 
       struct JPEGChunk c;
-      if (this->frameChunks.size() > 0) {
-        c = this->frameChunks.front();
-      } else {
-        // This will cause frameChunks to get an element
-        this->getFrame(0);
-        c = this->frameChunks.front();
-      }
+      // Cause frameChunks to get an element
+      this->getFrame(0);
+      c = this->frameChunks.front();
       this->width = c.srcinfo.comp_info[1].width_in_blocks;
       this->height = c.srcinfo.comp_info[1].height_in_blocks;
-
-     /* printf("modifiying frames...\n");
-      for (i = 0; i < 1; i ++) {
-        this->getFrame(i);
-        this->storeDCT(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays);
-      }*/
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
@@ -187,23 +177,6 @@ class JPEGDecoder : public VideoDecoder {
       }
       this->frameChunks.clear();
       mtx.unlock();
-    };
-    void storeDCT(j_decompress_ptr srcinfo, j_compress_ptr dstinfo, jvirt_barray_ptr *src_coef_arrays) {
-      JBLOCKARRAY *row_ptrs = (JBLOCKARRAY *)malloc(sizeof(JBLOCKARRAY) * srcinfo->num_components);
-      int compnum = 1;
-     // for (JDIMENSION compnum = 0; compnum < srcinfo->num_components; compnum ++) {
-        for (JDIMENSION rownum = 0; rownum < srcinfo->comp_info[compnum].height_in_blocks; rownum ++) {
-          row_ptrs[compnum] = dstinfo->mem->access_virt_barray((j_common_ptr)&dstinfo, src_coef_arrays[compnum], 
-              rownum, (JDIMENSION)1, FALSE);
-          for (JDIMENSION blocknum = 0; blocknum < srcinfo->comp_info[compnum].width_in_blocks; blocknum ++) {
-            for (JDIMENSION i = 0; i < DCTSIZE2; i ++) {
-              printf("%d, ", row_ptrs[compnum][0][blocknum][i]);
-            }
-            printf("\n");
-            return;
-          }
-        }
-      //}
     };
     virtual Chunk *getFrame(int frame) {
       this->writeBack();
