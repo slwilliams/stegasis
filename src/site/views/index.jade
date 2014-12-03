@@ -3,3 +3,5 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  form(action='/submit/test', method='post')
+    input(type='submit',value='Sign Up')
