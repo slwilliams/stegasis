@@ -2,3 +2,4 @@
 *.o
 *.exe
 stegasis
+src/site/public/images*
