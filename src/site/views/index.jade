@@ -8,10 +8,10 @@ block content
   #frames
     h2 Which image do you think contains hidden data?
     #frame
-      form(action='/submit/test1', method='post')
+      form(action='/submit/#{frame1}', method='post')
         input(type='image', src='images/#{frame1}')
     #frame
-      form(action='/submit/test2', method='post')
+      form(action='/submit/#{frame2}', method='post')
         input(type='image', src='images/#{frame2}')
 
 
