@@ -39,6 +39,10 @@ To run Stegasis you will need the FUSE package installed <http://fuse.sourceforg
 
 sudo addgroup username fuse
 
+If you experience audio sync issues run the following command to convert your video to 25 FPS:
+
+ffmpeg -i input.mp4 -qscale 0 -r 25 -y output.mp4
+
 libc6-dev-i386
 
 sudo apt-get install gcc-4.8-multilib g++-4.8-multilib

@@ -36,6 +36,7 @@ DEFINE_string(alg, "", "Embedding algorithm to use");
 DEFINE_string(pass, "", "Passphrase to encrypt and permute data with");
 DEFINE_int32(cap, 100, "Percentage of frame to embed within");
 DEFINE_bool(p, false, "Do not write back to disk until unmount");
+DEFINE_bool(f, false, "Force FFmpeg decoder to be used");
 
 int main(int argc, char *argv[]) {
   // After parsing the flags, argv[1] will the command (format, mount)
@@ -85,7 +86,12 @@ int main(int argc, char *argv[]) {
 
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
-  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
+  VideoDecoder *dec = NULL;
+  if (FLAGS_f) {
+    dec = (VideoDecoder *)new JPEGDecoder(videoPath, false);
+  } else {
+    dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
+  }
   SteganographicAlgorithm *lsb = getAlg(alg, pass, dec); 
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
@@ -101,7 +107,12 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 
 void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
-  VideoDecoder *dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, true);
+  VideoDecoder *dec = NULL;
+  if (FLAGS_f) {
+    dec = (VideoDecoder *)new JPEGDecoder(videoPath, true);
+  } else {
+    dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, true);
+  }
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
   
   Chunk *headerFrame = dec->getFrame(0);

@@ -11,8 +11,8 @@ router.get('/', function(req, res) {
   }
   res.render('index', { 
     title: 'Stegasis',
-    frame1: "frame",
-    frame2: "frame"
+    frame1: 'clean',
+    frame2: 'data'
   });
 });
 

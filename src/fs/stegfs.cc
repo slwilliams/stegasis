@@ -284,7 +284,6 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   return -ENOENT;
 };
 
-//117MB limit if using 4096 chunks with a singe header frame
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   this->mux.lock();
   //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
