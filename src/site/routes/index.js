@@ -9,7 +9,11 @@ router.get('/', function(req, res) {
   if (!req.cookies.id) {
     res.cookie('id', uuid.v4(), { maxAge: 31536000730 });
   }
-  res.render('index', { title: 'Stegasis' });
+  res.render('index', { 
+    title: 'Stegasis',
+    frame1: "frame",
+    frame2: "frame"
+  });
 });
 
 router.post('/submit/:img', function(req, res) {

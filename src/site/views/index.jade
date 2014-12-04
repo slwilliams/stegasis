@@ -1,7 +1,22 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
-  form(action='/submit/test', method='post')
-    input(type='submit',value='Sign Up')
+  #title
+    h1= title
+    a(href="https://github.com/slwilliams/stegasis/") github.com/slwilliams/stegasis/
+    hr
+  #frames
+    h2 Which image contains hidden data?
+    #frame
+      form(action='/submit/test1', method='post')
+        input(type='image', src='images/#{frame1}.png')
+    #frame
+      form(action='/submit/test2', method='post')
+        input(type='image', src='images/#{frame2}.png')
+
+
+  #footer
+    h3.
+      By using this site you consent that data collected can be used
+      within an evaluation study. No identifying personal data will be
+      stored.
