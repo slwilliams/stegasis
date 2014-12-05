@@ -1,5 +1,6 @@
 body {
   padding: 30px;
+  padding-top: 10px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
   text-align: center;
 }
@@ -27,6 +28,10 @@ a {
 #frame {
   display: inline-block;
   padding: 25px;
+}
+
+#frames {
+  margin-bottom: 90px;
 }
 
 #footer {
