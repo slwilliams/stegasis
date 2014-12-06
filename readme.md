@@ -23,28 +23,31 @@ Example Usage
 
 Detailed Options
 -----------------
-    stegasis <command> [-p,-g] --alg=<alg> --pass=<pass> --cap=<capacity> <video_path> <mount_point>
+    stegasis <command> [-p,-g,-f] --alg=<alg> --pass=<pass> --cap=<capacity> <video_path> <mount_point>
+
 Commands:
-* format  Formats a video for use with stegasis
-* mount  Mounts a formatted video to a given mount point
+  * format  Formats a video for use with stegasis
+  * mount  Mounts a formatted video to a given mount point
+
 Flags:
-* --alg  Embedding algorithm to use, see below
-* --cap  Percentage of frame to embed within in percent
-* --pass  Passphrase used for encrypting and permuting data
-* -p  Do not flush writes to disk until unmount
-* -f  Force FFmpeg decoder to be used
+  * --alg  Embedding algorithm to use, see below
+  * --cap  Percentage of frame to embed within in percent
+  * --pass  Passphrase used for encrypting and permuting data
+  * -p  Do not flush writes to disk until unmount
+  * -f  Force FFmpeg decoder to be used
+
 Embedding Algorithms:
-* Uncompressed AVI only:
-..* lsb: Least Significant Bit Sequential Embedding
-..* lsbk: LSB Sequential Embedding XOR'd with a psudo random stream
-..* lsbp: LSB Permuted Embedding using a seeded LCG
-..* lsb2: Combination of lsbk and lsbp
-* Other video formats:
-..* dctl: LSB Sequential Embedding within DCT coefficients
-..* dctp: LSB Permuted Embedding within DCT coefficients
-..* dct2: Combination of dctp and lsbk
-..* dcta: LSB Permuted Embedding encrypted with AES
-..* dct3: LSB Permuted Embedding encrypted with AES->Twofish->Serpent
+  * Uncompressed AVI only:
+    * lsb: Least Significant Bit Sequential Embedding
+    * lsbk: LSB Sequential Embedding XOR'd with a psudo random stream
+    * lsbp: LSB Permuted Embedding using a seeded LCG
+    * lsb2: Combination of lsbk and lsbp
+  * Other video formats:
+    * dctl: LSB Sequential Embedding within DCT coefficients
+    * dctp: LSB Permuted Embedding within DCT coefficients
+    * dct2: Combination of dctp and lsbk
+    * dcta: LSB Permuted Embedding encrypted with AES
+    * dct3: LSB Permuted Embedding encrypted with AES->Twofish->Serpent
 
 Notes
 ------
