@@ -1,0 +1,159 @@
+% --------------------------------------------------------------------
+% Preamble
+% --------------------------------------------------------------------
+\documentclass[paper=a4, fontsize=11pt,twoside]{scrartcl}    % KOMA
+
+\usepackage[a4paper,pdftex]{geometry}    % A4paper margins
+\setlength{\oddsidemargin}{5mm}            % Remove 'twosided' indentation
+\setlength{\evensidemargin}{5mm}
+
+\usepackage[english]{babel}
+\usepackage[protrusion=true,expansion=true]{microtype}    
+\usepackage{amsmath,amsfonts,amsthm,amssymb}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{ragged2e}
+\usepackage{tabto}
+
+% --------------------------------------------------------------------
+% Definitions
+% --------------------------------------------------------------------
+\newcommand{\HRule}[1]{\rule{\linewidth}{#1}}     % Horizontal rule
+
+\makeatletter                            % Title
+\def\printtitle{%                        
+    {\centering \@title\par}}
+\makeatother                                    
+
+\makeatletter                            % Author
+\def\printauthor{%                    
+    {\large \@author}}                
+\makeatother                            
+
+% --------------------------------------------------------------------
+% Metadata
+% --------------------------------------------------------------------
+
+\title{    \begin{flushright}
+				\LARGE{\textit{Scott Williams}}
+			\end{flushright}
+			~\\[2.0cm]			
+			\normalsize \textsc{Computer Science Part II Project Dissertation}     % Subtitle
+             \\[2.0cm]                                % 2cm spacing
+            \HRule{0.5pt} \\                        % Upper rule
+            \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    % Title
+            \HRule{2pt} \\ [30pt]        % Lower rule + 0.5cm spacing
+            \normalsize Christ's College\\[5pt]University of Cambridge\\[25pt]           
+            \normalsize \today            % Todays date
+        }
+
+
+
+
+\begin{document}
+% ------------------------------------------------------------------------------
+% Maketitle
+% ------------------------------------------------------------------------------
+\thispagestyle{empty}        % Remove page numbering on this page
+
+\printtitle                    % Print the title data as defined above
+      \vfill
+\printauthor                % Print the author data as defined above
+\newpage
+% ------------------------------------------------------------------------------
+% Begin document
+% ------------------------------------------------------------------------------
+\setcounter{page}{1}        % Set page numbering to begin on this page
+\pagenumbering{roman} 
+\section*{Performa}
+\NumTabs{3}
+\textsc{Name}: \tab{Scott Williams}\\
+\textsc{College}: \tab{Christ's}\\
+\textsc{Project Title}: \tab{Steganographic filesystems within video files}\\
+\textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
+\textsc{Year}: \tab{2015}\\
+\textsc{Word Count}: \tab{12,000}\\
+\textsc{Project Originator}: \tab{Scott Williams}\\
+\textsc{Project Supervisor}: \tab{Daniel Thomas}\\
+
+\section*{Original Aims of the Project}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse bibendum justo a neque facilisis scelerisque. Interdum et malesuada fames ac ante ipsum primis in faucibus. Mauris ac eleifend mi. Suspendisse rutrum odio diam, vel consectetur nisi tincidunt vitae. Nulla tortor felis, blandit vehicula faucibus ac, efficitur nec risus. Donec quis ligula ultricies ante tincidunt pretium nec et velit. Phasellus lobortis suscipit ligula, id varius sem varius nec. Aliquam sed tristique libero, in fringilla lectus. Nam a tellus faucibus lorem pellentesque ultrices. 
+
+\section*{Work Completed}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse bibendum justo a neque facilisis scelerisque. Interdum et malesuada fames ac ante ipsum primis in faucibus. Mauris ac eleifend mi. Suspendisse rutrum odio diam, vel consectetur nisi tincidunt vitae. Nulla tortor felis, blandit vehicula faucibus ac, efficitur nec risus. Donec quis ligula ultricies ante tincidunt pretium nec et velit. Phasellus lobortis suscipit ligula, id varius sem varius nec. Aliquam sed tristique libero, in fringilla lectus. Nam a tellus faucibus lorem pellentesque ultrices. 
+
+\section*{Special Difficulties}
+None.
+
+\pagebreak
+\section*{Declaration of Originality}
+I, Scott Williams of Christ's College, being a candidate for Part II of the Computer
+Science Tripos, hereby declare that this dissertation and the work described
+in it are my own work, unaided except as may be specified below, and that
+the dissertation does not contain material that has already been used to any
+substantial extent for a comparable purpose.
+
+I give permission for my dissertation to be made available in the archive
+area of the Laboratory's website.\\[15pt]
+\textit{Signed:}\\[15pt]
+\textit{Date:}
+\pagebreak
+
+\tableofcontents
+
+\pagebreak
+\pagenumbering{arabic} 
+\section{Introduction}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed id metus pharetra, mollis elit eu, fringilla tellus. Pellentesque fermentum mattis sem, id malesuada elit sollicitudin eu. Quisque ullamcorper lorem non risus tincidunt elementum. Maecenas eget ipsum vitae nulla vehicula vestibulum. Sed elementum congue purus. Donec eget mauris aliquam, consequat lectus ac, feugiat dolor.
+\subsection{Motivation}
+Quisque aliquam pharetra sem, sed rutrum lorem dignissim a. Sed tincidunt nunc non dui elementum, eu semper sem malesuada. Nunc imperdiet metus eget consectetur finibus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean elit erat, ultrices sit amet ornare ac, bibendum ut eros. Suspendisse consequat cursus tortor, aliquet dignissim enim posuere nec. Nulla nec neque vel libero molestie pulvinar ut id nibh. Integer magna eros, maximus consequat eros at, vehicula ornare mauris. Proin interdum congue fermentum. Suspendisse elit libero, mattis at egestas et, blandit nec enim. 
+
+\section{Preparation}
+\subsection{Background}
+Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer blandit auctor dui, nec tincidunt lectus lobortis id. Suspendisse sit amet dui vehicula, mollis est id, pretium lacus.
+\subsubsection{Preliminaries}
+Vivamus quis velit at nisi pellentesque commodo at at sapien. Ut porta felis eget egestas gravida. Nullam non neque non mauris pharetra tincidunt nec in nunc. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vivamus tincidunt tempus nulla quis dignissim. Donec ullamcorper imperdiet nisl non pretium. Maecenas finibus pulvinar rutrum. 
+
+\subsubsection{AVI encoding}
+
+\subsubsection{JPEG compression}
+
+\subsection{Existing tools}
+
+\subsection{Choice of Languages and Tools}
+
+\subsection{Requirements Analysis}
+
+\subsubsection{Core Requirements}
+\subsubsection{Possible Extensions}
+
+\section{Implementation}
+\subsection{Introduction}
+\subsection{Filesystem}
+\subsection{Steganographic Algorithms}
+\subsection{Extensions}
+
+\section{Evaluation}
+\subsection{Satisfaction of Requirements}
+\subsection{Correctness}
+\subsection{Security}
+\subsection{Performance}
+
+\section{Conclusions}
+\subsection{Future Project Directions}
+
+
+\begin{thebibliography}{1}
+
+\bibitem{digmedia}
+  \emph{Steganography in Digital Media}.
+  Jessica Fridrich, 2010.
+
+\end{thebibliography}
+% ------------------------------------------------------------------------------
+% End document
+% ------------------------------------------------------------------------------
+\end{document}
+
+
