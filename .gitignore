@@ -3,3 +3,9 @@
 *.exe
 stegasis
 src/site/public/images*
+doc/*.log
+doc/*.aux
+doc/*.dvi
+doc/*.out
+doc/*.gz
+doc/*.toc
