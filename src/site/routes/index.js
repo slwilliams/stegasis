@@ -43,10 +43,14 @@ router.get('/', function(req, res) {
 function updateTotal(db, correct) {
   db.collection('total', function(err, collection) {
     collection.findOne({}, function(err, item) {
-      if (correct)
+      if (correct) {
         item.correct ++;
-      else
+        item.string += '1';
+      }
+      else {
         item.incorrect ++;
+        item.string += '0';
+      }
       item.total ++;
       collection.update({}, item, function(err, cnt, stat) {
         if (!err) { 
@@ -72,10 +76,10 @@ router.post('/submit/:img', function(req, res) {
             var newObj;
             if (correctImages[req.param('img')]) {
               updateTotal(db, true);
-              newObj = {user: req.cookies.id, total: 1, correct: 1, incorrect: 0};
+              newObj = {user: req.cookies.id, total: 1, correct: 1, incorrect: 0, string: '1'};
             } else {
               updateTotal(db, false);
-              newObj = {user: req.cookies.id, total: 1, correct: 0, incorrect: 1};
+              newObj = {user: req.cookies.id, total: 1, correct: 0, incorrect: 1, string: '0'};
             }
             collection.insert(newObj, function(err, rec) {
               if (!err) {
@@ -86,15 +90,18 @@ router.post('/submit/:img', function(req, res) {
           } else {
             var total = item.total + 1;
             var correct = item.correct;
+            var str = item.string;
             var incorrect = item.incorrect;
             if (correctImages[req.param('img')]) {
               updateTotal(db, true);
               correct ++;
+              str += '1';
             } else {
               updateTotal(db, false);
               incorrect ++;
+              str += '0';
             }
-            var newObj = {user: req.cookies.id, total: total, correct: correct, incorrect: incorrect};
+            var newObj = {user: req.cookies.id, total: total, correct: correct, incorrect: incorrect, string: str};
             collection.update({user: req.cookies.id}, newObj, function(err, cn, stat) {
               if (!err) {
                 console.log('Updated user');
