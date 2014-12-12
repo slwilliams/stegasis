@@ -15,6 +15,11 @@
 \usepackage{hyperref}
 \usepackage{ragged2e}
 \usepackage{tabto}
+\usepackage{afterpage}
+\usepackage[usenames, dvipsnames]{color}
+\usepackage{titlesec}
+\usepackage{lipsum}
+\usepackage{tipa}
 
 % --------------------------------------------------------------------
 % Definitions
@@ -29,27 +34,40 @@
 \makeatletter                            % Author
 \def\printauthor{%                    
     {\large \@author}}                
-\makeatother                            
+\makeatother       
+
+\newcommand\blankpage{%
+    \null
+    \thispagestyle{empty}%
+    \addtocounter{page}{-1}%
+    \newpage}                     
+
+\definecolor{mygray}{gray}{0.6}
+
+\titleformat{\section}
+{\normalfont\huge\bfseries}
+{\thesection\hskip 12pt\textcolor{mygray}{\textdoublepipe}\hskip 20pt}
+{0pt}
+{}
+
+\titlespacing*{\section}{0pt}{18pt}{13pt}
 
 % --------------------------------------------------------------------
 % Metadata
 % --------------------------------------------------------------------
 
-\title{    \begin{flushright}
-				\LARGE{\textit{Scott Williams}}
-			\end{flushright}
-			~\\[2.0cm]			
-			\normalsize \textsc{Computer Science Part II Project Dissertation}     % Subtitle
-             \\[2.0cm]                                % 2cm spacing
-            \HRule{0.5pt} \\                        % Upper rule
-            \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    % Title
-            \HRule{2pt} \\ [30pt]        % Lower rule + 0.5cm spacing
-            \normalsize Christ's College\\[5pt]University of Cambridge\\[25pt]           
-            \normalsize \today            % Todays date
-        }
-
-
-
+\title{
+	\begin{flushright}
+		\LARGE{\textit{Scott Williams}}
+	\end{flushright}
+	~\\[2.0cm]			
+	\normalsize \textsc{Computer Science Part II Project Dissertation}\\[2.0cm]     % Subtitle
+    \HRule{0.5pt} \\                        % Upper rule
+    \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    % Title
+    \HRule{2pt} \\[30pt]        % Lower rule + 0.5cm spacing
+    \normalsize Christ's College\\[5pt]University of Cambridge\\[25pt]           
+    \normalsize \today            % Todays date
+}
 
 \begin{document}
 % ------------------------------------------------------------------------------
@@ -58,14 +76,15 @@
 \thispagestyle{empty}        % Remove page numbering on this page
 
 \printtitle                    % Print the title data as defined above
-      \vfill
+\vfill
 \printauthor                % Print the author data as defined above
+\afterpage{\blankpage}
 \newpage
 % ------------------------------------------------------------------------------
 % Begin document
 % ------------------------------------------------------------------------------
 \setcounter{page}{1}        % Set page numbering to begin on this page
-\pagenumbering{roman} 
+\pagenumbering{roman}
 \section*{Performa}
 \NumTabs{3}
 \textsc{Name}: \tab{Scott Williams}\\
@@ -77,18 +96,19 @@
 \textsc{Project Originator}: \tab{Scott Williams}\\
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
-\section*{Original Aims of the Project}
+\subsection*{Original Aims of the Project}
 % 350 words per day...
 To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume.
 
-\section*{Work Completed}
+\subsection*{Work Completed}
 A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Basic file system operations work as expected within the mounted volume and the embedding process operates without any perceivable impact on video quality.
 
-\section*{Special Difficulties}
+\subsection*{Special Difficulties}
 None.
 
 \pagebreak
 \section*{Declaration of Originality}
+~\\[5pt]
 I, Scott Williams of Christ's College, being a candidate for Part II of the Computer
 Science Tripos, hereby declare that this dissertation and the work described
 in it are my own work, unaided except as may be specified below, and that
@@ -106,15 +126,25 @@ area of the Laboratory's website.\\[20pt]
 \pagebreak
 \pagenumbering{arabic} 
 \section{Introduction}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed id metus pharetra, mollis elit eu, fringilla tellus. Pellentesque fermentum mattis sem, id malesuada elit sollicitudin eu. Quisque ullamcorper lorem non risus tincidunt elementum. Maecenas eget ipsum vitae nulla vehicula vestibulum. Sed elementum congue purus. Donec eget mauris aliquam, consequat lectus ac, feugiat dolor.
+Steganography is the art of hiding information in apparently innocuous objects. Whereas cryptography seeks to protect only the content of information, steganography attempts to conceal the fact that the information even exists. This allows steganographic methods to be utilised in countries where encryption is illegal for example, or within the UK where keys for identified encrypted data can be forced to be handed over.
+
+In this project I design and implement a practical steganographic software application - \texttt{Stegasis} - which enables users to embed arbitrary files within videos via a file system interface. \texttt{Stegasis} can operate with no perceivable impact on video quality and can achieve embedding capacities of upto 200\% of the video size. A wide range of video formats are supported\footnote{Including many modern video formats such as \texttt{MP4}, \texttt{MKV}, \texttt{FLV} and \texttt{AVI}.} along with several steganographic embedding algorithms. Standard encryption algorithms can be used to further protect embedded data and plausible deniability functionality protects users even when the presence of embedded data has been confirmed.
+
+Steganogaphic methods operating on video have had comparatively little attention compared to images and audio. As such, there are few programs currently available which allow data to be steganographically hidden within video. \texttt{Stegasis} is the first application to enable the embedding of arbitrary files within videos via a file system interface.   
+
+
+
 \subsection{Motivation}
-Quisque aliquam pharetra sem, sed rutrum lorem dignissim a. Sed tincidunt nunc non dui elementum, eu semper sem malesuada. Nunc imperdiet metus eget consectetur finibus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean elit erat, ultrices sit amet ornare ac, bibendum ut eros. Suspendisse consequat cursus tortor, aliquet dignissim enim posuere nec. Nulla nec neque vel libero molestie pulvinar ut id nibh. Integer magna eros, maximus consequat eros at, vehicula ornare mauris. Proin interdum congue fermentum. Suspendisse elit libero, mattis at egestas et, blandit nec enim. 
+Lots of digital media redundnciy, large files common in internet.
+Lots of progs available today but only 1 image 160chars etc. want lots of space nsa uk law etc...
 
 \section{Preparation}
 \subsection{Background}
-Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer blandit auctor dui, nec tincidunt lectus lobortis id. Suspendisse sit amet dui vehicula, mollis est id, pretium lacus.
+Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer blandit auctor dui, nec tincidunt lectus lobortis id. Suspendisse sit amet dui vehicula, mollis est id, pretium lacus. Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer 
 \subsubsection{Preliminaries}
-Vivamus quis velit at nisi pellentesque commodo at at sapien. Ut porta felis eget egestas gravida. Nullam non neque non mauris pharetra tincidunt nec in nunc. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vivamus tincidunt tempus nulla quis dignissim. Donec ullamcorper imperdiet nisl non pretium. Maecenas finibus pulvinar rutrum. 
+Vivamus quis velit at nisi pellentesque commodo at at sapien. Ut porta felis eget egestas gravida. Nullam non neque non mauris pharetra tincidunt nec in nunc. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vivamus tincidunt tempus nulla quis dignissim. Donec ullamcorper imperdiet nisl non pretium. Maecenas finibus pulvinar rutrum.
+Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies.
+Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer  
 
 \subsubsection{AVI encoding}
 
