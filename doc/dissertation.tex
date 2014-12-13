@@ -98,10 +98,10 @@
 
 \subsection*{Original Aims of the Project}
 % 350 words per day...
-To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume.
+To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality.
 
 \subsection*{Work Completed}
-A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Basic file system operations work as expected within the mounted volume and the embedding process operates without any perceivable impact on video quality.
+A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Basic file system operations work as expected within the mounted volume and the embedding process operates without any perceivable impact on video quality. Performance of the system is adequate for general use allowing high definition media content to be played directly out of the embedded volume.
 
 \subsection*{Special Difficulties}
 None.
@@ -135,16 +135,19 @@ Steganogaphic methods operating on video have had comparatively little attention
 
 
 \subsection{Motivation}
-Lots of digital media redundnciy, large files common in internet.
-Lots of progs available today but only 1 image 160chars etc. want lots of space nsa uk law etc...
+Digital media is ubiquitous on the Internet and high definition video content is now common place on video sharing and social networking websites. Video files of multiple gigabytes in size can reside on users devices without arousing suspicion, providing an ideal hiding place for large collections of sensitive files. Few programs are capitalising on this fact, and those that are, allow the user to embed only a singe chosen file into a specific single video format. As with \texttt{TrueCrypt}\footnote{A successful cryptographic program providing on-the-fly encryption and full disc encryption.}, I believe that a practical system for protecting sensitive files should present the user with a mounted logical volume allowing the use of standard file system operations to create, access and organise embedded data. Furthermore, there exist many commonly used video formats along with many more currently in development. As such, a steganographic program operating on one single video format not only greatly restricts usability, it will require constant development as new video formats inevitably become more popular. Instead, a generic solution applicable to a variety of video formats is preferred.
+
+The many recent global surveillance disclosures show that using certain technologies related to privacy can get you ``flagged" by authorities such as the \texttt{NSA} - it is no longer the case that simply encrypting data is enough to keep the owner safe.
 
 \section{Preparation}
 \subsection{Background}
-Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer blandit auctor dui, nec tincidunt lectus lobortis id. Suspendisse sit amet dui vehicula, mollis est id, pretium lacus. Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer 
+In this section steganographic background material, definitions and concepts are introduced. The most important property of any steganographic system is undetectability, that is, it should be impossible to differentiate between ordinary and steganographically modified objects. This requirement is famously formulated within Simmons' prisoners' problem. 
+
+Alice and Bob are imprisoned in separate cells and wish to formulate an escape plan. They are allowed to communicate, but all messages must pass through a warden Eve. If Eve suspects the prisoners of secretly communicating their escape plan, the communication channel will be severed and Alice and Bob thrown into solitary confinement. The prisoners attempt to utilise steganograhpy to exchange details of their plan undetected. The steganographic system is considered broken if Eve is able to detect the presence of hidden messages within the prisoners exchanges. It is assumed that Eve has a complete knowledge of the steganographic algorithm being used, with the exception of the stego key, which Alice and Bob have agreed upon beforehand. This is in parallel with Kerckhoff's principle used within cryptography. 
+
+
 \subsubsection{Preliminaries}
-Vivamus quis velit at nisi pellentesque commodo at at sapien. Ut porta felis eget egestas gravida. Nullam non neque non mauris pharetra tincidunt nec in nunc. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vivamus tincidunt tempus nulla quis dignissim. Donec ullamcorper imperdiet nisl non pretium. Maecenas finibus pulvinar rutrum.
-Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies.
-Duis et luctus ante. Etiam mattis molestie accumsan. Quisque luctus ligula sit amet commodo gravida. Praesent interdum sem id bibendum elementum. Fusce auctor neque a erat rhoncus, nec fermentum leo tristique. Donec molestie nisi ut erat condimentum ultricies. Integer  
+A steganographic system is formally defined as follows. 
 
 \subsubsection{AVI encoding}
 
