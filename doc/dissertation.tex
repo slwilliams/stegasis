@@ -20,6 +20,7 @@
 \usepackage{titlesec}
 \usepackage{lipsum}
 \usepackage{tipa}
+\usepackage{amsthm}
 
 % --------------------------------------------------------------------
 % Definitions
@@ -51,6 +52,8 @@
 {}
 
 \titlespacing*{\section}{0pt}{18pt}{13pt}
+
+\newtheorem{ddef}{Definition}[section]
 
 % --------------------------------------------------------------------
 % Metadata
@@ -143,11 +146,34 @@ The many recent global surveillance disclosures show that using certain technolo
 \subsection{Background}
 In this section steganographic background material, definitions and concepts are introduced. The most important property of any steganographic system is undetectability, that is, it should be impossible to differentiate between ordinary and steganographically modified objects. This requirement is famously formulated within Simmons' prisoners' problem. 
 
-Alice and Bob are imprisoned in separate cells and wish to formulate an escape plan. They are allowed to communicate, but all messages must pass through a warden Eve. If Eve suspects the prisoners of secretly communicating their escape plan, the communication channel will be severed and Alice and Bob thrown into solitary confinement. The prisoners attempt to utilise steganograhpy to exchange details of their plan undetected. The steganographic system is considered broken if Eve is able to detect the presence of hidden messages within the prisoners exchanges. It is assumed that Eve has a complete knowledge of the steganographic algorithm being used, with the exception of the stego key, which Alice and Bob have agreed upon beforehand. This is in parallel with Kerckhoff's principle used within cryptography. 
+Alice and Bob are imprisoned in separate cells and wish to formulate an escape plan. They are allowed to communicate, but all messages must pass through a warden Eve. If Eve suspects the prisoners of secretly communicating their escape plan, the communication channel will be severed and Alice and Bob thrown into solitary confinement. The prisoners attempt to utilise steganograhpy to exchange details of their plan undetected. The steganographic system is considered broken if Eve is able to detect the presence of hidden messages within the prisoners exchanges. It is assumed that Eve has a complete knowledge of the steganographic algorithm being used, with the exception of the stego key, which Alice and Bob have agreed upon beforehand. This is in parallel with Kerckhoff's principle used within cryptography. The warden can be considered one of three categories; \textit{passive}, \textit{active} and \textit{malicious}. A \textit{passive} warden does not modify the exchanged messages in any way, whereas an \textit{active} warden may modify the messages whilst maintaining their original meaning. For example an \textit{active} warden may replace words with synonyms or reorder sentences. If images are being used as a transport medium then an \textit{active} warden may recompress or crop the images. A \textit{malicious} warden attempts to break the steganograhpic system and impersonate the prisoners in an attempt to obtain information.
+
+This project is concerned with only the case of the \textit{passive} warden. As such, any modification of the video files once \texttt{stegasis} has embedded data within them, will most likely render the embedded file system corrupt\footnote{This unfortunately means utilising video sharing websites such as YouTube and Facebook for distribution is not possible due to them performing compression upon video upload.}.
 
 
 \subsubsection{Preliminaries}
-A steganographic system is formally defined as follows. 
+A steganographic system consists of a number of individual components:
+\begin{itemize}
+	\item A \textit{Cover object} is the original object that the message will be embedded within.
+	\item A \textit{Message} is an arbitrary length sequence of symbols. For this project we consider a message $\mathcal{M} \in \{0,1\}^{n} $
+	\item A \textit{Stego key} is a secret key used within the embedded process.
+	\item A \textit{Stego object} is the result of embedding a message inside a cover object.
+\end{itemize}
+
+\begin{ddef}
+\textsc{Steganographic System}\\[5pt]
+Let $\mathcal{C}$ be the set of all cover objects. For a given $\textbf{c} \in \mathcal{C}$, let $\mathcal{K} _{\textbf{c}}$ denote the set of all stego keys for \textbf{c}, and the set $\mathcal{M} _{\textbf{c}}$ denote all messages that can be communicated in \textbf{c}. A steganographic system\footnote{This is specifically steganography by cover modification.}, is then formally defined as a pair of embedding and extracting functions Emb and Ext,
+\begin{center}
+	Emb :  $\mathcal{C} \times \mathcal{K} \times \mathcal{M} \rightarrow \mathcal{C}$\\
+	Ext :  $\mathcal{C} \times \mathcal{K} \rightarrow \mathcal{M}$\\
+\end{center}
+satisfying,
+\begin{center}
+	$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~\textbf{c} \in \mathcal{C} ~\land ~ \textbf{k} \in \mathcal{K} _{\textbf{c}} ~\land ~ \textbf{m} \in \mathcal{M} _{\textbf{c}} \Rightarrow$ Ext(Emb(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}	
+\end{center}
+\end{ddef}
+\vfill
+
 
 \subsubsection{AVI encoding}
 
