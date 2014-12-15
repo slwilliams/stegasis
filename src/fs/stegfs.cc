@@ -111,6 +111,7 @@ void SteganographicFileSystem::Set(SteganographicFileSystem *i) {
 };
 
 int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
+  printf("get attr: %s\n", path);
   memset(stbuf, 0, sizeof(struct stat));
   if (strcmp(path, "/") == 0) {
     stbuf->st_mode = S_IFDIR | 0755;
@@ -122,10 +123,20 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
         stbuf->st_mode = S_IFREG | 0755;
         stbuf->st_nlink = 1;
         stbuf->st_size = kv.second;
+        printf("attr retuneed\n");
+        return 0;
+      }
+    }
+    for (auto kv : this->dirs) {
+      if (strcmp(path, kv.first.c_str()) == 0) {
+        stbuf->st_mode = S_IFDIR | 0755;
+        stbuf->st_nlink = 2;
+        printf("attr dir rred\n");
         return 0;
       }
     }
   }
+  printf("somehow got here?\n");
   // Requested file not in the filesystem...
   return -ENOENT;
 };
@@ -140,15 +151,53 @@ int SteganographicFileSystem::access(const char *path, int mask) {
   return 0;
 };
 
+int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
+  printf("mkdir called: %s\n", path);
+  printf("mkdir called: %s\n", path);
+  this->dirs[path] = true;
+  return 0;
+}
+
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
-  if (strcmp(path, "/") != 0) {
-    return -ENOENT;
-  }
+  //if (strcmp(path, "/") != 0) {
+  //  return -ENOENT;
+  //}
+  
+  printf("path: %s\n", path);
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
+
+  std::string prefix = path;
+  int prefixSlash = std::count(prefix.begin(), prefix.end(), '/');
   for (auto kv : this->fileSizes) {
-    filler(buf, kv.first.c_str() + 1, NULL, 0);
+    printf("file: %s\n", kv.first.c_str());
+    int nameSlash = std::count(kv.first.begin(), kv.first.end(), '/');
+    if (prefix == "/") {
+      if (nameSlash == 1) {
+        printf("OK?? / %s\n", kv.first.c_str() + 1);
+        filler(buf, kv.first.c_str() + 1, NULL, 0);
+      } 
+    } else if (kv.first.substr(0, prefix.size()) == prefix && prefixSlash == nameSlash - 1) {
+      std::string name = kv.first.substr(kv.first.find_last_of("/") + 1);
+      printf("OK??: %s\n", name.c_str());
+      filler(buf, name.c_str(), NULL, 0);
+    }
+  }
+  for (auto kv : this->dirs) {
+    printf("dir: %s\n", kv.first.c_str());
+
+    int nameSlash = std::count(kv.first.begin(), kv.first.end(), '/');
+    if (prefix == "/") {
+      if (nameSlash == 1) {
+        filler(buf, kv.first.c_str() + 1, NULL, 0); 
+        printf("adding dir /: %a\n", kv.first.c_str() + 1);
+      }
+    } else if (kv.first.substr(0, prefix.size()) == prefix && prefixSlash == nameSlash - 1) {
+      std::string name = kv.first.substr(kv.first.find_last_of("/") + 1);
+      filler(buf, name.c_str(), NULL, 0);
+      printf("adding dir: %s\n", name.c_str());
+    }
   }
   return 0;
 };

@@ -30,6 +30,7 @@ class SteganographicFileSystem {
     Logger *log;
     std::unordered_map<std::string, int> fileSizes; 
     std::unordered_map<std::string, std::vector<struct tripleT> > fileIndex; 
+    std::unordered_map<std::string, bool> dirs;
     std::mutex mux;
     
   public:
@@ -49,6 +50,7 @@ class SteganographicFileSystem {
     int utime(const char *path, struct utimbuf *ubuf);
     int unlink(const char *path);
     int flush(const char *path, struct fuse_file_info *fi);
+    int mkdir(const char *path, mode_t mode);
 
     void writeHeader();
     void compactHeader();
