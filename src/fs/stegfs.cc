@@ -386,8 +386,6 @@ void SteganographicFileSystem::writeHeader() {
   int offset = 0;
   Chunk *headerFrame = this->decoder->getFrame(0);
   for (auto f : this->fileIndex) {
-    printf("Writing head file: %s\n", f.first.c_str());
-    printf("Writing head file: %s\n", f.first.c_str());
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
     int triples = f.second.size();
@@ -403,8 +401,6 @@ void SteganographicFileSystem::writeHeader() {
       offset += sizeof(tripleT);
       embedded ++;
     }
-    printf("embedded: %u\n", embedded);
-    printf("embedded: %u\n", embedded);
     memcpy(tripleOffset, (char *)&embedded, 4);
 
     headerBytes += f.first.length() + 1;
@@ -415,12 +411,6 @@ void SteganographicFileSystem::writeHeader() {
   int tmp = headerBytes;
   this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
   this->alg->embed(headerFrame, header, tmp, (4+4+4+1) * 8); 
-  printf("------------------\n");
-  for (int i = 0; i < 200; i ++) {
-    printf("%u, ", header[i]);
-  }
-  printf("------------------\n");
-  printf("------------------\n");
   headerFrame->setDirty();
   free(header);
   delete headerFrame;
