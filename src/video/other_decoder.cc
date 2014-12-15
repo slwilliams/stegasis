@@ -159,7 +159,7 @@ class JPEGDecoder : public VideoDecoder {
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
       }
-      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy -c:a aac -strict -2 -b:a 192k -shortest /media/darkskill/Backup/output.mkv";
+      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy -c:a aac -strict -2 -b:a 192k -shortest output.mkv";
       exec((char *)muxCommand.c_str());
     };
     virtual void writeBack() {
@@ -201,7 +201,7 @@ class JPEGDecoder : public VideoDecoder {
       jpeg_set_quality(&this->frameChunks.back().dstinfo, 100, FALSE);
 
       jcopy_markers_setup(&this->frameChunks.back().srcinfo, JCOPYOPT_ALL);
-      (void)jpeg_read_header(&this->frameChunks.back().srcinfo, TRUE);
+      jpeg_read_header(&this->frameChunks.back().srcinfo, TRUE);
 
       jtransform_request_workspace(&this->frameChunks.back().srcinfo, &transformoption);
       this->frameChunks.back().src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);

@@ -159,6 +159,8 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
 };
 
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+  printf("created called: %s\n", path);
+  printf("created called: %s\n", path);
   this->fileSizes[path] = 0;
   this->fileIndex[path] = std::vector<struct tripleT>();
   return 0;
@@ -384,6 +386,8 @@ void SteganographicFileSystem::writeHeader() {
   int offset = 0;
   Chunk *headerFrame = this->decoder->getFrame(0);
   for (auto f : this->fileIndex) {
+    printf("Writing head file: %s\n", f.first.c_str());
+    printf("Writing head file: %s\n", f.first.c_str());
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
     int triples = f.second.size();
@@ -399,6 +403,8 @@ void SteganographicFileSystem::writeHeader() {
       offset += sizeof(tripleT);
       embedded ++;
     }
+    printf("embedded: %u\n", embedded);
+    printf("embedded: %u\n", embedded);
     memcpy(tripleOffset, (char *)&embedded, 4);
 
     headerBytes += f.first.length() + 1;
@@ -406,9 +412,15 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += sizeof(tripleT)*embedded;
     if (offset > (this->decoder->frameSize() / 8) - 50) break;
   }
-  char tmp = headerBytes;
+  int tmp = headerBytes;
   this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
   this->alg->embed(headerFrame, header, tmp, (4+4+4+1) * 8); 
+  printf("------------------\n");
+  for (int i = 0; i < 200; i ++) {
+    printf("%u, ", header[i]);
+  }
+  printf("------------------\n");
+  printf("------------------\n");
   headerFrame->setDirty();
   free(header);
   delete headerFrame;
