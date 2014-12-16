@@ -10,6 +10,7 @@
 \usepackage[english]{babel}
 \usepackage[protrusion=true,expansion=true]{microtype}    
 \usepackage{amsmath,amsfonts,amsthm,amssymb}
+\usepackage{listings}
 \usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
@@ -21,6 +22,9 @@
 \usepackage{lipsum}
 \usepackage{tipa}
 \usepackage{amsthm}
+\usepackage{relsize}
+\usepackage{color}
+
 
 % --------------------------------------------------------------------
 % Definitions
@@ -54,6 +58,23 @@
 \titlespacing*{\section}{0pt}{18pt}{13pt}
 
 \newtheorem{ddef}{Definition}[section]
+
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color
+  basicstyle=\footnotesize,        % size of fonts used for the code
+  breaklines=true,                 % automatic line breaking only at whitespace
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  keywordstyle=\color{blue},       % keyword style
+  stringstyle=\color{mymauve},     % string literal style
+}
+
 
 % --------------------------------------------------------------------
 % Metadata
@@ -92,7 +113,7 @@
 \NumTabs{3}
 \textsc{Name}: \tab{Scott Williams}\\
 \textsc{College}: \tab{Christ's}\\
-\textsc{Project Title}: \tab{Steganographic filesystems within video files}\\
+\textsc{Project Title}: \tab{Steganographic file systems within video files}\\
 \textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
 \textsc{Year}: \tab{2015}\\
 \textsc{Word Count}: \tab{12,000}\\
@@ -104,7 +125,7 @@
 To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality.
 
 \subsection*{Work Completed}
-A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Basic file system operations work as expected within the mounted volume and the embedding process operates without any perceivable impact on video quality. Performance of the system is adequate for general use allowing high definition media content to be played directly out of the embedded volume.
+A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Basic file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Performance of the system is adequate for general use allowing high definition media content to be played directly out of the embedded volume.
 
 \subsection*{Special Difficulties}
 None.
@@ -144,19 +165,19 @@ The many recent global surveillance disclosures show that using certain technolo
 
 \section{Preparation}
 \subsection{Background}
-In this section steganographic background material, definitions and concepts are introduced. The most important property of any steganographic system is undetectability, that is, it should be impossible to differentiate between ordinary and steganographically modified objects. This requirement is famously formulated within Simmons' prisoners' problem. 
+In this section steganographic background material, definitions and concepts are introduced. The \texttt{AVI} file structure and \texttt{JPEG} compression are also discussed. The most important property of any steganographic system is undetectability, that is, it should be impossible to differentiate between ordinary and steganographically modified objects. This requirement is famously formulated within Simmons' prisoners' problem. 
 
 Alice and Bob are imprisoned in separate cells and wish to formulate an escape plan. They are allowed to communicate, but all messages must pass through a warden Eve. If Eve suspects the prisoners of secretly communicating their escape plan, the communication channel will be severed and Alice and Bob thrown into solitary confinement. The prisoners attempt to utilise steganograhpy to exchange details of their plan undetected. The steganographic system is considered broken if Eve is able to detect the presence of hidden messages within the prisoners exchanges. It is assumed that Eve has a complete knowledge of the steganographic algorithm being used, with the exception of the stego key, which Alice and Bob have agreed upon beforehand. This is in parallel with Kerckhoff's principle used within cryptography. The warden can be considered one of three categories; \textit{passive}, \textit{active} and \textit{malicious}. A \textit{passive} warden does not modify the exchanged messages in any way, whereas an \textit{active} warden may modify the messages whilst maintaining their original meaning. For example an \textit{active} warden may replace words with synonyms or reorder sentences. If images are being used as a transport medium then an \textit{active} warden may recompress or crop the images. A \textit{malicious} warden attempts to break the steganograhpic system and impersonate the prisoners in an attempt to obtain information.
 
 This project is concerned with only the case of the \textit{passive} warden. As such, any modification of the video files once \texttt{stegasis} has embedded data within them, will most likely render the embedded file system corrupt\footnote{This unfortunately means utilising video sharing websites such as YouTube and Facebook for distribution is not possible due to them performing compression upon video upload.}.
 
 
-\subsubsection{Preliminaries}
+\subsubsection{Steganographic Concepts}
 A steganographic system consists of a number of individual components:
 \begin{itemize}
 	\item A \textit{Cover object} is the original object that the message will be embedded within.
 	\item A \textit{Message} is an arbitrary length sequence of symbols. For this project we consider a message $\mathcal{M} \in \{0,1\}^{n} $
-	\item A \textit{Stego key} is a secret key used within the embedded process.
+	\item A \textit{Stego key} is a secret key used within the embedding process.
 	\item A \textit{Stego object} is the result of embedding a message inside a cover object.
 \end{itemize}
 
@@ -172,10 +193,68 @@ satisfying,
 	$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~\textbf{c} \in \mathcal{C} ~\land ~ \textbf{k} \in \mathcal{K} _{\textbf{c}} ~\land ~ \textbf{m} \in \mathcal{M} _{\textbf{c}} \Rightarrow$ Ext(Emb(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}	
 \end{center}
 \end{ddef}
+\begin{ddef}
+\textsc{Embedding Capacity}\\[5pt]
+The \textit{Embedding Capacity} (payload) $\mathcal{P} _{\textbf{c}}$ for a given cover object \textbf{c} $\in \mathcal{C}$ is defined in bits as,
+\begin{center}
+	$\mathcal{P} _{\textbf{c}} = \log_{2}|\mathcal{M}(\textbf{c})| $
+\end{center}
+The relative embedding capacity $\mathcal{R} _{\textbf{c}}$ for a given cover object \textbf{c} $\in \mathcal{C}$ is defined as,
+\begin{center}
+	$\mathcal{R} _{\textbf{c}} = \dfrac{\log_{2}|\mathcal{M}(\textbf{c})|}{n} $
+\end{center}
+where n is the number of elements in \textbf{c}.
+\end{ddef}
+\noindent
+For example, consider $\mathcal{C}$ to be the set of all 512 $\times$ 512 greyscale images, embedding one bit per pixel gives $\mathcal{M} = \{0,1\}^{512 \times 512}$ and $\forall ~\textbf{c} \in \mathcal{C}. ~|\mathcal{M}(\textbf{c})| = 2^{512 \times 512}$. The embedding capacity $\forall ~\textbf{c} \in \mathcal{C}$ is then $512 \times 512 \approx 33$kB as expected. In this case, $n$ is equal to the number of pixels in \textbf{c} and therefore the relative embedding capacity is equal to 1 bpp (bits per pixel), again as expected.
+
+Using the definitions above, we can define a simple expression for the embedding capacity of a video file. 
+\begin{ddef}
+\textsc{Embedding Capacity for video}\\[5pt]
+With $\mathcal{C}$ as the set of all video files, the embedding capacity $\mathcal{V} _{\textbf{c}}$ for a given video $\textbf{c} \in \mathcal{C}$ can be expressed as,
+\begin{center}
+	$\mathcal{V} _{\textbf{c}} ~= \mathlarger{\mathlarger{\sum}}\limits_{f ~\in ~frames(\textbf{c})} \mathcal{P} _{f}$
+\end{center}
+\end{ddef}
+\noindent
+Note that for certain embedding algorithms, the embedding capacity can depend on both the input data and the cover object\footnote{Many algorithms operating on \texttt{JPEG} images for example will not embedded within zero valued DCT coefficients.}. However, in some cases the following expression is also valid,
+\begin{center}
+	$\mathcal{V} _{\textbf{c}} ~=~ |frames(\textbf{c})| \times \mathcal{P} _{f _{0}}$
+\end{center}
+
+\begin{ddef}
+\textsc{Steganographic Capacity}\\[5pt]
+The concept of Steganographic Capacity is loosely defined as the maximum number of bits that can be embedded within a given cover object without introducing statistically detectable artifacts. % <-- spelt right
+\end{ddef}
+\noindent
+For completeness, the least significant bit (LSB) of a given number is defined as follows,
+\begin{center}
+	LSB($x$) = $x$ mod 2
+\end{center}
+% steganalysis
+\subsubsection{Steganalysis}
+Steganalysis is the study detecting messages embedded using steganographic techniques; this is analogous to cryptanalysis applied to cryptography. A steganalysis attack is considered successful (i.e. the steganography has been broken) if it is possible to correctly distinguish between cover and stego objects with probability better than random guessing. Note that it is not necessary to be able to read the contents of the secret message to break a steganographic system.
+
+A trivial example of steganalysis arises when the steganalyst has access to the original cover object used within the embedding procedure. By computing the difference between the stego and cover objects, the steganalyst can immediately detect the presence of a hidden message. This attack identifies a number of important points to consider when developing a practical steganographic system. Firstly, embedding within popular media content should be discouraged, as the cover object will be likely widely available. Secondly, if a user is embedding within original content, for example a video recorded by them, any copies of the original file should be securely erased after embedding.
+
+Steganalysis methods can be split into two main categories, \textit{Targeted Steganalysis} and \textit{Blind Steganalysis}.\textit{Targeted Steganalysis} occurs when the steganalyst has access to the details of the steganographic algorithm used for embedding. The steganalyst can accordingly target her activity to the specific stegosystem. On the other hand, if the steganalyst has no knowledge of the utilised steganographic algorithm, \textit{Blind Steganalysis} techniques must be applied. In this project, \textit{Targeted Steganalysis} attacks are developed for several of the proposed embedding algorithms.
+
+\subsubsection{The AVI file format}
+As specified within the project proposal, this project only looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section ???} by \texttt{Stegasis}. Henceforward, references to ``\texttt{AVI} files'' specifically refer to version 1.0, uncompressed.
+
+The \texttt{AVI} file format is a \texttt{RIFF} file specification developed by Microsoft and originally introduced in November 1992.
+
 \vfill
 
+\begin{lstlisting}[language=C]
+	typedef struct {
+	  long dwFourCC,
+	  long dwSize,
+	  char data[dwSize] // contains headers or video/audio data
+	} CHUNK;
+\end{lstlisting}
 
-\subsubsection{AVI encoding}
+
 
 \subsubsection{JPEG compression}
 
@@ -214,6 +293,7 @@ satisfying,
 % ------------------------------------------------------------------------------
 % End document
 % ------------------------------------------------------------------------------
+
 \end{document}
 
 
