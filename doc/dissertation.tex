@@ -24,7 +24,8 @@
 \usepackage{amsthm}
 \usepackage{relsize}
 \usepackage{color}
-
+\usepackage{chngcntr}
+\counterwithin{table}{section}
 
 % --------------------------------------------------------------------
 % Definitions
@@ -64,7 +65,7 @@
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
 
-\lstset{ %
+\lstset{
   backgroundcolor=\color{white},   % choose the background color
   basicstyle=\footnotesize,        % size of fonts used for the code
   breaklines=true,                 % automatic line breaking only at whitespace
@@ -94,6 +95,7 @@
 }
 
 \begin{document}
+\renewcommand{\thelstlisting}{\thesection.\arabic{lstlisting}}
 % ------------------------------------------------------------------------------
 % Maketitle
 % ------------------------------------------------------------------------------
@@ -237,23 +239,68 @@ Steganalysis is the study detecting messages embedded using steganographic techn
 
 A trivial example of steganalysis arises when the steganalyst has access to the original cover object used within the embedding procedure. By computing the difference between the stego and cover objects, the steganalyst can immediately detect the presence of a hidden message. This attack identifies a number of important points to consider when developing a practical steganographic system. Firstly, embedding within popular media content should be discouraged, as the cover object will be likely widely available. Secondly, if a user is embedding within original content, for example a video recorded by them, any copies of the original file should be securely erased after embedding.
 
-Steganalysis methods can be split into two main categories, \textit{Targeted Steganalysis} and \textit{Blind Steganalysis}.\textit{Targeted Steganalysis} occurs when the steganalyst has access to the details of the steganographic algorithm used for embedding. The steganalyst can accordingly target her activity to the specific stegosystem. On the other hand, if the steganalyst has no knowledge of the utilised steganographic algorithm, \textit{Blind Steganalysis} techniques must be applied. In this project, \textit{Targeted Steganalysis} attacks are developed for several of the proposed embedding algorithms.
+Steganalysis methods can be split into two main categories, \textit{Targeted Steganalysis} and \textit{Blind Steganalysis}. \textit{Targeted Steganalysis} occurs when the steganalyst has access to the details of the steganographic algorithm used for embedding. The steganalyst can accordingly target their activity to the specific stegosystem. On the other hand, if the steganalyst has no knowledge of the utilised steganographic algorithm, \textit{Blind Steganalysis} techniques must be applied. In this project, \textit{Targeted Steganalysis} attacks are developed for several of the proposed embedding algorithms.
 
 \subsubsection{The AVI file format}
 As specified within the project proposal, this project only looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section ???} by \texttt{Stegasis}. Henceforward, references to ``\texttt{AVI} files'' specifically refer to version 1.0, uncompressed.
 
-The \texttt{AVI} file format is a \texttt{RIFF} file specification developed by Microsoft and originally introduced in November 1992. It is a container format and as such can contain a number of different 
+The \texttt{AVI} file format is a Resource Interchange File Format (\texttt{RIFF}) file specification developed by Microsoft and originally introduced in November 1992. The data within \texttt{RIFF} files is divided into chunks and lists, each of which is identified by a \texttt{FourCC} tag. An \texttt{AVI} file takes the form of a single chunk in a \texttt{RIFF} formatted file, which is then subdivided into two mandatory lists and one optional chunk. The first sub-list is the file header containing metadata about the video (for example framerate, width and height). The second sub-list contains the actual audio/video data and the optional chunk indexes the offsets of the data chunks within the file.
 
-\vfill
-
-\begin{lstlisting}[language=C]
-	typedef struct {
-	  long dwFourCC,
-	  long dwSize,
-	  char data[dwSize] // contains headers or video/audio data
-	} CHUNK;
+We therefore have an \texttt{AVI} file laid out as follows, see the appendix for a more detailed expanded form.
+\begin{lstlisting}[language=C, caption={\texttt{AVI RIFF} form}, frame=single]
+	RIFF ('AVI '
+	      LIST ('hdrl' ... )
+	      LIST ('movi' ... )
+ 	      ['idx1' (<AVI Index>)]
+	     )
 \end{lstlisting}
 
+\noindent
+With a \texttt{RIFF} chunk being defined as follows:
+
+\begin{lstlisting}[language=C, caption={\texttt{RIFF} chunk}, frame=single]
+	struct CHUNK {
+	  char fourCC[4],
+	  int ckSize,
+	  char ckData[ckSize] // contains headers or video/audio data
+	};
+\end{lstlisting}
+
+\noindent
+And a \texttt{RIFF} list defined as:
+
+\begin{lstlisting}[language=C, caption={\texttt{RIFF} list}, frame=single]
+	struct LIST {
+	  char listCC[4], // Will always be the literal 'LIST'
+	  int listSize,
+	  char listType[4],
+	  char listData[listSize]
+	};
+\end{lstlisting}
+
+\noindent
+An \texttt{AVI} file consists of a number of data streams (usually 2, one for audio and one for video) interleaved within the movi list. Each stream is identified by a \texttt{FourCC} tag consisting of a two-digit stream number followed by a two-character code:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|lll}
+\cline{1-2}
+\textbf{Two-character code} & \textbf{Description}       \\ \cline{1-2}
+db                          & Uncompressed video frame   \\ \cline{1-2}
+dc                          & Compressed video frame     \\ \cline{1-2}
+pc                          & Palette change             \\ \cline{1-2}
+wb                          & Audio data                 \\ \cline{1-2}
+\end{tabular}
+\caption{\texttt{AVI} stream types}
+\end{table}
+
+\noindent
+Each stream has a corresponding \texttt{AVI} stream header and format chunk within the above mentioned hdrl list. These data structures contain information about the stream including the codec and compression used (if any). Specifically, the \texttt{fccHandler} field contains a \texttt{FourCC} tag that identifies a specific data handler. For raw uncompressed video this will equal 'DIB ' (Device Independent Bitmap). Any user provided \texttt{AVI} files with a fccHandler not euqal to 'DIB ', that is, the \texttt{AVI} contains compressed video, will at this point be rejected and an error message presented to the user.
+
+Definition for movi chunk, top left corner, GBR calculate embedding cap...
+
+
+\vfill
 
 
 \subsubsection{JPEG compression}
