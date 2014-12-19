@@ -25,6 +25,7 @@
 \usepackage{relsize}
 \usepackage{color}
 \usepackage{chngcntr}
+\usepackage{textcomp}
 \counterwithin{table}{section}
 
 % --------------------------------------------------------------------
@@ -221,7 +222,7 @@ With $\mathcal{C}$ as the set of all video files, the embedding capacity $\mathc
 \noindent
 Note that for certain embedding algorithms, the embedding capacity can depend on both the input data and the cover object\footnote{Many algorithms operating on \texttt{JPEG} images for example will not embedded within zero valued DCT coefficients.}. However, in some cases the following expression is also valid,
 \begin{center}
-	$\mathcal{V} _{\textbf{c}} ~=~ |frames(\textbf{c})| \times \mathcal{P} _{f _{0}}$
+	$\mathcal{V} _{\textbf{c}} ~=~ |frames(\textbf{c})| \cdot \mathcal{P} _{f _{0}}$
 \end{center}
 
 \begin{ddef}
@@ -247,7 +248,7 @@ As specified within the project proposal, this project only looks at raw uncompr
 The \texttt{AVI} file format is a Resource Interchange File Format (\texttt{RIFF}) file specification developed by Microsoft and originally introduced in November 1992. The data within \texttt{RIFF} files is divided into chunks and lists, each of which is identified by a \texttt{FourCC} tag. An \texttt{AVI} file takes the form of a single chunk in a \texttt{RIFF} formatted file, which is then subdivided into two mandatory lists and one optional chunk. The first sub-list is the file header containing metadata about the video (for example framerate, width and height). The second sub-list contains the actual audio/video data and the optional chunk indexes the offsets of the data chunks within the file.
 
 We therefore have an \texttt{AVI} file laid out as follows, see the appendix for a more detailed expanded form.
-\begin{lstlisting}[language=C, caption={\texttt{AVI RIFF} form}, frame=single]
+\begin{lstlisting}[language=C, caption={\texttt{AVI RIFF} form}, frame=single, upquote=true]
 	RIFF ('AVI '
 	      LIST ('hdrl' ... )
 	      LIST ('movi' ... )
@@ -295,17 +296,52 @@ wb                          & Audio data                 \\ \cline{1-2}
 \end{table}
 
 \noindent
-Each stream has a corresponding \texttt{AVI} stream header and format chunk within the above mentioned hdrl list. These data structures contain information about the stream including the codec and compression used (if any). Specifically, the \texttt{fccHandler} field contains a \texttt{FourCC} tag that identifies a specific data handler. For raw uncompressed video this will equal 'DIB ' (Device Independent Bitmap). Any user provided \texttt{AVI} files with a fccHandler not euqal to 'DIB ', that is, the \texttt{AVI} contains compressed video, will at this point be rejected and an error message presented to the user.
+Each stream has a corresponding \texttt{AVI} stream header and format chunk within the above mentioned hdrl list. These data structures contain information about the stream including the codec and compression used (if any). Specifically, the \texttt{fccHandler} field contains a \texttt{FourCC} tag that identifies a specific data handler. For raw uncompressed video this will equal `DIB ' (Device Independent Bitmap). Any user provided \texttt{AVI} files with a fccHandler not euqal to `DIB ', that is, the \texttt{AVI} contains compressed video, will at this point be rejected and an error message presented to the user.
 
-Definition for movi chunk, top left corner, GBR calculate embedding cap...
+The movi list contains the raw video and audio data within sequential \texttt{RIFF} chunks. Each chunk for the DIB video stream contains one frames worth of pixel data, with each pixel represented by a 3 byte BGR (Blue Green Red) triple - a total of 24 bits per pixel. The first 3 byte triple corresponds to the lower left pixel of the final image\footnote{This can be inverted via the use of an option within the \texttt{BITMAPINFOHEADER}.}. 
+
+If we use an embedding algorithm which embeds 3 bits per pixel (that is, 1 bit per colour channel per pixel) we can derive an expression for the embedding capacity of a video \textbf{c} in terms of the height $h$ and width $w$ in pixels, the total number of frames $t$ and the frame rate $f$ in frames per second:
+\begin{center}
+	$\mathcal{V} _{\textbf{c}} = \dfrac{3 \cdot w \cdot h \cdot t}{f}$
+\end{center}  
+\noindent
+These values are all available within the \texttt{AVIMAINHEADER} structure allowing the user to be informed of the video's embedding capacity upon formatting.
+
+\subsubsection{JPEG compression}
+
+The \texttt{JPEG} file format will prove useful when developing a universal steganographic technique operating across many video formats, see section ???. Steganography within \texttt{JPEGs} has had a comparatively large amount of attention from the research community, most likely due to their popularity and the fact that virtually every camera will produce images in the \texttt{JPEG} format. As such, there exists a fair number of well documented steganographic embedding algorithms for \texttt{JPEG}.
+
+The \texttt{JPEG} compression process consists of 5 main procedures:
+\begin{enumerate}
+	\item Transform the image into an optimal color space. 
+	\item Downsample chrominance components by averaging groups of pixels together.
+	\item Apply a Discrete Cosine Transform (DCT) to blocks of pixels. 
+	\item Quantise each block of DCT coefficients using a quantisation table. 
+	\item Encode the resulting coefficients using a Huffman variable word-length algorithm. 
+\end{enumerate}
+
+\noindent
+Note that step 4 is an example of lossy compression, whereas step 5 is lossless. Therefore most steganographic algorithms will operate on the quantised DCT coefficients (between steps 4 and 5) to avoid embedded data being lost.
+
+Conveniently, the Independent JPEG Group provide the \texttt{libjpeg} C library which which will abstract the complexities of the \texttt{JPEG} format and allow direct access to the quantised DCT coefficients prior to step 5 being executed.
+
+It is worth noting that the \texttt{JPEG} decompression and compression processes are computationally expensive. This is especially important when dealing with video since the average 3 minute music video, consists of 4500 frames. Since performance of the virtual file system is important, design decisions will need to be made to accommodate this. Also worth noting is that although \texttt{JPEG} files are small on disk, they're not once decompressed into RAM. It will not be possible to hold all 4500 decompressed \texttt{JPEG} frames of the average music video in RAM, which is unfortunate again for performance reasons.
+
+\subsection{Existing tools}
+
+This section contains an exhaustive list of all the video steganogrphy tools I could find freely available on the Internet. A total of 5 tools claimed to provide steganographic embedding features within video files. Of these 5, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file and none of them provide any sort of file system interface.
+
+\subsubsection{Steganosaurus}
+
+Pretty good.
+
+\subsubsection{StegoStick}
+
+Really bad.
 
 
 \vfill
 
-
-\subsubsection{JPEG compression}
-
-\subsection{Existing tools}
 
 \subsection{Choice of Languages and Tools}
 
