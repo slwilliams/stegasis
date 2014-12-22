@@ -170,7 +170,7 @@ The many recent global surveillance disclosures show that using certain technolo
 
 \section{Preparation}
 \subsection{Background}
-In this section steganographic background material, definitions and concepts are introduced. The \texttt{AVI} file structure and \texttt{JPEG} compression are also discussed.
+In this section steganographic background material, definitions and concepts are introduced. The \texttt{AVI} file structure, \texttt{JPEG} compression and file systems are also discussed.
 
 The most important property of any steganographic system is undetectability, that is, it should be impossible to differentiate between ordinary and steganographically modified objects. This requirement is famously formulated within Simmons' prisoners' problem. 
 
@@ -331,6 +331,10 @@ Conveniently, the Independent JPEG Group provide the \texttt{libjpeg} C library 
 
 It is worth noting that the \texttt{JPEG} decompression and compression processes are computationally expensive. This is especially important when dealing with video since the average 3 minute music video, for example, consists of 4,500 frames (which can be considered as individual \texttt{JPEGs}). Since performance of the virtual file system is important, design decisions will need to be made to accommodate this. Also worth noting is that although \texttt{JPEG} files are small on disk, they're not once decompressed into RAM. It will not be possible to hold all 4,500 decompressed \texttt{JPEG} frames of the average music video in RAM, which is unfortunate again for performance reasons.
 
+\subsubsection{Filesystem in Userspace}
+
+need some b.g. info on FUSE.
+
 \subsection{Existing tools}
 % worth citing this: http://www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf
 The relatively little work on steganography within video is reflected in my search for steganographic programs operating on video files. This section contains an exhaustive list of all the video steganogrphy tools I could find freely\footnote{A further 2 programs exist claiming to embed within video, however these are closed source and not freely available to download. Therefore they have been excluded from this list. (Info Stego, Hiderman)} available on the Internet. A total of 6 tools claimed to provide steganographic embedding functionality within video files. Of these 6, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file\footnote{Admittedly you could embed a compressed archive using these tools to effectively allow a directory structure to be embedded.}  and none of them provide any sort of file system interface.
@@ -363,16 +367,77 @@ The above programs all resort to embedding within video files by either appendin
 \texttt{Steganosaurus} is a cross platform steganograhpic program developed by James Ridgway. It allows users to embed a file within \texttt{MP4} (\texttt{H264}) files via the modification of motion vectors. The input file is encrypted using \texttt{AES} with a user provided pass phrase. Need to test this in Linux.\\
 
 \noindent
-The above 3 programs are much more promising from a steganogrphic security point of view and some of them support multiple video formats. However, all feature the same limitation of only allowing the user to embed one chosen file. The provided embedding capacities are also far from practical for use with large files.
+The above 3 programs are much more promising from a steganogrphic security point of view and some of them also support multiple video formats. However, all feature the same limitation of only allowing the user to embed one chosen file and the offered embedding capacities are far from practical for use with large files.
 
-This project aims to remedy these issues by providing the user the opportunity to embed an arbitrary number of files within a video via a file system interface and providing high capacity steganographic embedding algorithms in excess of 100\% of the cover object's size\footnote{This is very much a trade off - capacities upwards of 100\% will come at the sacrifice of steganogrphic security. However, this decision is presented to the user rather than decided by the program itself.}. 
+This project aims to remedy these issues by providing the user the opportunity to embed an arbitrary number of files within a video via a file system interface and providing high capacity steganographic embedding algorithms offering capacities in excess of 100\% of the cover object's size\footnote{This is very much a trade off - capacities upwards of 100\% will come at the sacrifice of steganogrphic security. However, this decision is presented to the user rather than decided by the program itself.}. 
 
 \subsection{Requirements Analysis}
 
+After reviewing the necessary background material and investigating current available solutions to the problem of steganography within video, the following collection of requirements were produced. For the project to be considered a success, at least all of the core requirements should be fulfilled.
+
 \subsubsection{Core Requirements}
+
+\texttt{Stegasis} should:
+
+\begin{itemize}
+\item Allow users to embed data within video files.
+	\begin{itemize}
+		\item Several steganographic embedding algorithms should be available.
+		\item Each embedding algorithm, $\mathcal{A}$, should satisfy correctness. That is,\\ 
+		\begin{center}
+			$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~Ext_{\mathcal{A}}(Emb_{\mathcal{A}}(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}$.
+		\end{center}
+		\item An optional user provided password should encrypt data prior to embedding.
+		\item A capacity option should allow users to specify the percentage of each video frame to embed within.
+	\end{itemize}
+\item Provide a file system interface:
+	\begin{itemize}
+		\item The presented logical volume should reside at a user provided mount point.		
+		\item Data written to the file system should be embedded on the fly within the chosen video file.
+		\item Data accessed from the file system should be retrieved on the fly from within the video.
+		\item Standard file system operations such as creating, deleting and moving files should work as expected, and standard Unix tools such as \texttt{cp}, \texttt{mv} and \texttt{rm} should also work as expected.
+	\end{itemize}	
+\item Support raw uncompressed \texttt{AVI} video:
+	\begin{itemize}
+		\item Uncompressed \texttt{AVIs} should be natively parsed allowing access to individual pixel data.
+	\end{itemize}	
+\item Provide performance adequate for normal use:
+	\begin{itemize}
+		\item Full HD video content should be playable directly from within the presented file system.
+	\end{itemize}		
+\end{itemize}
 
 \subsubsection{Possible Extensions}
 
+If time constraints allow, the following extension tasks shall also be completed.\\
+
+\noindent
+\texttt{Stegasis} should:
+
+\begin{itemize}
+\item Support a wide range of video formats:
+	\begin{itemize}
+		\item Specifically including the popular video format \texttt{MP4}.		
+	\end{itemize}
+\item Allow directory operations within the file system:
+	\begin{itemize}
+		\item Creating directories using the \texttt{mkdir} command should work as expected, as should using the \texttt{mv} and \texttt{rm} commands.
+		\item Organising files within directories should also work as expected.
+	\end{itemize}	
+\item Embed also within audio data:
+	\begin{itemize}
+		\item Data should also be embedded within the (possible) audio stream of the video, therefore increasing the embedding capacity.
+	\end{itemize}	
+\item Provide plausible deniability:
+	\begin{itemize}
+		\item A second file system should be (optionally) embedded within the video, mountable with a second passphrase.
+		\item The presence of the second, hidden file system should not be detectable.
+	\end{itemize}
+\item Be evaluated partially using a web application:
+	\begin{itemize}
+		\item The web application should evaluate the claim ``Embedding has no perceivable impact on video quality.'' by obtaining data from multiple users.
+	\end{itemize}		
+\end{itemize}
 
 \subsection{Choice of Languages and Tools}
 
