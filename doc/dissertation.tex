@@ -28,6 +28,7 @@
 \usepackage{textcomp}
 \usepackage[binary-units=true]{siunitx}
 \counterwithin{table}{section}
+\numberwithin{figure}{section}
 
 
 % --------------------------------------------------------------------
@@ -170,8 +171,9 @@ The many recent global surveillance disclosures show that using certain technolo
 
 \section{Preparation}
 \subsection{Background}
-In this section steganographic background material, definitions and concepts are introduced. The \texttt{AVI} file structure, \texttt{JPEG} compression and file systems are also discussed.
+In this section steganographic background material, definitions and concepts are introduced. A number of related technologies to the project are also discussed.\\
 
+\noindent
 The most important property of any steganographic system is undetectability, that is, it should be impossible to differentiate between ordinary and steganographically modified objects. This requirement is famously formulated within Simmons' prisoners' problem. 
 
 Alice and Bob are imprisoned in separate cells and wish to formulate an escape plan. They are allowed to communicate, but all messages must pass through a warden Eve. If Eve suspects the prisoners of secretly discussing their escape plan, the communication channel will be severed and Alice and Bob thrown into solitary confinement. The prisoners attempt to utilise steganograhpy to exchange details of their plan undetected. The steganographic system is considered broken if Eve is able to detect the presence of hidden messages within the prisoners exchanges. It is assumed that Eve has a complete knowledge of the steganographic algorithm being used, with the exception of the stego key, which Alice and Bob have agreed upon beforehand. This is in parallel with Kerckhoff's principle used within cryptography. The warden can be considered to be one of three categories: \textit{passive}, \textit{active} and \textit{malicious}. A passive warden does not modify the exchanged messages in any way, whereas an active warden may modify the messages whilst maintaining their original meaning. For example an active warden may replace words with synonyms or reorder sentences. If images are being used as a transport medium then an active warden may recompress or crop the images. A malicious warden attempts to break the steganograhpic system and impersonate the prisoners in an attempt to obtain information.
@@ -247,7 +249,8 @@ A trivial example of steganalysis arises when the steganalyst has access to the 
 Steganalysis methods can be split into two main categories, \textit{Targeted Steganalysis} and \textit{Blind Steganalysis}. \textit{Targeted Steganalysis} occurs when the steganalyst has access to the details of the steganographic algorithm used for embedding. The steganalyst can accordingly target their activity to the specific stegosystem. On the other hand, if the steganalyst has no knowledge of the utilised steganographic algorithm, \textit{Blind Steganalysis} techniques must be applied. In this project, \textit{Targeted Steganalysis} attacks are developed for several of the proposed embedding algorithms.
 
 \subsubsection{The AVI file format}
-As specified within the project proposal, this project only looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section ???} by \texttt{Stegasis}. Henceforward, references to ``\texttt{AVI} files'' specifically refer to version 1.0, uncompressed.
+\label{avi}
+As specified within the project proposal, this project only (initially) looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section ???} by \texttt{Stegasis}. Unfortunately, uncompressed \texttt{AVI} is today, a very uncommon video format. This is likely due to its relatively huge file sizes when compared to a modern compressed format such as \texttt{MP4} \texttt{H.264}. For example, one minute of 720p HD footage encoded as uncompressed \texttt{AVI} is roughly 4.2 GB.
 
 The \texttt{AVI} file format is a Resource Interchange File Format (\texttt{RIFF}) file specification developed by Microsoft and originally introduced in November 1992. The data within \texttt{RIFF} files is divided into chunks and lists, each of which is identified by a \texttt{FourCC} tag. An \texttt{AVI} file takes the form of a single chunk in a \texttt{RIFF} formatted file, which is then subdivided into two mandatory lists and one optional chunk. The first sub-list is the file header containing metadata about the video (for example framerate, width and height). The second sub-list contains the actual audio/video data and the optional chunk indexes the offsets of the data chunks within the file.
 
@@ -312,6 +315,7 @@ If we use an embedding algorithm which embeds 3 bits per pixel (that is, 1 bit p
 These values are all available within the \texttt{AVIMAINHEADER} structure allowing the user to be informed of the video's embedding capacity upon formatting.
 
 \subsubsection{JPEG compression}
+\label{jpeg}
 
 The \texttt{JPEG} file format will prove useful when developing a universal steganographic technique operating across many video formats, see section ???. Steganography within \texttt{JPEGs} has had a comparatively large amount of attention from the research community, most likely due to their popularity and the fact that virtually every camera will produce images in the \texttt{JPEG} format. As such, there exists a fair number of well documented steganographic embedding algorithms for \texttt{JPEG}.
 
@@ -331,9 +335,51 @@ Conveniently, the Independent JPEG Group provide the \texttt{libjpeg} C library 
 
 It is worth noting that the \texttt{JPEG} decompression and compression processes are computationally expensive. This is especially important when dealing with video since the average 3 minute music video, for example, consists of 4,500 frames (which can be considered as individual \texttt{JPEGs}). Since performance of the virtual file system is important, design decisions will need to be made to accommodate this. Also worth noting is that although \texttt{JPEG} files are small on disk, they're not once decompressed into RAM. It will not be possible to hold all 4,500 decompressed \texttt{JPEG} frames of the average music video in RAM, which is unfortunate again for performance reasons.
 
-\subsubsection{Developing a file system}
+\subsubsection{FFmpeg}
+\label{ffmpeg}
 
-need some b.g. info on FUSE and the other option.
+\texttt{FFmpeg} is an open source, multimedia framework. It is a ``complete, cross-platform solution to record, convert and stream audio and video''. In particular, it contains codecs for nearly every video format available today.  
+
+The pitfalls of the uncompressed \texttt{AVI} video format, as discussed in section \ref{avi}, show that \texttt{Stegasis} would greatly benefit from operating on multiple video formats other than uncompressed \texttt{AVI}. I could continue to investigate more video formats and develop codecs for these as part of the project. However, this will become a very time consuming endeavor most likely resulting in very brittle, untested parsers. Instead, it would be wise to leverage the \texttt{FFmpeg} framework for this functionality.
+
+One trivial solution to allow \texttt{Stegasis} to operate on multiple video formats would be to convert all user provided video files to uncompressed \texttt{AVI}, using \texttt{FFmpeg}, prior to the embedding process. However, this doesn't solve the problems of the huge file sizes and uncommonality of the format. Note that it is not possible to covert to uncompressed \texttt{AVI}, perform the embedding and then convert back to the original provided format since the conversion process will be lossy, damaging the embedded data.
+
+A novel solution to this problem is posed in section ?? and makes use of \texttt{FFmpeg} for the video conversion.
+
+\subsubsection{Developing a file system}
+\label{fs}
+
+A file system can either operate within \textit{kernel} or \textit{user space}. It was decided at the project proposal stage to develop the file system component for \texttt{Stegasis} in user space using the \texttt{FUSE} (Filesystem in Userspace) library for a number of reasons. Firstly, developing a kernel module is complex and hard to test - a \texttt{Segmentation fault} occurring within kernel space code will bring down the entire machine. A kernel module also requires a large amount of boiler plate code and I would prefer to spend time on the steganographic portion of this project rather than getting bogged down with the complexities of a kernel file system implementation. In contrast, \texttt{FUSE} ships with an example ``hello world'' file system which is less than 100 lines of C code. Secondly, developing the file system in user space will cause the final application to be a lot more portable and easier for users to install - a kernel space file system would require super user permission to load the related kernel module.
+
+There are however disadvantages to using a file system in user space, performance being one of them. This is due to the \texttt{FUSE} kernel module having to act as a proxy between the system call and the user space code. This is explained below.
+
+\begin{figure}[here]
+\centerline{\includegraphics[width=0.9\textwidth]{images/fuse_structure.png}}
+\caption{Path of a file system call in the hello world example.}
+\label{fig:fuse}
+\end{figure}
+
+Figure \ref{fig:fuse} shows the path of a file system call in the provided hello world example file system. We can see the \texttt{FUSE} kernel module acting as a proxy between the \texttt{VFS} system call and the \texttt{example/hello} user space code. A kernel space file system would not need to re-enter user space to compete the system call, hence giving better performance. 
+
+The \texttt{FUSE} library provides a number of function definitions which the user space code implements. These functions are then called when the corresponding file system operation occurs. Some of the important operations are discussed in detail below.\\
+
+\begin{lstlisting}[language=C, caption={\texttt{FUSE} read operation.}, frame=single]
+	int read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+\end{lstlisting}
+
+\noindent
+The \texttt{read} function is called when a file system read occurs. It requests that \texttt{size} bytes of the file \texttt{path} starting at offset \texttt{offset} should be written to the buffer \texttt{buf}.
+
+The \texttt{write} function is similar:\\
+
+\begin{lstlisting}[language=C, caption={\texttt{FUSE} write operation.}, frame=single]
+	int write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+\end{lstlisting}
+
+\noindent
+It requests that \texttt{size} bytes from the buffer \texttt{buf} should be written to the file \texttt{path} starting at offset \texttt{offset}.
+
+Similar functions exist for all of the standard file system operations, see appendix section ??? for a full list. 
 
 \subsection{Existing tools}
 % worth citing this: http://www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf
@@ -387,6 +433,7 @@ After reviewing the necessary background material and investigating current avai
 		\begin{center}
 			$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~Ext_{\mathcal{A}}(Emb_{\mathcal{A}}(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}$.
 		\end{center}
+		\item Steganalysis tools should be developed to test the security of the proposed embedding algorithms.
 		\item An optional user provided password should encrypt data prior to embedding.
 		\item A capacity option should allow users to specify the percentage of each video frame to embed within.
 	\end{itemize}
@@ -433,7 +480,7 @@ If time constraints allow, the following extension tasks shall also be completed
 		\item A second file system should be (optionally) embedded within the video, mountable with a second passphrase.
 		\item The presence of the second, hidden file system should not be detectable.
 	\end{itemize}
-\item Be evaluated partially using a web application:
+\item Be evaluated for perceivable video impact using a web application:
 	\begin{itemize}
 		\item The web application should evaluate the claim ``Embedding has no perceivable impact on video quality.'' by obtaining data from multiple users.
 	\end{itemize}		
@@ -445,21 +492,28 @@ With the above requirements for the final product defined, an appropriate set of
 
 It is first noted that \texttt{Stegasis} (as developed for this project) will only function on the \texttt{Linux} operating system. That is, there is no requirement for \texttt{Stegasis} to be cross platform.  
 
-The file system is an important aspect of \texttt{Stegasis} and so it is initially decided which approach to take in developing it as this will influence the later choice of an appropriate programming language.
+The file system is an important aspect of \texttt{Stegasis} and so it is initially decided which approach to take in developing it as this will influence the later choice of an appropriate programming language. As described within section \ref{fs}, it was decided to use the \texttt{FUSE} library to develop the file system component in user space.
 
-As described within section ??, there are two main approaches to developing a file system; within kernal space and within user space. 
+We now address the choice of primary programming language for the development of \texttt{Stegasis}.
 
-We now address the choice of primary programming language for developing \texttt{Stegasis}.
+Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library, and libraries provided by \texttt{FFmpeg}). Although wrappers for other languages (including Java) do exist, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{There have been numerous studies showing that C/C++ code performs better than equivalent Java code.} due to the JVM overheads. 
 
-Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a C like language since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library). Although wrappers for other languages (including Java) do exist, they seem to be lacking documentation and few are being actively maintained. The final core requirement, performance, also favours C/C++ over Java\footnote{There have been numerous studies showing that C/C++ code performs better than equivalent Java code.} due to the JVM overheads. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C.
+The reasons above led to the conclusion that C++ should be the primary language used to develop \texttt{Stegasis}.
 
-It is because of the above reasons that it was chosen to develop \texttt{Stegasis} in C++.
+As discussed in section \ref{ffmpeg}, \texttt{FFmpeg} will be used for the extension task ``\texttt{Stegasis} should support a wide range of video formats'', to allow the decoding and conversion of the many video formats available today, together with library \texttt{libjpeg} discussed in section \ref{jpeg} for the manipulation of \texttt{JPEG} images. 
 
-\vfill
+During the implementation of \texttt{Stegasis}, a number of small steganalysis programs will be developed. These will likely be written in a scripting language such as Python or Matlab since both have extensive library support for mathematical operations.
+
+The extension task ``\texttt{Stegasis} should be evaluated for perceivable video impact using a web application'' will require a website to be developed and hosted for easy access to participants and a database to store the collected user data. \texttt{Node.js} together with the web application framework \texttt{Express} and the database \texttt{MongoDB} was chosen as the development stack for the site. This decision was mainly due to the speed at which you can develop \textit{CRUD} (create, read, update and delete) web applications - essentially what this evaluation site is - and my previous experience with the technologies.
 
 
 \section{Implementation}
 \subsection{Introduction}
+
+Intro...
+
+\vfill
+\subsection{AVI}
 \subsection{Filesystem}
 \subsection{Steganographic Algorithms}
 \subsection{Extensions}
