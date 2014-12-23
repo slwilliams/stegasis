@@ -331,9 +331,9 @@ Conveniently, the Independent JPEG Group provide the \texttt{libjpeg} C library 
 
 It is worth noting that the \texttt{JPEG} decompression and compression processes are computationally expensive. This is especially important when dealing with video since the average 3 minute music video, for example, consists of 4,500 frames (which can be considered as individual \texttt{JPEGs}). Since performance of the virtual file system is important, design decisions will need to be made to accommodate this. Also worth noting is that although \texttt{JPEG} files are small on disk, they're not once decompressed into RAM. It will not be possible to hold all 4,500 decompressed \texttt{JPEG} frames of the average music video in RAM, which is unfortunate again for performance reasons.
 
-\subsubsection{Filesystem in Userspace}
+\subsubsection{Developing a file system}
 
-need some b.g. info on FUSE.
+need some b.g. info on FUSE and the other option.
 
 \subsection{Existing tools}
 % worth citing this: http://www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf
@@ -356,11 +356,11 @@ The above programs all resort to embedding within video files by either appendin
 
 \subsubsection{StegoVideo}
 
-\texttt{StegoVideo} is a Virtual Dub filter\footnote{Which is also available in a stand alone executable form.} which allows a user to embedded a file within \texttt{AVI} files (supporting multiple compression codecs). I am unsure of the exact steganograhpic embedding algorithm used since the program is closed source, but the website does mention that \texttt{StegoVideo} makes use of error correction codes to allow embedded data to be recovered even after the resulting video has been compressed - although this is understandably dependant on the compression amount. \texttt{StegoVideo} claims to protect the embedded data via the use of a passkey (a 5 digit number), although as with \texttt{StegoMagic}, this is not provided by the user and is instead generated and presented to the user to make a note of.
+\texttt{StegoVideo} is a Virtual Dub filter\footnote{Which is also available in a stand alone executable form.} which allows users to embedded a file within \texttt{AVI} files (supporting multiple compression codecs). I am unsure of the exact steganograhpic embedding algorithm used since the program is closed source, but the website does mention that \texttt{StegoVideo} makes use of error correction codes to allow embedded data to be recovered even after the resulting video has been compressed - although this is understandably dependant on the compression amount. \texttt{StegoVideo} claims to protect the embedded data via the use of a passkey (a 5 digit number), although as with \texttt{StegoMagic}, this is not provided by the user and is instead generated and presented to the user to make a note of.
 
 \subsubsection{OpenPuff}
 
-\texttt{OpenPuff} is a steganographic tool supporting a wide range of formats, including \texttt{3GP}, \texttt{MP4}, \texttt{MPG} and \texttt{VOB}. It allows users to embed a file within a collection of carrier objects and uses 3 user provided passwords to encrypt, scramble and whiten (mixing with a high amount of noise) the provided file. Plausible deniability is also provided via the option to add decoy content. \texttt{OpenPuff} successfully embedded and retrieved a text file within a sample \texttt{MP4} video and I could notice no perceivable impact on video quality. Performance was also good due to multithreading support. However, the embedding capacity is very limited. A hard limit of \SI{256}{\mega\byte} is imposed regardless of the number and size of the carrier objects and I was only able to achieve embedding capacities of around 0.0043\%\footnote{2,600 bytes within a \SI{60}{\mega\byte} video.} even at the maximum capacity setting. This makes \texttt{OpenPuff} impractical for hiding large files - for example, you would need around 770 \SI{60}{\mega\byte} carrier files to embed a standard \SI{2}{\mega\byte} \texttt{JPEG} image.
+\texttt{OpenPuff} is a steganographic tool supporting a wide range of formats, including \texttt{3GP}, \texttt{MP4}, \texttt{MPG} and \texttt{VOB}. It allows users to embed a file within a collection of carrier objects and uses 3 user provided passwords to encrypt, scramble and whiten (mixing with a high amount of noise) the provided file. Plausible deniability is also provided via the option to add decoy content. \texttt{OpenPuff} successfully embedded and retrieved a text file within a sample \texttt{MP4} video and I could notice no perceivable impact on video quality. Performance was also good due to multithreading support. However, the embedding capacity is very limited. A hard limit of \SI{256}{\mega\byte} is imposed regardless of the number and size of the carrier objects and I was only able to achieve embedding capacities of around 0.0043\%\footnote{2,600 bytes within a \SI{60}{\mega\byte} video.} even at the maximum capacity setting. This makes \texttt{OpenPuff} impractical for hiding large files - for example, you would need around 770 \SI{60}{\mega\byte} \texttt{MP4} carrier files to embed a standard \SI{2}{\mega\byte} \texttt{JPEG} image.
 
 \subsubsection{Steganosaurus}
 
@@ -369,7 +369,7 @@ The above programs all resort to embedding within video files by either appendin
 \noindent
 The above 3 programs are much more promising from a steganogrphic security point of view and some of them also support multiple video formats. However, all feature the same limitation of only allowing the user to embed one chosen file and the offered embedding capacities are far from practical for use with large files.
 
-This project aims to remedy these issues by providing the user the opportunity to embed an arbitrary number of files within a video via a file system interface and providing high capacity steganographic embedding algorithms offering capacities in excess of 100\% of the cover object's size\footnote{This is very much a trade off - capacities upwards of 100\% will come at the sacrifice of steganogrphic security. However, this decision is presented to the user rather than decided by the program itself.}. 
+This project aims to remedy these issues by providing the user the opportunity to embed an arbitrary number of files within a video via a file system interface and providing high capacity steganographic embedding algorithms offering capacities in excess of 100\%\footnote{This specifically means a file of size n bytes can have more than n bytes hidden inside it.} of the cover object's size\footnote{This is very much a trade off - capacities upwards of 100\% will come at the sacrifice of steganogrphic security. However, this decision is presented to the user rather than decided by the program itself.}. 
 
 \subsection{Requirements Analysis}
 
@@ -380,7 +380,7 @@ After reviewing the necessary background material and investigating current avai
 \texttt{Stegasis} should:
 
 \begin{itemize}
-\item Allow users to embed data within video files.
+\item Allow users to embed data within video files:
 	\begin{itemize}
 		\item Several steganographic embedding algorithms should be available.
 		\item Each embedding algorithm, $\mathcal{A}$, should satisfy correctness. That is,\\ 
@@ -441,7 +441,19 @@ If time constraints allow, the following extension tasks shall also be completed
 
 \subsection{Choice of Languages and Tools}
 
-C because it is web scale refering to the above req.
+With the above requirements for the final product defined, an appropriate set of languages and tools can be identified.
+
+It is first noted that \texttt{Stegasis} (as developed for this project) will only function on the \texttt{Linux} operating system. That is, there is no requirement for \texttt{Stegasis} to be cross platform.  
+
+The file system is an important aspect of \texttt{Stegasis} and so it is initially decided which approach to take in developing it as this will influence the later choice of an appropriate programming language.
+
+As described within section ??, there are two main approaches to developing a file system; within kernal space and within user space. 
+
+We now address the choice of primary programming language for developing \texttt{Stegasis}.
+
+Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a C like language since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library). Although wrappers for other languages (including Java) do exist, they seem to be lacking documentation and few are being actively maintained. The final core requirement, performance, also favours C/C++ over Java\footnote{There have been numerous studies showing that C/C++ code performs better than equivalent Java code.} due to the JVM overheads. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C.
+
+It is because of the above reasons that it was chosen to develop \texttt{Stegasis} in C++.
 
 \vfill
 
