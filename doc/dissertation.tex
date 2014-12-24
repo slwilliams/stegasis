@@ -27,7 +27,7 @@
 \usepackage{chngcntr}
 \usepackage{textcomp}
 \usepackage[binary-units=true]{siunitx}
-\counterwithin{table}{section}
+\numberwithin{table}{section}
 \numberwithin{figure}{section}
 
 
@@ -242,11 +242,11 @@ For completeness, the least significant bit (LSB) of a given number is defined a
 \end{center}
 % steganalysis
 \subsubsection{Steganalysis}
-Steganalysis is the study detecting messages embedded using steganographic techniques; this is analogous to cryptanalysis applied to cryptography. A steganalysis attack is considered successful (i.e. the steganography has been broken) if it is possible to correctly distinguish between cover and stego objects with probability better than random guessing. Note that it is not necessary to be able to read the contents of the secret message to break a steganographic system.
+Steganalysis is the study of detecting messages embedded using steganographic techniques; this is analogous to cryptanalysis applied to cryptography. A steganalysis attack is considered successful (that is, the steganography has been broken) if it is possible to correctly distinguish between cover and stego objects with probability better than random guessing. Note that it is not necessary to be able to read the contents of the secret message to break a steganographic system.
 
 A trivial example of steganalysis arises when the steganalyst has access to the original cover object used within the embedding procedure. By computing the difference between the stego and cover objects, the steganalyst can immediately detect the presence of a hidden message. This attack identifies a number of important points to consider when developing a practical steganographic system. Firstly, embedding within popular media content should be discouraged, as the cover object will be likely widely available. Secondly, if a user is embedding within original content, for example a video recorded by them, any copies of the original file should be securely erased after embedding.
 
-Steganalysis methods can be split into two main categories, \textit{Targeted Steganalysis} and \textit{Blind Steganalysis}. \textit{Targeted Steganalysis} occurs when the steganalyst has access to the details of the steganographic algorithm used for embedding. The steganalyst can accordingly target their activity to the specific stegosystem. On the other hand, if the steganalyst has no knowledge of the utilised steganographic algorithm, \textit{Blind Steganalysis} techniques must be applied. In this project, \textit{Targeted Steganalysis} attacks are developed for several of the proposed embedding algorithms.
+Steganalysis methods can be split into two main categories, \textit{Targeted Steganalysis} and \textit{Blind Steganalysis}. Targeted Steganalysis occurs when the steganalyst has access to the details of the steganographic algorithm used for embedding. The steganalyst can accordingly target their activity to the specific stegosystem. On the other hand, if the steganalyst has no knowledge of the utilised steganographic algorithm, Blind Steganalysis techniques must be applied. In this project, Targeted Steganalysis attacks are developed for several of the proposed embedding algorithms.
 
 \subsubsection{The AVI file format}
 \label{avi}
@@ -287,7 +287,7 @@ And a \texttt{RIFF} list defined as:
 \end{lstlisting}
 
 \noindent
-An \texttt{AVI} file consists of a number of data streams (usually 2, one for audio and one for video) interleaved within the movi list. Each stream is identified by a \texttt{FourCC} tag consisting of a two-digit stream number followed by a two-character code:
+An \texttt{AVI} file consists of a number of data streams (usually 2, one for audio and one for video) interleaved within the movi list. Each stream is identified by a \texttt{FourCC} tag consisting of a two-digit stream number followed by a two-character code listed in table \ref{table:fourcc}.
 
 \begin{table}[h]
 \centering
@@ -300,6 +300,7 @@ pc                          & Palette change             \\ \cline{1-2}
 wb                          & Audio data                 \\ \cline{1-2}
 \end{tabular}
 \caption{\texttt{AVI} stream types}
+\label{table:fourcc}
 \end{table}
 
 \noindent
@@ -517,6 +518,7 @@ Intro...
 \subsection{Filesystem}
 \subsection{Steganographic Algorithms}
 \subsection{Extensions}
+\subsection{Testing}
 
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
