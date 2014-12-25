@@ -509,14 +509,20 @@ The extension task ``\texttt{Stegasis} should be evaluated for perceivable video
 
 
 \section{Implementation}
+
 \subsection{Introduction}
 
-Intro...
+The development of \texttt{Stegasis} consisted of the 5 main stages sectioned within this chapter. First, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} is developed allowing direct access to video pixel data. Next, steganographic embedding algorithms are implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system can now be developed using the \texttt{AVI} decoder and steganogrphic algorithms to embed and read data directly into and from video files. Extension tasks are then individually addressed. Finally, testing of the system is summarised.
+
+The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next, embracing the modern ``Launch early, iterate often'' methodology. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate concept.
+
+\subsection{AVI Decoder}
+
+Blah AVI blah.
 
 \vfill
-\subsection{AVI}
-\subsection{Filesystem}
 \subsection{Steganographic Algorithms}
+\subsection{Filesystem}
 \subsection{Extensions}
 \subsection{Testing}
 
