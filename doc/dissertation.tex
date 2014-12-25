@@ -152,6 +152,7 @@ area of the Laboratory's website.\\[20pt]
 \clearpage
 
 \tableofcontents
+\vfill
 
 \pagebreak
 \pagenumbering{arabic} 
@@ -250,7 +251,7 @@ Steganalysis methods can be split into two main categories, \textit{Targeted Ste
 
 \subsubsection{The AVI file format}
 \label{avi}
-As specified within the project proposal, this project only (initially) looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section ???} by \texttt{Stegasis}. Unfortunately, uncompressed \texttt{AVI} is today, a very uncommon video format. This is likely due to its relatively huge file sizes when compared to a modern compressed format such as \texttt{MP4} \texttt{H.264}. For example, one minute of 720p HD footage encoded as uncompressed \texttt{AVI} is roughly 4.2 GB.
+As specified within the project proposal, this project only (initially) looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section \ref{extffmpeg}.} by \texttt{Stegasis}. Unfortunately, uncompressed \texttt{AVI} is today, a very uncommon video format. This is likely due to its relatively huge file sizes when compared to a modern compressed format such as \texttt{MP4} \texttt{H.264}. For example, one minute of 720p HD footage encoded as uncompressed \texttt{AVI} is roughly 4.2 GB.
 
 The \texttt{AVI} file format is a Resource Interchange File Format (\texttt{RIFF}) file specification developed by Microsoft and originally introduced in November 1992. The data within \texttt{RIFF} files is divided into chunks and lists, each of which is identified by a \texttt{FourCC} tag. An \texttt{AVI} file takes the form of a single chunk in a \texttt{RIFF} formatted file, which is then subdivided into two mandatory lists and one optional chunk. The first sub-list is the file header containing metadata about the video (for example framerate, width and height). The second sub-list contains the actual audio/video data and the optional chunk indexes the offsets of the data chunks within the file.
 
@@ -522,8 +523,13 @@ Blah AVI blah.
 
 \vfill
 \subsection{Steganographic Algorithms}
-\subsection{Filesystem}
+\subsection{File system}
 \subsection{Extensions}
+\subsubsection{Supporting multiple video formats}
+\label{extffmpeg}
+\subsubsection{File system directory structures}
+\subsubsection{Plausible deniability}
+\subsubsection{Hiding data within audio streams}
 \subsection{Testing}
 
 \section{Evaluation}
