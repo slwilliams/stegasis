@@ -105,6 +105,7 @@
 
 \begin{document}
 \renewcommand{\thelstlisting}{\thesection.\arabic{lstlisting}}
+\counterwithin{lstlisting}{section}
 % ------------------------------------------------------------------------------
 % Maketitle
 % ------------------------------------------------------------------------------
@@ -246,7 +247,19 @@ For completeness, the least significant bit (LSB) of a given number is defined a
 \begin{center}
 	LSB($x$) = $x$ mod 2
 \end{center}
-% steganalysis
+
+\noindent
+It will be useful to visually inspect the effect of steganographic embedding algorithms operating on the LSBs of pixels. The \textit{LSB Plane} of an image is therefore defined.
+
+\begin{ddef}
+\textsc{LSB Plane}\\[5pt]
+The Least Significant Bit Plane of a given image $\mathcal{\textbf{c}}$ and a specified colour channel $q$ is defined as the 1 bit image $LSBP(\mathcal{\textbf{c}},q)$ which has resolution equal to that of image $\mathcal{\textbf{c}}$ and with pixel values  $LSBP(\mathcal{\textbf{c}},q)(x,y)$ given by,
+\begin{center}
+	$LSBP(\mathcal{\textbf{c}},q)(x,y) = LSB(\mathcal{\textbf{c}}(x,y))$
+\end{center} 
+\end{ddef}
+
+
 \subsubsection{Steganalysis}
 Steganalysis is the study of detecting messages embedded using steganographic techniques; this is analogous to cryptanalysis applied to cryptography. A steganalysis attack is considered successful (that is, the steganography has been broken) if it is possible to correctly distinguish between cover and stego objects with probability better than random guessing. Note that it is not necessary to be able to read the contents of the secret message to break a steganographic system.
 
@@ -550,7 +563,7 @@ This gives the following definition for the \texttt{Video Decoder} interface (\t
 \noindent
 Note that \texttt{getFrame} returns a \texttt{Chunk} wrapper object, rather than a raw \texttt{char} pointer to the frame pixel data, adhering to the \textit{Dependency Inversion} principle. This will be useful when dealing with different video formats that don't necessarily group all of a frames video data to be accessible by a single \texttt{char} pointer.
 
-A \texttt{Chunk} abstracts the concept of a single frames video data. In the case of the uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes\footnote{For uncompressed \texttt{AVI} this will always equal $3 \cdot height \cdot width$.}. The commonly used technique of only writing back dirty data is applied here, associating a boolean with each \texttt{Chunk} which is true if and only if the frame data has been modified.  
+A \texttt{Chunk} abstracts the concept of a single frames video data. In the case of the uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes. The commonly used technique of only writing back dirty data is applied here, associating a boolean with each \texttt{Chunk} which is true if and only if the frame data has been modified.  
 
 The \texttt{Chunk} interface is therefore defined as follows:
 
@@ -574,7 +587,7 @@ The \texttt{AVI} parssing process can be thought of consisting of two main parts
 
 \begin{algorithm}
 \caption{\texttt{AVI} parsing process}
-\label{pseudoPSO}
+\label{parseavi}
 \begin{algorithmic}[1]
 \State f $\gets$ open(file\_path)
 \State riff\_header $\gets$ readRiffHeader(f)
@@ -609,7 +622,54 @@ The \texttt{AVI} parssing process can be thought of consisting of two main parts
 \end{algorithm}
 
 \noindent
-Explain blah read RIFF if not reject...
+See the appendix section B for some longer code samples. The actual implementation is slightly more complex than presented above due to the existence of \texttt{JUNK} chunks. The \texttt{AVI} file format specifies that any number of chunks with a \texttt{FourCC} code of \texttt{JUNK} and of arbitrary length can be inserted between any \texttt{AVI} list structures. The parser must therefore be able to cope with this.
+
+The \texttt{WriteBack} function of the \texttt{AVI} decoder will write back any modified \texttt{Chunk} data into the original \texttt{AVI} file. This operation is described in algorithm \ref{writeback} below.
+
+\begin{algorithm}
+\caption{\texttt{AVI} write back process}
+\label{writeback}
+\begin{algorithmic}[1]
+\State Seek f to the chunks offset
+\State i $\gets$ 0
+\While{i $<$ avi\_header.total\_frames}
+	\State chunk $\gets$ readChunk(f)
+	\If{chunk.fourCC == 00db}
+		\If{frame\_chunks[i].isDirty}
+			\State Write frame\_chunks[i].frameData to f
+			\State frame\_chunks[i].dirty = false
+			\Comment{This chunk is no longer dirty}
+		\Else
+			\State Advance f chunk.chunkSize bytes
+			\Comment{Chunk did not need to be written}
+		\EndIf
+		\State i ++
+	\Else
+		\State Advance f chunk.chunkSize bytes
+		\Comment{Chunk was not a video chunk}
+	\EndIf
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+The remaining functionality of the parser is mostly trivially returning data from the \texttt{aviHeader} structure (for example \texttt{aviHeader.height}, \texttt{aviHeader.totalFrames} etc.) The only other function of interest is \texttt{getFrameSize}, which returns the number of bytes within each frame that can be embedded within. This (incorrectly) assumes that each frame can always have the same number of bytes embedded within it. This assumption is however true for uncompressed \texttt{AVI}\footnote{It is also true for the simple \texttt{JPEG} embedding algorithms used within the extension tasks.} and is implemented as in listing \ref{framesize}.
+
+\begin{lstlisting}[language=C++, caption={\texttt{AVI} decoder \texttt{frameSize} function (\texttt{video/avi\_decoder.cc:298})}, frame=single, label=framesize]
+	virtual int frameSize() {
+	  return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
+	};
+\end{lstlisting}
+
+This expression arises from the fact that uncompressed \texttt{AVI} uses 24 bits (3 bytes) per pixel value. So since there are $height \cdot width$ pixels within a single frame, we simply multiply this by 3 to get the total number of bytes. \textit{Capacity} is a user provided percentage ranging in value from 1 - 100. It specifies the percentage of the frame to embed within. \texttt{frameSize} must therefore reduce the returned frame size value by capacity percent.
+
+The effect of the capacity parameter is illustrated within figure \ref{cap50}. The left image is the original LSB plane (red channel) of a frame taken from an uncompressed \texttt{AVI} video. The right image is the same frame with data embedded within it using a capacity setting of 50\%.
+
+\begin{figure}[here]
+\centerline{\includegraphics[width=0.9\textwidth]{images/cap50comp.png}}
+\caption{Illustration of the capacity parameter.}
+\label{cap50}
+\end{figure}
+
 
 \vfill
 \subsection{Steganographic Algorithms}
