@@ -435,7 +435,7 @@ The above programs all resort to embedding within video files by either appendin
 \noindent
 The above 3 programs are much more promising from a steganogrphic security point of view and some of them also support multiple video formats. However, all feature the same limitation of only allowing the user to embed one chosen file and the offered embedding capacities are far from practical for use with large files.
 
-This project aims to remedy these issues by providing the user the opportunity to embed an arbitrary number of files within a video via a file system interface and providing high capacity steganographic embedding algorithms offering capacities in excess of 100\%\footnote{This specifically means a file of size n bytes can have more than n bytes hidden inside it.} of the cover object's size\footnote{This is very much a trade off - capacities upwards of 100\% will come at the sacrifice of steganogrphic security. However, this decision is presented to the user rather than decided by the program itself.}. 
+This project aims to remedy these issues by providing the user the opportunity to embed an arbitrary number of files within a video via a file system interface and providing high capacity steganographic embedding algorithms offering capacities in excess of 100\%\footnote{This specifically means a file of size n bytes can have more than n hidden bytes residing inside it.} of the cover object's size\footnote{This is very much a trade off - capacities larger than the file size will come at the sacrifice of steganogrphic security. However, this decision is presented to the user rather than decided by the program itself.}. 
 
 \subsection{Requirements Analysis}
 
@@ -449,7 +449,7 @@ After reviewing the necessary background material and investigating current avai
 \item Allow users to embed data within video files:
 	\begin{itemize}
 		\item Several steganographic embedding algorithms should be available.
-		\item Each embedding algorithm, $\mathcal{A}$, should satisfy correctness. That is,\\ 
+		\item Each embedding algorithm, $\mathcal{A}$, should satisfy correctness. That is,
 		\begin{center}
 			$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~Ext_{\mathcal{A}}(Emb_{\mathcal{A}}(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}$.
 		\end{center}
@@ -531,7 +531,7 @@ The extension task ``\texttt{Stegasis} should be evaluated for perceivable video
 
 \subsection{Introduction}
 
-The development of \texttt{Stegasis} consisted of the 5 main stages sectioned within this chapter. Firstly, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} was developed allowing direct access to video pixel data. Next, steganographic embedding algorithms were implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system was then developed utilising the \texttt{AVI} decoder and steganogrphic algorithms to embed and read data directly into and out of video files. Finally, the extension tasks were individually addressed providing support for multiple video formats, directory structures and plausible deniability\footnote{The evaluation site extension task is discussed within the evaluation chapter.}. The testing section provides an overview of the testing processes applied throughout development. 
+The development of \texttt{Stegasis} consisted of the 5 main stages sectioned within this chapter. Firstly, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} was developed allowing direct access to video pixel data. Next, steganographic embedding algorithms were implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system was then developed utilising the \texttt{AVI} decoder and steganogrphic algorithms to embed and extract data directly into and out of video files. Finally, the extension tasks were individually addressed providing support for multiple video formats, directory structures and plausible deniability\footnote{The evaluation site extension task is discussed within the evaluation chapter.}. The testing section provides an overview of the testing processes applied throughout development. 
 
 The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next. Instead, an iterative process was taken across all sections, embracing the modern ``Launch early, iterate often'' methodology. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate concept.
 
@@ -563,7 +563,7 @@ This gives the following definition for the \texttt{Video Decoder} interface (\t
 \noindent
 Note that \texttt{getFrame} returns a \texttt{Chunk} wrapper object, rather than a raw \texttt{char} pointer to the frame pixel data, adhering to the \textit{Dependency Inversion} principle. This will be useful when dealing with different video formats that don't necessarily group all of a frames video data to be accessible by a single \texttt{char} pointer.
 
-A \texttt{Chunk} abstracts the concept of a single frames video data. In the case of the uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes. The commonly used technique of only writing back dirty data is applied here, associating a boolean with each \texttt{Chunk} which is true if and only if the frame data has been modified.  
+A \texttt{Chunk} abstracts the concept of a single frames video data. In the case of uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes. A boolean value is also associated with each chunk, signifying if the chunk data has been modified, that is, it is dirty.
 
 The \texttt{Chunk} interface is therefore defined as follows:
 
@@ -583,7 +583,7 @@ The \texttt{Chunk} interface is therefore defined as follows:
 \noindent
 Note that the parameters for \texttt{getFrameData} are optional. For the \texttt{AVI} decoder, these will not be used.
 
-The \texttt{AVI} parssing process can be thought of consisting of two main parts; parsing the video headers and parsing the video chunk data. The following pseudocode illustrates the parsing process with the headers being parsed lines 1-12 and the chunks being parsed lines 15-22: 
+The \texttt{AVI} parssing process can be thought of consisting of two main parts; parsing the video headers and parsing the video chunk data. The following pseudocode illustrates this with the headers being parsed lines 1-12 and the chunks being parsed lines 15-22: 
 
 \begin{algorithm}
 \caption{\texttt{AVI} parsing process}
@@ -652,7 +652,7 @@ The \texttt{WriteBack} function of the \texttt{AVI} decoder will write back any 
 \end{algorithmic}
 \end{algorithm}
 
-The remaining functionality of the parser is mostly trivially returning data from the \texttt{aviHeader} structure (for example \texttt{aviHeader.height}, \texttt{aviHeader.totalFrames} etc.) The only other function of interest is \texttt{getFrameSize}, which returns the number of bytes within each frame that can be embedded within. This (incorrectly) assumes that each frame can always have the same number of bytes embedded within it. This assumption is however true for uncompressed \texttt{AVI}\footnote{It is also true for the simple \texttt{JPEG} embedding algorithms used within the extension tasks.} and is implemented as in listing \ref{framesize}.
+The remaining functionality of the parser is mostly trivially returning data from the \texttt{aviHeader} structure (for example \texttt{aviHeader.height}, \texttt{aviHeader.totalFrames} etc.) The only other function of interest is \texttt{getFrameSize}, which returns the number of bytes within each frame that can be embedded within. This (incorrectly) assumes that each frame can always have the same number of bytes embedded within it. This assumption is however true for the steganographic algorithms presented in the next section\footnote{It is also true for the simple \texttt{JPEG} embedding algorithms used within the extension tasks.}, and is implemented as in listing \ref{framesize}.
 
 \begin{lstlisting}[language=C++, caption={\texttt{AVI} decoder \texttt{frameSize} function (\texttt{video/avi\_decoder.cc:298})}, frame=single, label=framesize]
 	virtual int frameSize() {
@@ -660,19 +660,111 @@ The remaining functionality of the parser is mostly trivially returning data fro
 	};
 \end{lstlisting}
 
-This expression arises from the fact that uncompressed \texttt{AVI} uses 24 bits (3 bytes) per pixel value. So since there are $height \cdot width$ pixels within a single frame, we simply multiply this by 3 to get the total number of bytes. \textit{Capacity} is a user provided percentage ranging in value from 1 - 100. It specifies the percentage of the frame to embed within. \texttt{frameSize} must therefore reduce the returned frame size value by capacity percent.
+This expression arises from the fact that uncompressed \texttt{AVI} uses 24 bits (3 bytes) per pixel value. So since there are $height \cdot width$ pixels within a single frame, we simply multiply this by 3 to get the total number of bytes. \textit{Capacity} is a user provided percentage ranging in value from 1 - 100. It specifies the percentage of the frame to embed within. \texttt{frameSize} must therefore reduce the returned frame size value by ``capacity percent''.
 
-The effect of the capacity parameter is illustrated within figure \ref{cap50}. The left image is the original LSB plane (red channel) of a frame taken from an uncompressed \texttt{AVI} video. The right image is the same frame with data embedded within it using a capacity setting of 50\%.
+The effect of the capacity parameter is illustrated within figure \ref{cap50}. The top left image is the original video frame and the top right image is the LSB plane (red channel) of the frame with no data embedded. The bottom two images have data sequentially embedded within them using capacity settings of 50\% and 15\% respectively.
 
 \begin{figure}[here]
-\centerline{\includegraphics[width=0.9\textwidth]{images/cap50comp.png}}
+\centerline{\includegraphics[width=0.9\textwidth]{images/cap_ill.png}}
 \caption{Illustration of the capacity parameter.}
 \label{cap50}
 \end{figure}
 
+\noindent
+The \texttt{AVI Decoder} as described now provides all necessary functionality to allow the modification of pixel data to achieve the steganogrphic embedding of information within video frames. 
+
+
+\subsection{Steganographic Algorithms}
+
+The concept of a generic stegangraphic embedding algorithm is initially developed and implemented as a \texttt{Steganographic Algorithm} interface. As defined within the background discussion of steganogrphic concepts, a steganogrphic system consist of a pair of functions providing embedding and extraction functionality. The interface will therefore need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data respectively. The \texttt{Video Decoder} interface defined above allows access to video data via individual frame \texttt{Chunk} objects. It was therefore decided to define the \texttt{embed} and \texttt{extract} functions to operate on \texttt{Chunk} objects. The following interface definition was therefore used.
+
+\begin{lstlisting}[language=C++, caption={\texttt{Stego Algorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=framesize]
+class SteganographicAlgorithm {
+  protected:
+    string password;
+    VideoDecoder *dec;
+  public:
+    virtual void embed(Chunk *c,char *data,int dataBytes,int offset)=0;
+    virtual void extract(Chunk *c,char *output,int dataBytes,int offset)=0;
+    virtual void getAlgorithmCode(char out[4]) = 0;
+};
+\end{lstlisting}
+
+\noindent
+The \texttt{embed} function should be read as ``embed \texttt{dataBytes} bytes from \texttt{data} into chunk \texttt{c} starting at an offset \texttt{offset} bytes into the frame''. Similarly, the \texttt{extract} function should be read as ``extract \texttt{dataBytes} bytes from chunk \texttt{c} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output}''. It was decided to place the error handling logic within the file system code. The steganogrphic algorithm implementations therefore do not contain any such logic and instead assume that pointer \texttt{data} does indeed point to at least \texttt{dataBytes} bytes and so on.
+
+\texttt{getAlgorithmCode} simply returns a (unique) 4 character algorithm identifier which is used when users specify which algorithm they want to use.
+
+%\noindent
+%Implementations of the \texttt{Steganographic Algorithm} interface are now presented along with corresponding steganalysis methods. 
+
+\subsubsection{LSB Sequential Embedding}
+
+Sequential LSB embedding is arguably the simplest steganographic algorithm. It works by replacing the LSBs of the cover object with the message bits producing the stego image. Algorithm \ref{lsbalg} show pseudocode for the LSB embedding algorithm.
+
+\begin{algorithm}
+\caption{LSB embedding algorithm}
+\label{lsbalg}
+\begin{algorithmic}[1]
+\For{i $\gets$ 0 upto dataBytes - 1}
+	\For{j $\gets$ 7 downto 0}
+		\If{The jth significat bit of data[i] == 1}
+			\State frame[offset++] $\vert$= 1
+		\Else
+			\State frame[offset++] \&= ~1
+		\EndIf
+	\EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\noindent
+The matching extraction algorithm is shown in algorithm \ref{lsbext}.
+
+\begin{algorithm}
+\caption{LSB extraction algorithm}
+\label{lsbext}
+\begin{algorithmic}[1]
+\For{i $\gets$ 0 upto dataBytes - 1}
+	\For{j $\gets$ 7 downto 0}
+		\State output[i] $\vert$= ((frame[frameByte++] \& 1) $<<$ j)
+	\EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\noindent
+The actual implementation is relatively short and so is included below in listing \ref{lsbimp}.
+
+\begin{lstlisting}[language=C++, caption={LSB implementation (\texttt{steg/lsb\_algorithm.cc:8})}, frame=single, label=lsbimp]
+virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+  char *frame = c->getFrameData();
+  for (int i = 0; i < dataBytes; i ++) {
+    for (int j = 7; j >= 0; j --) {
+      if ((((1 << j) & data[i]) >> j) == 1) {
+        frame[offset++] |= 1;
+      } else {
+        frame[offset++] &= ~1;
+      }
+    }
+  }
+};
+\end{lstlisting}
+
+\noindent
+Pitfals visaul steg attack show some images then onto integral thing...
+
+\subsubsection{Permuted LSB Embedding}
+
+LCG!
+
+\subsubsection{Permuted and Encrypted LSB Embedding}
+
+AES whoo!
+
 
 \vfill
-\subsection{Steganographic Algorithms}
+
 \subsection{File system}
 \label{fsi}
 \subsection{Extensions}
