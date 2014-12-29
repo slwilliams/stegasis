@@ -17,6 +17,7 @@
 #include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
 #include "steg/lsb2_algorithm.cc"
+#include "steg/lsba_algorithm.cc"
 #include "steg/dctl_algorithm.cc"
 #include "steg/dctp_algorithm.cc"
 #include "steg/dct2_algorithm.cc"
@@ -150,6 +151,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new LSBPAlgorithm(pass, dec);
   } else if (alg == "lsb2") {
     return new LSB2Algorithm(pass, dec);
+  } else if (alg == "lsba") {
+    return new LSBAAlgorithm(pass, dec);
   } else if (alg == "dctl") {
     return new DCTLAlgorithm(dec);
   } else if (alg == "dctp") {
