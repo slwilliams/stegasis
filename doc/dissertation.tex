@@ -14,7 +14,7 @@
 \usepackage[noend]{algpseudocode}
 
 \usepackage{listings}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -137,7 +137,7 @@
 To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality.
 
 \subsection*{Work Completed}
-A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Basic file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Performance of the system is adequate for general use allowing high definition media content to be played directly out of the embedded volume.
+A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Most common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Performance of the system is adequate for general use allowing high definition media content to be played directly out of the embedded volume.
 
 \subsection*{Special Difficulties}
 None.
@@ -402,6 +402,7 @@ It requests that \texttt{size} bytes from the buffer \texttt{buf} should be writ
 Similar functions exist for all of the standard file system operations, see appendix section ??? for a full list. 
 
 \subsection{Existing tools}
+\label{tools}
 % worth citing this: http://www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf
 The relatively little work on steganography within video is reflected in my search for steganographic programs operating on video files. This section contains an exhaustive list of all the video steganogrphy tools I could find freely\footnote{A further 2 programs exist claiming to embed within video, however these are closed source and not freely available to download. Therefore they have been excluded from this list. (Info Stego, Hiderman)} available on the Internet. A total of 6 tools claimed to provide steganographic embedding functionality within video files. Of these 6, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file\footnote{Admittedly you could embed a compressed archive using these tools to effectively allow a directory structure to be embedded.}  and none of them provide any sort of file system interface.
 
@@ -889,7 +890,7 @@ Therefore, if the above requirements can be satisfied, a LCG can be used as a ps
 \noindent
 As such, $m$ is set equal to the next power of 2 larger or equal to $n$. Any produced values larger or equal to $n$ are just thrown away, therefore producing a full period of size $n$ as required.
 
-The pseudorandom permutation should be dependant on a user provided password. Therefore, the values of $a$ and $c$ are determined using a key derived from the users password. The popular key derivation function \texttt{PBKDF2} is used along with the \texttt{Whirlpool} hash function to generate a 128 byte key and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$.\\
+The pseudorandom permutation should be dependant on a user provided password. Therefore, the values of $a$ and $c$ are determined using a key derived from the users password. The popular key derivation function \texttt{PBKDF2} is used along with the \texttt{Whirlpool} hash function to generate a 128 byte key and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these well known algorithms myself, I used the popular C++ cryptographic library, \texttt{Crypto++}.\\
 
 \noindent
 This successfully describes an implementation for line 1 of algorithm \ref{lsbp}. Line 2 unfortunately causes some problems for the LCG due to precisely the reason that it was chosen to be used.
@@ -899,29 +900,67 @@ Since the full array of the pseudorandom permutation is not being stored, the LC
 The result of the permuted embedding algorithm is illustrated in figure \ref{lsbp_ill}. The left image has data embedded using the sequential embedding algorithm whereas the right image has the same data embedded using the permuted embedding algorithm. Both images were using a capacity setting of 15\%.
 
 \begin{figure}[here]
-\centerline{\includegraphics[width=0.9\textwidth]{images/lsbp_ill.png}}
+\centerline{\includegraphics[width=\textwidth]{images/lsbp_ill.png}}
 \caption{Illustration of the permuted LSB algorithm.}
 \label{lsbp_ill}
 \end{figure}
 
-Figure \ref{lsbp_chi} show the result of applying the Chi-Squared attack to a video frame with data embedded using the sequential LSB algorithm (left) and the permuted LSB algorithm (right), both using a capacity setting of 15\%.
+Figure \ref{lsbp_chi} shows the result of applying the Chi-Squared attack to the video frames in figure \ref{lsbp_ill}. The left and right graphs show the probability of embedding within the left and right frame respectively. It is clear that the implemented permuted LSB embedding algorithm resists the Chi-Squared attack when using small values for the capacity setting. 
 
 \begin{figure}[here]
-\centerline{\includegraphics[width=0.9\textwidth]{images/lsbp_chi.png}}
+\centerline{\includegraphics[width=\textwidth]{images/lsbp_chi.png}}
 \caption{Chi-Squared attack on the permuted LSB algorithm.}
 \label{lsbp_chi}
 \end{figure}
+
+\noindent
+The above example embedded data within an uncompressed \texttt{AVI} video file which was 10 seconds in duration, had a resolution of $1280\times720$ and was \SI{741}{\mega\byte} in size. Using the permuted LSB embedding algorithm with a capacity setting of 15\% (which resisted the Chi-Squared attack), \texttt{Stegasis} informed me that the formatted volume had a total capacity of \SI{14.49}{\mega\byte}, roughly 2\% of the file size. This embedding capacity is already a lot better than some of the those provided by programs investigated in section \ref{tools}, and will be further improved upon during the extension task within section ??.
 
 
 
 \subsubsection{Permuted and Encrypted LSB Embedding}
 
-To further stengthen the security blach.
+To further strengthen the security of \texttt{Stegasis}, it was decided to encrypt the data before embedding it within the video. This way, even if the stegosystem is broken, that is the hidden data has been identified and extracted, the data itself will not be compromised. The same user provided password used to permute the data throughout the video frame is used within the encryption process, addressing another concern of some of the investigated programs in section \ref{tools}.\\
 
-\vfill
+\noindent
+The initial approach to encrypting the embedded data was to simply \texttt{XOR} the data stream with a pseudorandom number stream. The \texttt{Crypto++} library provided a variety of pseudorandom number generators which could be seeded and used as the pseudorandom number stream. It was chosen to use the \texttt{RandomPool} algorithm and to seed it using both the entire 128 byte key derived using the \texttt{PBKDF2} algorithm, and the requested embed offset into the video frame. This way, if the same file is written twice to the volume, it will be encrypted to 2 different byte streams\footnote{Unless the file is embedded within 2 different frames at the same offset.}. Unfortunately, this will cause some problems when the file system is developed in section \ref{fsi}.
+
+Listing \ref{lsb2} shows the implementation of the permuted and encrypted LSB embedding algorithm.
+
+\begin{lstlisting}[language=C++, caption={Encrypted and permuted embedding (\texttt{steg/lsb2\_algorithm.cc:41})}, frame=single, label=lsb2]
+virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+  char *frame = c->getFrameData();
+  CryptoPP::RandomPool pool;
+  pool.IncorporateEntropy((const unsigned char *)this->key, 128);
+  pool.IncorporateEntropy((const unsigned char *)&offset, 4);
+  
+  int frameByte = lcg.map[offset++];
+  for (int i = 0; i < dataBytes; i ++) {
+    char xord = data[i] ^ pool.GenerateByte();
+    for (int j = 7; j >= 0; j --) {
+      if ((((1 << j) & xord) >> j) == 1) {
+        frame[frameByte] |= 1;
+      } else {
+        frame[frameByte] &= ~1;
+      }
+      frameByte = lcg.map[offset++];
+    }
+  }
+};
+\end{lstlisting}
+
+\noindent
+More standard encryption algorithms were then added, such as \texttt{AES} (256 bit), \texttt{TwoFish} and \texttt{Serpent}. All of these algorithms are available within the \texttt{Crypto++} library which made incorporating them easy. \texttt{Stegasis} currently supports standard \texttt{AES}, and also \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent}. That is, the data is first encrypted using \texttt{AES}, the result of this is then encrypted with \texttt{TwoFish} etc. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also available in \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption, however the performance of the file system is still good enough to facilitate the playback of HD video content directly out of it.\\
+
+\noindent
+This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break the implemented stego systems. However, steganogrphic security was not the sole focus of this project and the framework \texttt{Stegasis} provides allows easy incorporation of new, more secure embedding algorithms.
 
 \subsection{File system}
 \label{fsi}
+
+File systems are complex...
+
+\vfill
 \subsection{Extensions}
 \subsubsection{Supporting multiple video formats}
 \label{extffmpeg}
