@@ -14,7 +14,7 @@
 \usepackage[noend]{algpseudocode}
 
 \usepackage{listings}
-\usepackage[draft]{graphicx}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -534,7 +534,7 @@ The extension task ``\texttt{Stegasis} should be evaluated for perceivable video
 
 The development of \texttt{Stegasis} consisted of the 5 main stages sectioned within this chapter. Firstly, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} was developed allowing direct access to video pixel data. Next, steganographic embedding algorithms were implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system was then developed utilising the \texttt{AVI} decoder and steganogrphic algorithms to embed and extract data directly into and out of video files. Finally, the extension tasks were individually addressed providing support for multiple video formats, directory structures and plausible deniability\footnote{The evaluation site extension task is discussed within the evaluation chapter.}. The testing section provides an overview of the testing processes applied throughout development. 
 
-The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next. Instead, an iterative process was taken across all sections, embracing the modern ``Launch early, iterate often'' methodology. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate concept.
+The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next. Instead, an iterative process was taken across all sections, embracing the modern ``Launch early, iterate often'' methodology. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate component.
 
 \subsection{AVI Decoder}
 
@@ -950,18 +950,53 @@ virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
 \end{lstlisting}
 
 \noindent
-More standard encryption algorithms were then added, such as \texttt{AES} (256 bit), \texttt{TwoFish} and \texttt{Serpent}. All of these algorithms are available within the \texttt{Crypto++} library which made incorporating them easy. \texttt{Stegasis} currently supports standard \texttt{AES}, and also \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent}. That is, the data is first encrypted using \texttt{AES}, the result of this is then encrypted with \texttt{TwoFish} etc. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also available in \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption, however the performance of the file system is still good enough to facilitate the playback of HD video content directly out of it.\\
+More standard encryption algorithms were then added, such as \texttt{AES} (256 bit), \texttt{TwoFish} and \texttt{Serpent}. All of these algorithms are available within the \texttt{Crypto++} library which made incorporating them easy. \texttt{Stegasis} currently supports standard \texttt{AES}, and also \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent}. That is, the data is first encrypted using \texttt{AES}, the result of this is then encrypted with \texttt{TwoFish} etc. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also offered by \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption, however the performance of the file system is still good enough to facilitate the playback of HD video content directly out of it.\\
 
 \noindent
 This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break the implemented stego systems. However, steganogrphic security was not the sole focus of this project and the framework \texttt{Stegasis} provides allows easy incorporation of new, more secure embedding algorithms.
 
-\subsection{File system}
+
+\subsection{The File system}
 \label{fsi}
 
-File systems are complex...
+It was decided early on and stated within the project proposal that the file system would only support a subset of the features offered by a fully-fledged standard file system. The following features were considered essential for a practical file system and were planned to be implemented: Creating and deleting files, reading and writing to files, listing the files in the file system and renaming (moving) files. The lack of directory functionality means that all embedded files will reside in the root of the file system, also note the lack of permissions support, all files will be given the same permissions of \texttt{755} (\texttt{RWXRW-RW-}). Changing a file's access and modification times is also not implemented meaning all times default to 0 \textit{Unix Time} (1 January 1970). Omitting these features does have an impact on the usability of the file system, for example the \texttt{make} command makes use of file modification dates to determine if they need recompiling. However, the file system is not being designed for general purpose use, it is merely supposed to be a container for a collection of files\footnote{However, I would argue that after the directory structure extension task has been implemented, the file system provides enough functionality for most general use cases.}.
+
+Since the file system functionality was being implemented from scratch, the code written turned out very intricate due to the many corner cases encountered during integration testing. A large amount of time was dedicated to testing the implemented file system and tracking down particularly nasty concurrency bugs arising in specific circumstances.\\
+
+\noindent
+The basic idea behind storing the file system within a video is to develop some kind of header which contains the locations of all of the files stored across the video frames. The files themselves will be broken into arbitrary sized \textit{chunks} and stored within a particular frame at a particular offset. Consider the following example use case which motivates the solution developed in this section. A 10 byte text file is first written to the volume and embedded within frame 1 of the video at offset 0. A second file is now written to the volume and is such embedded within frame 1 at offset 80\footnote{Since it takes 8 bytes of frame to embed 1 byte of data.}. Now, additional text is appended to the first file, where should this be embedded? The obvious answer is after the second file, requiring some sort of header to keep track of the file chunks so that the files can be correctly read back.
+
+\subsubsection{Developing the header}
+
+The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. The header will need to be stored in a known location so that it can be extracted when the video file is mounted. It was decided to use the first frame of the video to store the header and is such named the \textit{File Allocation Frame} or \texttt{FAF} for short. The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets.
+
+Figure \ref{header} shows the overall structure of the header.
+
+\begin{figure}[here]
+\centerline{\includegraphics[width=\textwidth]{images/header.png}}
+\caption{Header structure overview.}
+\label{header}
+\end{figure}
+
+\noindent
+
+
+\subsubsection{Writing the header}
+
+
+
+\subsubsection{Reading from the file system}
+
+Finding chunks blah...
+
+\subsubsection{Writing to the file system}
+
+making chunks...
+
+
 
 \vfill
-\subsection{Extensions}
+\subsection{Extension Tasks}
 \subsubsection{Supporting multiple video formats}
 \label{extffmpeg}
 \subsubsection{File system directory structures}
