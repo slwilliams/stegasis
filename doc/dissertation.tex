@@ -381,7 +381,7 @@ There are however disadvantages to using a file system in user space, performanc
 
 Figure \ref{fig:fuse} shows the path of a file system call in the provided hello world example file system. We can see the \texttt{FUSE} kernel module acting as a proxy between the \texttt{VFS} system call and the \texttt{example/hello} user space code. A kernel space file system would not need to re-enter user space to compete the system call, hence giving better performance. 
 
-The \texttt{FUSE} library provides a number of function definitions which the user space code implements. These functions are then called when the corresponding file system operation occurs. Some of the important operations are discussed in detail below.\\
+The \texttt{FUSE} library provides a number of function definitions which the user space code implements. These functions are then called when the corresponding file system operation occurs. Some of the important operations are discussed below.\\
 
 \begin{lstlisting}[language=C, caption={\texttt{FUSE} read operation.}, frame=single]
 int read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
@@ -404,7 +404,7 @@ Similar functions exist for all of the standard file system operations, see appe
 \subsection{Existing tools}
 \label{tools}
 % worth citing this: http://www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf
-The relatively little work on steganography within video is reflected in my search for steganographic programs operating on video files. This section contains an exhaustive list of all the video steganogrphy tools I could find freely\footnote{A further 2 programs exist claiming to embed within video, however these are closed source and not freely available to download. Therefore they have been excluded from this list. (Info Stego, Hiderman)} available on the Internet. A total of 6 tools claimed to provide steganographic embedding functionality within video files. Of these 6, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file\footnote{Admittedly you could embed a compressed archive using these tools to effectively allow a directory structure to be embedded.}  and none of them provide any sort of file system interface.
+The relatively little work on steganography within video was reflected in my search for steganographic programs operating on video files. This section contains an exhaustive list of all the video steganogrphy tools I could find freely\footnote{A further 2 programs exist claiming to embed within video, however these are closed source and not freely available to download. Therefore they have been excluded from this list. (Info Stego, Hiderman)} available on the Internet. A total of 6 tools claimed to provide steganographic embedding functionality within video files. Of these 6, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file\footnote{Admittedly you could embed a compressed archive using these tools to effectively allow a directory structure to be embedded.}  and none of them provide any sort of file system interface.
 
 \subsubsection{StegoStick}
 
@@ -771,10 +771,10 @@ Using the algorithm as shown above, \SI{43.2}{\kilo\byte} of data is is embedded
 \end{figure}
 
 \noindent
-The visual impact on the video frame is very small and almost certainly not noticeable having been reproduced within this document at a smaller resolution. However, if we take a closer look at a specific portion of the video frame we can see some small discrepancies between the cover and stego objects - figure \ref{lsbcloseup}. I am unsure how well these images will be reproduced when printed, but the difference is definitely noticeable within the \texttt{PDF}. Note that without the original cover object for comparison, it would be very hard (if not impossible) to identify these details and deduce the presence of embedded data.
+The visual impact on the video frame is very small and almost certainly not noticeable having been reproduced within this document at a smaller resolution. However, if we take a closer look at a specific portion of the video frame we can see some small discrepancies between the cover and stego objects - figure \ref{lsbcloseup}. I am unsure how well these images will be reproduced when printed, but the difference is definitely noticeable within the \texttt{PDF}. Note that without the original cover object for comparison, it would be very hard (if not impossible) to identify these details visually and deduce the presence of embedded data.
 
 \begin{figure}
-\centerline{\includegraphics[width=\textwidth]{images/closeup_3.png}}
+\centerline{\includegraphics[width=0.9\textwidth]{images/closeup_3.png}}
 \caption{Close up effect of the LSB Embedding algorithm.}
 \label{lsbcloseup}
 \end{figure}
@@ -782,7 +782,7 @@ The visual impact on the video frame is very small and almost certainly not noti
 However, if the LSB plane of the frame is visually inspected, as in figure \ref{lsbemb}, one can immediately detect the presence of the hidden data - the LSB plane of the stego object looks ``too random''. This is an example of a \textit{visual steganalysis attack}.
 
 \begin{figure}
-\centerline{\includegraphics[width=\textwidth]{images/lsb_emb.png}}
+\centerline{\includegraphics[width=0.9\textwidth]{images/lsb_emb.png}}
 \caption{LSB plane of the cover and stego object.}
 \label{lsbemb}
 \end{figure}
