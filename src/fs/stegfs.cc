@@ -61,9 +61,17 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     printf("File name: %s\n", name);
     std::string fileName((const char *)name);
     free(name);
-    uint32_t triples = 0;
+    int32_t triples = 0;
     memcpy(&triples, headerBytes + offset + i, 4);
-    printf("File has %u triples\n", triples);
+    printf("File has %d triples\n", triples);
+    if (triples == -1) {
+      // This file is a directory
+      printf("Got a dir: %s\n", fileName.c_str());
+      this->dirs[fileName] = true;
+      // Advance offset past the dir name and the -1 header bytes
+      offset += i + 4;
+      continue;
+    }
     int j = 0;
     int fileSize = 0;
     this->fileIndex[fileName.c_str()] = std::vector<tripleT>();
@@ -111,7 +119,6 @@ void SteganographicFileSystem::Set(SteganographicFileSystem *i) {
 };
 
 int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
-  printf("get attr: %s\n", path);
   memset(stbuf, 0, sizeof(struct stat));
   if (strcmp(path, "/") == 0) {
     stbuf->st_mode = S_IFDIR | 0755;
@@ -123,7 +130,6 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
         stbuf->st_mode = S_IFREG | 0755;
         stbuf->st_nlink = 1;
         stbuf->st_size = kv.second;
-        printf("attr retuneed\n");
         return 0;
       }
     }
@@ -131,12 +137,10 @@ int SteganographicFileSystem::getattr(const char *path, struct stat *stbuf) {
       if (strcmp(path, kv.first.c_str()) == 0) {
         stbuf->st_mode = S_IFDIR | 0755;
         stbuf->st_nlink = 2;
-        printf("attr dir rred\n");
         return 0;
       }
     }
   }
-  printf("somehow got here?\n");
   // Requested file not in the filesystem...
   return -ENOENT;
 };
@@ -152,18 +156,13 @@ int SteganographicFileSystem::access(const char *path, int mask) {
 };
 
 int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
-  printf("mkdir called: %s\n", path);
-  printf("mkdir called: %s\n", path);
+  //printf("mkdir called: %s\n", path);
   this->dirs[path] = true;
   return 0;
 }
 
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
-  //if (strcmp(path, "/") != 0) {
-  //  return -ENOENT;
-  //}
-  
-  printf("path: %s\n", path);
+  //printf("readdir path: %s\n", path);
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
@@ -171,32 +170,25 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
   std::string prefix = path;
   int prefixSlash = std::count(prefix.begin(), prefix.end(), '/');
   for (auto kv : this->fileSizes) {
-    printf("file: %s\n", kv.first.c_str());
     int nameSlash = std::count(kv.first.begin(), kv.first.end(), '/');
     if (prefix == "/") {
       if (nameSlash == 1) {
-        printf("OK?? / %s\n", kv.first.c_str() + 1);
         filler(buf, kv.first.c_str() + 1, NULL, 0);
       } 
     } else if (kv.first.substr(0, prefix.size()) == prefix && prefixSlash == nameSlash - 1) {
       std::string name = kv.first.substr(kv.first.find_last_of("/") + 1);
-      printf("OK??: %s\n", name.c_str());
       filler(buf, name.c_str(), NULL, 0);
     }
   }
   for (auto kv : this->dirs) {
-    printf("dir: %s\n", kv.first.c_str());
-
     int nameSlash = std::count(kv.first.begin(), kv.first.end(), '/');
     if (prefix == "/") {
       if (nameSlash == 1) {
         filler(buf, kv.first.c_str() + 1, NULL, 0); 
-        printf("adding dir /: %a\n", kv.first.c_str() + 1);
       }
     } else if (kv.first.substr(0, prefix.size()) == prefix && prefixSlash == nameSlash - 1) {
       std::string name = kv.first.substr(kv.first.find_last_of("/") + 1);
       filler(buf, name.c_str(), NULL, 0);
-      printf("adding dir: %s\n", name.c_str());
     }
   }
   return 0;
@@ -208,8 +200,7 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
 };
 
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
-  printf("created called: %s\n", path);
-  printf("created called: %s\n", path);
+  //printf("create called: %s\n", path);
   this->fileSizes[path] = 0;
   this->fileIndex[path] = std::vector<struct tripleT>();
   return 0;
@@ -456,6 +447,16 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += 4;
     headerBytes += sizeof(tripleT)*embedded;
     if (offset > (this->decoder->frameSize() / 8) - 50) break;
+  }
+  // Embed dirs
+  for (auto d : this->dirs) {
+    memcpy(header + offset, (char *)d.first.c_str(), d.first.length()+1);
+    offset += d.first.length() + 1;
+    int dirTriples = -1;
+    memcpy(header + offset, (char *)&dirTriples, 4);
+    offset += 4;
+    headerBytes += d.first.length() + 1;
+    headerBytes += 4;
   }
   int tmp = headerBytes;
   this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
