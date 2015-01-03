@@ -14,7 +14,8 @@
 \usepackage[noend]{algpseudocode}
 
 \usepackage{listings}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
+%\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -73,6 +74,7 @@
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
 
+\lstset{language=C++}
 \lstset{
   backgroundcolor=\color{white},   % choose the background color
   basicstyle=\footnotesize,        % size of fonts used for the code
@@ -82,7 +84,8 @@
   escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
   keywordstyle=\color{blue},       % keyword style
   stringstyle=\color{mymauve},     % string literal style
-  literate={~} {$\sim$}{1}
+  morekeywords={uint32_t},
+    literate={~} {$\sim$}{1},
 }
 
 
@@ -114,6 +117,9 @@
 \printtitle                    % Print the title data as defined above
 \vfill
 \printauthor                % Print the author data as defined above
+\begin{center}
+\huge{[~}\normalsize \textsc{First Draft}\huge{~]}
+\end{center}
 \afterpage{\blankpage}
 \newpage
 % ------------------------------------------------------------------------------
@@ -537,6 +543,7 @@ The development of \texttt{Stegasis} consisted of the 5 main stages sectioned wi
 The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next. Instead, an iterative process was taken across all sections, embracing the modern ``Launch early, iterate often'' methodology. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate component.
 
 \subsection{AVI Decoder}
+\label{avidec}
 
 The concept of an \texttt{AVI} decoder is first abstracted to that of a generic \texttt{Video Decoder} interface\footnote{The term ``interface'' is used as shorthand for an abstract C++ base class. That is, a class with pure virtual member functions and no function implementations.} The core requirements state that the \texttt{AVI} decoder should allow access to individual pixel data. The pixel data within an \texttt{AVI} file is grouped into chunks, one per video frame. It was therefore decided to define the \texttt{Video Decoder} to allow access to the video pixel data at a granularity of a single video frame. It would also be useful for the \texttt{Video Decoder} interface to expose metadata about the video, for example, the total number of video frames in the video, the height and width of the video frames and the total size (in bytes) of each video frame.
 
@@ -679,7 +686,7 @@ The \texttt{AVI Decoder} as described now provides all necessary functionality t
 
 The concept of a generic stegangraphic embedding algorithm is initially developed and implemented as a \texttt{Steganographic Algorithm} interface. As defined within the background discussion of steganogrphic concepts, a steganogrphic system consist of a pair of functions providing embedding and extraction functionality. The interface will therefore need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data respectively. The \texttt{Video Decoder} interface defined above allows access to video data via individual frame \texttt{Chunk} objects. It was therefore decided to define the \texttt{embed} and \texttt{extract} functions to operate on \texttt{Chunk} objects. The following interface definition was therefore used.
 
-\begin{lstlisting}[language=C++, caption={\texttt{Stego Algorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=framesize]
+\begin{lstlisting}[language=C++, caption={\texttt{Stego Algorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=stegoalg]
 class SteganographicAlgorithm {
   protected:
     string password;
@@ -968,9 +975,7 @@ The basic idea behind storing the file system within a video is to develop some 
 
 \subsubsection{Developing the header}
 
-The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. The header will need to be stored in a known location so that it can be extracted when the video file is mounted. It was decided to use the first frame of the video to store the header and is such named the \textit{File Allocation Frame} or \texttt{FAF} for short. The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets.
-
-Figure \ref{header} shows the overall structure of the header.
+The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. It will need to be stored in a known location so that it can be extracted when the video file is mounted. It was decided to use the first frame of the video to store the header and is such named the \textit{File Allocation Frame} or \texttt{FAF} for short. The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets. Figure \ref{header} shows the overall structure of the header.
 
 \begin{figure}[here]
 \centerline{\includegraphics[width=\textwidth]{images/header.png}}
@@ -979,19 +984,167 @@ Figure \ref{header} shows the overall structure of the header.
 \end{figure}
 
 \noindent
-blah the [] make up a triple, steg used for error detection, blha
+The header section (coloured blue) contains metadata about the embedded file system. ``STEG'' is the literal 4 character \texttt{ASCII} string and is used to check the header has been correctly extracted. If STEG is not found as the first 4 bytes of the header, the extraction process is aborted and an error message displayed to the user. The ``Header Bytes'' field contains the number of remaining bytes in the header (that is, the size of the header not including the blue coloured section), allowing the extraction of the remaining header data from the \texttt{FAF}. The remaining header data contains information for each of the files within the file system. This includes the file name as a null terminated string, the number of chunks the file is split into and the location and size of each of these chunks. A file chunk is represented as a \texttt{Triple} defined in listing \ref{triple}.
 
-\subsubsection{Writing the header}
+\begin{lstlisting}[caption={Triple definition (\texttt{fs/stegfs.h:19})}, frame=single, label=triple]
+struct Triple {
+  uint32_t frame;
+  uint32_t offset;
+  uint32_t bytes;
+};
+\end{lstlisting}
+
+\noindent
+Within figure \ref{header}, a single triple is indicated with square brackets, and is coloured green. A file can contain an arbitrary number of triples each of which can span multiple frames, but note that using an unsigned integer for the struct fields limits individual chunk sizes to (roughly) \SI{4}{\giga\byte}. Also note that only a single frame is used as the \texttt{FAF} - it cannot span multiple frames. This limits the total size of the header, imposing a maximum number of files and chunks.
+
+\subsubsection{Reading and writing the header}
+
+Internally, the header data will be stored in memory as a pair of \texttt{unordered\_maps}, one mapping from file name to file size and the other from file name to a vector\footnote{This is an ordered data structure, the triple contained in vector[0] will contain the file data immediately preceding vector[1].} of \texttt{Triples}. These are named \texttt{fileSizes} and \texttt{fileIndex}.
+
+The process of reading the header is split up into 2 main sections, reading the header data and reading the file data. These are both illustrated within Algorithm \ref{readheader}.
+
+The video decoder get and set frame offset methods, briefly mentioned in section \ref{avidec}, are used to indicate where new files written to this existing file system should be embedded within the video. The read header process identifies the highest frame and offset and passes this data to the video decoder.
+
+Writing back the header is a similar process explained within algorithm \ref{writeheader}.
+
+\begin{algorithm}
+\caption{Reading the file system header.}
+\label{readheader}
+\begin{algorithmic}[1]
+\State header\_frame $\gets$ the first video frame
+\State header\_sig $\gets$ extract 4 characters from header\_frame
+\If{header\_sig != STEG}
+	\State print ``Video has not been formatted, or invalid password.''
+	\State Exit
+\EndIf
+\State algorithm\_code $\gets$ extract 4 characters from header\_frame
+\State capacity $\gets$ extract byte from header\_frame
+\State header\_bytes $\gets$ extract integer from header\_frame
+\While{extracted $<$ header\_bytes}
+	\State file\_name $\gets$ extract string from header\_frame
+	\State number\_triples $\gets$ extract integer from header\_frame
+	\State file\_size $\gets$ 0	
+	\For{j $\gets$ 0 upto number\_triples - 1}
+		\State triple $\gets$ extract triple from header\_frame
+		\State fileIndex[file\_name].append(triple)
+		\State file\_size += triple.bytes
+	\EndFor
+	\State fileSizes[file\_name] $\gets$ file\_size
+\EndWhile
+\State max\_frame $\gets$ largest frame containing data
+\State max\_offset $\gets$ smallest offset within max\_frame data is not embedded within
+\State video\_decoder.setNextFrameOffset(max\_frame, max\_offset)
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Writing the file system header.}
+\label{writeheader}
+\begin{algorithmic}[1]
+\State header\_frame $\gets$ the first video frame
+\State header $\gets$ byte array
+\State header\_bytes $\gets$ 0
+\State offset $\gets$ 0
+\For{(file\_name, triples) in fileIndex}
+	\State header[offset] $\gets$ file\_name
+	\State offset += file\_name.length() + 1
+	\Comment{Null terminated}
+	\State num\_triples $\gets$ triples.length()
+	\State header[offset] $\gets$ num\_triples
+	\State offset += 4
+	\For{triple in triple}
+		\State header[offset] $\gets$ triple
+		\State offset += sizeof(triple)
+	\EndFor
+	\State header\_bytes += file\_name.length() + 1
+	\State header\_bytes += 4
+	\State header\_bytes += sizeof(triple)*num\_triples
+\EndFor
+\State embed header\_bytes into header\_frame
+\State embed header into header\_frame
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Compacting the header}
+
+During testing, it was noticed that writes to the file system seemed to occur in chunks of \texttt{4096} bytes. Due to the above presented design of the file system header, this resulted in relatively large files containing a very large number of chunks, too large to fit into the singe \texttt{FAF}. For example, a \SI{5}{\mega\byte} music file would be written into 1221 chunks. Since each chunk consists of 12 bytes (three 4 byte integers), you would need \SI{14.65}{\kilo\byte} to just store all of the triples into the header. Unfortunately, this meant the largest file you could embedded within any 720p uncompressed \texttt{AVI} (regardless of the length) was \SI{117}{\mega\byte}. This was decided to be an unacceptable limit and so a process to compact the header and remove unnecessary chunks was developed. Figure \ref{compact} shows a visual representation of this process occurring, green and red lines indicate the start and end of a chunk respectively. The first process compacts sequential chunks of the same file within frames to give single chunks per frame, sequential single frame chunks are then combined in the second process. This allows a file spread across the entire video to be represented by a single chunk.
 
 
+\begin{figure}[here]
+\centerline{\includegraphics[width=\textwidth]{images/compact.png}}
+\caption{Header compaction process.}
+\label{compact}
+\end{figure}
+
+
+\subsubsection{Writing to the file system}
+
+A write to the file system will occur in three main stages. First, \texttt{create} will be called requesting that a new file be created with a specified name. Next, the \texttt{write} function will be called a number of times requesting that data be written to the file. Finally \texttt{flush} will be called for the file requesting that any data held in memory be flushed to disk.
+
+The first stage is easy to implement and is listed in listing \ref{create}.
+
+\begin{lstlisting}[language=C++, caption={The create function call (\texttt{fs/stegfs.cc:202})}, frame=single, label=create]
+int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
+  this->fileSizes[path] = 0;
+  this->fileIndex[path] = std::vector<struct Triple>();
+  return 0;
+};
+\end{lstlisting}
+
+\noindent
+The write calls are a bit trickier, recall the \texttt{FUSE} write call:
+
+\begin{lstlisting}[language=C, caption={\texttt{FUSE} write operation.}, frame=single]
+int write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+\end{lstlisting}
+
+\noindent
+Which requests that \texttt{size} bytes from the buffer \texttt{buf} should be written to the file \texttt{path} starting at offset \texttt{offset}. Algorithm \ref{write} shows pseudocode for the write function.
+
+\begin{algorithm}
+\caption{Writing to the file system.}
+\label{write}
+\begin{algorithmic}[1]
+\State bytes\_written $\gets$ 0
+\While{bytes\_written $<$ size}
+	\State (next\_frame, next\_offset) $\gets$ decoder.getNextFrameOffset()
+	\State triple $\gets$ Triple()
+	\State bytes\_left\_in\_frame $\gets$ Frame Size - next\_offset
+	\If{(size - bytes\_written) $<$ bytes\_left\_in\_frame}
+		\State		
+		\Comment{This frame will finish off this write call}
+		\State triple.bytes $\gets$ size - bytes\_written
+		\State triple.frame $\gets$ next\_frame
+		\State triple.offset $\gets$ next\_offset
+		\State frame $\gets$ getFrame(next\_frame)
+		\State embed triple.bytes from buf+bytes\_written into frame at offset next\_offset
+		\State fileIndex[path].append(triple)
+		\State decoder.setNextFrameOffset(nextFrame, next\_offset + size-bytes\_written)
+		\State bytes\_written += size-bytes\_written
+	\Else
+		\State		
+		\Comment{Bytes left in frame are not enough for the write call}
+		\State		
+		\Comment{Write all bytes left in frame and go around again}
+		\State triple.bytes $\gets$ bytes\_left\_in\_frame / 8
+		\State triple.frame $\gets$ next\_frame
+		\State triple.offset $\gets$ next\_offset
+		\State embed triple.bytes from buf+bytes\_written into frame at offset next\_offset
+		\State fileIndex[path].append(triple)
+		\State decoder.setNextFrameOffset(nextFrame + 1, 0)
+		\State bytes\_written += bytes\_left\_in\_frame / 8
+	\EndIf  	
+\EndWhile
+\State return size
+\end{algorithmic}
+\end{algorithm}
+
+The above explanation doesn't address the case where writes occur to a file already existent within the file system, that is, it is being overwritten or extended. This is more complicated since it is beneficial to reuse the previously allocated chunks for the file and is therefore discussed in more detail in the appendix, section ??.
 
 \subsubsection{Reading from the file system}
 
 Finding chunks blah...
 
-\subsubsection{Writing to the file system}
-
-making chunks...
 
 
 
