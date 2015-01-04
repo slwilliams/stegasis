@@ -14,8 +14,8 @@
 \usepackage[noend]{algpseudocode}
 
 \usepackage{listings}
-\usepackage[draft]{graphicx}
-%\usepackage{graphicx}
+%\usepackage[draft]{graphicx}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -1083,7 +1083,7 @@ A write to the file system will occur in three main stages. First, \texttt{creat
 
 The first stage is easy to implement and is listed in listing \ref{create}.
 
-\begin{lstlisting}[language=C++, caption={The create function call (\texttt{fs/stegfs.cc:202})}, frame=single, label=create]
+\begin{lstlisting}[language=C++, caption={The \texttt{create} function call (\texttt{fs/stegfs.cc:202}).}, frame=single, label=create]
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
   this->fileSizes[path] = 0;
   this->fileIndex[path] = std::vector<struct Triple>();
@@ -1108,50 +1108,123 @@ Which requests that \texttt{size} bytes from the buffer \texttt{buf} should be w
 \State bytes\_written $\gets$ 0
 \While{bytes\_written $<$ size}
 	\State (next\_frame, next\_offset) $\gets$ decoder.getNextFrameOffset()
+	\State frame $\gets$ getFrame(next\_frame)
 	\State triple $\gets$ Triple()
+	\State triple.frame $\gets$ next\_frame
+	\State triple.offset $\gets$ next\_offset
 	\State bytes\_left\_in\_frame $\gets$ Frame Size - next\_offset
-	\If{(size - bytes\_written) $<$ bytes\_left\_in\_frame}
+	\If{size - bytes\_written $<$ bytes\_left\_in\_frame}
 		\State		
 		\Comment{This frame will finish off this write call}
 		\State triple.bytes $\gets$ size - bytes\_written
-		\State triple.frame $\gets$ next\_frame
-		\State triple.offset $\gets$ next\_offset
-		\State frame $\gets$ getFrame(next\_frame)
 		\State embed triple.bytes from buf+bytes\_written into frame at offset next\_offset
-		\State fileIndex[path].append(triple)
 		\State decoder.setNextFrameOffset(nextFrame, next\_offset + size-bytes\_written)
 		\State bytes\_written += size-bytes\_written
 	\Else
 		\State		
-		\Comment{Bytes left in frame are not enough for the write call}
-		\State		
 		\Comment{Write all bytes left in frame and go around again}
 		\State triple.bytes $\gets$ bytes\_left\_in\_frame / 8
-		\State triple.frame $\gets$ next\_frame
-		\State triple.offset $\gets$ next\_offset
 		\State embed triple.bytes from buf+bytes\_written into frame at offset next\_offset
-		\State fileIndex[path].append(triple)
 		\State decoder.setNextFrameOffset(nextFrame + 1, 0)
 		\State bytes\_written += bytes\_left\_in\_frame / 8
-	\EndIf  	
+	\EndIf
+	\State fileIndex[path].append(triple)
 \EndWhile
 \State return size
 \end{algorithmic}
 \end{algorithm}
 
-The above explanation doesn't address the case where writes occur to a file already existent within the file system, that is, it is being overwritten or extended. This is more complicated since it is beneficial to reuse the previously allocated chunks for the file and is therefore discussed in more detail in the appendix, section ??.
+The above explanation doesn't address the case where writes occur to a file already existent within the file system, that is, it is being overwritten or extended. This is more complicated since it is beneficial to reuse the previously allocated chunks for the file and is therefore listed in the appendix section ??.
+
+Finally, \texttt{flush} is called which will write the header and ask the video decoder to write back to disk. Note the conditional flag \textit{performance}, it is not necessary to flush to disk and by running \texttt{Stegasis} with the \texttt{-p} flag, this will be skipped.
+
+\begin{lstlisting}[language=C, caption={The \texttt{flush} function call (\texttt{fs/stegfs.cc:537}).}, frame=single]
+int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
+  if (!this->performance) {
+    this->writeHeader();
+    this->decoder->writeBack();
+  }
+  return 0;
+};
+\end{lstlisting}
+
 
 \subsubsection{Reading from the file system}
 
-Finding chunks blah...
+The read function call is similar, recall the declaration,
 
+\begin{lstlisting}[language=C, caption={\texttt{FUSE} read operation.}, frame=single]
+int read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+\end{lstlisting}
 
+\noindent
+which requests that \texttt{size} bytes of the file \texttt{path} starting at offset \texttt{offset} should be written to the buffer \texttt{buf}. Rather than allocating new chunks, the read function must identify the chunk \texttt{offset} points to and then return the correct amount of data possibly spread across multiple subsequent chunks. Algorithm \ref{read} describes the function operation. Note that two cases are needed when extracting data from chunks due to the possibility of data being encrypted. If \texttt{read} requests data from the middle of a chunk, the entire chunk is first decrypted, and then the correct data returned from this.
 
+\begin{algorithm}[!ht]
+\caption{Reading from the file system.}
+\label{read}
+\begin{algorithmic}[1]
+\State bytes\_written $\gets$ 0
+\State (triple, chunk\_offset) $\gets$ findTriple(offset)
+\While{bytes\_written $<$ size}
+	\State bytes\_left\_in\_chunk $\gets$ triple.bytes - chunk\_offset
+	\State frame $\gets$ getFrame(triple.frame)
+	\If{size - bytes\_written $<$ bytes\_left\_in\_chunk}
+		\If{chunk\_offset == 0}
+			\State extract size-bytes\_written bytes from frame at offet triple.offset into buf+bytes\_written
+		\Else
+			\State extract entire triple from frame into temp
+			\State copy size-bytes\_written bytes from temp+chunk\_offset into buf+bytes\_written 
+		\EndIf
+		\State return size
+	\EndIf
+	\If{chunk\_offset == 0}
+		\State extract bytes\_left\_in\_chunk bytes from frame at offet triple.offset into buf+bytes\_written
+	\Else
+		\State extract entire triple from frame into temp
+		\State copy bytes\_left\_in\_chunk from temp+chunk\_offset into buf+bytes\_written 
+	\EndIf
+	\State bytes\_written += bytes\_left\_in\_chunk
+	\State chunk\_offset $\gets$ 0
+	\State triple $\gets$ getNextTriple()
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
 
-\vfill
+The described algorithm doesn't work for chunks spanning multiple frames as it is rather verbose to list here, a complete version which does is listed in appendix section ??.
+
+\subsubsection{Listing files in the file system}
+
+The function \texttt{readdir} is called when the contents of a directory are requested to be listed, the implementation is straightforward and just iterates of the fileSizes map as shown in listing \ref{readdir}.
+
+\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir operation.}, frame=single, label=readdir,upquote=true]]
+int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
+  filler(buf, '.', NULL, 0);
+  filler(buf, '..', NULL, 0);
+  for (auto kv : this->fileSizes) {
+    filler(buf, kv.first.c_str() + 1, NULL, 0);
+  }
+  return 0;
+};
+\end{lstlisting}
+~\\
+\noindent
+The above \texttt{FUSE} operations cover the majority of the core file system implementation successfully implementing all of the decided essential features listed at the start of this subsection.
+
+\subsection{Putting it all together}
+
+Maybe do this, pos move to appendix?
+
 \subsection{Extension Tasks}
+
+All of the extension tasks listed within the project proposal were addressed and with the exception of ``Hiding data within audio streams'', all of them were successfully implemented. The further extension task ``Plausible deniability'' was added during the project and also successfully implemented.
+
 \subsubsection{Supporting multiple video formats}
 \label{extffmpeg}
+blah ffmpeg blah mp4 blah jpeg
+
+\vfill
+
 \subsubsection{File system directory structures}
 \subsubsection{Plausible deniability}
 \subsubsection{Hiding data within audio streams}
