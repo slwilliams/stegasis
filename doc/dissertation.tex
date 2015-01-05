@@ -719,10 +719,10 @@ Sequential LSB embedding is arguably the simplest steganographic algorithm. It w
 \begin{algorithmic}[1]
 \For{i $\gets$ 0 upto dataBytes - 1}
 	\For{j $\gets$ 7 downto 0}
-		\If{The jth significat bit of data[i] == 1}
-			\State frame[offset++] $\vert$= 1
+		\If{The jth significant bit of data[i] == 1}
+			\State Set LSB(frame[offset++]) to 1
 		\Else
-			\State frame[offset++] \&= $\sim$1
+			\State Set LSB(frame[offset++]) to 0
 		\EndIf
 	\EndFor
 \EndFor
@@ -738,7 +738,7 @@ The matching extraction algorithm is shown in algorithm \ref{lsbext}.
 \begin{algorithmic}[1]
 \For{i $\gets$ 0 upto dataBytes - 1}
 	\For{j $\gets$ 7 downto 0}
-		\State output[i] $\vert$= ((frame[frameByte++] \& 1) $<<$ j)
+		\State Set the jth significant bit of output[i] to LSB(frame[frameByte++]) 
 	\EndFor
 \EndFor
 \end{algorithmic}
@@ -1138,7 +1138,7 @@ The above explanation doesn't address the case where writes occur to a file alre
 
 Finally, \texttt{flush} is called which will write the header and ask the video decoder to write back to disk. Note the conditional flag \textit{performance}, it is not necessary to flush to disk and by running \texttt{Stegasis} with the \texttt{-p} flag, this will be skipped.
 
-\begin{lstlisting}[language=C, caption={The \texttt{flush} function call (\texttt{fs/stegfs.cc:537}).}, frame=single]
+\begin{lstlisting}[language=C, caption={\texttt{FUSE} flush implementation (\texttt{fs/stegfs.cc:537}).}, frame=single]
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
   if (!this->performance) {
     this->writeHeader();
@@ -1197,7 +1197,7 @@ The described algorithm doesn't work for chunks spanning multiple frames as it i
 
 The function \texttt{readdir} is called when the contents of a directory are requested to be listed, the implementation is straightforward and just iterates of the fileSizes map as shown in listing \ref{readdir}.
 
-\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir operation.}, frame=single, label=readdir,upquote=true]
+\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true]
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
   filler(buf, '.', NULL, 0);
   filler(buf, '..', NULL, 0);
@@ -1257,9 +1257,29 @@ The use of \texttt{-vcodec copy} tells \texttt{FFmpeg} to losslessly extract eac
 As with the core project, a video decoder performing the above proposed method was implemented satisfying the \texttt{Video Decoder} interface. When \texttt{Stegasis} is run, a check occurs to see whether the provided file is an uncompressed \texttt{AVI}. If it is, the native \texttt{AVI} decoder developed is used. If it is not, the above video decoder is used, allowing \texttt{Stegasis} to operate seamlessly across all video types without the user needing to manually specify which video decoder to use.\\
 
 \noindent
-The final step of this method is to implement some embedding algorithms operating on \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{Steganographic Algorithm} interface, all of the file system logic will continue to work as expected.
+The final step of this method is to implement embedding algorithms operating on \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{Steganographic Algorithm} interface, all of the file system logic will continue to work as expected.
 
-The implemented algorithms are all based on the \texttt{JPEG} DCT LSB method (also known as the \textit{JSteg} algorithm) and as expected, embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. As with the core project, several versions of the basic algorithm are developed including permuted and encrypted variants, reusing ideas and code from the core implementation.
+The implemented algorithms are all based on the \texttt{JPEG} DCT LSB method (also known as the \textit{JSteg} algorithm) and embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. As with the core project, several versions of the basic algorithm are developed including permuted and encrypted variants, reusing ideas and code from the core implementation. Algorithm \ref{jpegalg} shows pseudocode for the basic embedding algorithm.
+
+\begin{algorithm}
+\caption{Basic \texttt{JPEG} embedding algorithm.}
+\label{jpegalg}
+\begin{algorithmic}[1]
+\For{i $\gets$ 0 upto data\_bytes - 1}
+	\For{j $\gets$ 7 down to 0}
+		\State (row, block, coefficient) $\gets$ getCoefficientForOffset(offset++)
+		\State component = 2
+		\Comment{Components 2 and 3 are the chroma components.}
+		\State row $\gets$ chunk.getRow(row, component)
+		\If{ The jth significant bit of data[i] == 1}
+			\State Set LSB(row[block][coefficient]) to 1
+		\Else
+			\State Set LSB(row[block][coefficient]) to 0
+		\EndIf
+	\EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 Listing \ref{dctp} shows the permuted variant of the implemented \texttt{JPEG} embedding algorithm.
 
@@ -1283,6 +1303,17 @@ virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
   }
 };
 \end{lstlisting}
+
+The component to embed within is chosen using the calculation \texttt{(co \% 2) + 1}, this will uniformly distribute the embedded data bits between the two chroma components, deliberately not touching the luminance component. 
+
+At higher capacity settings, this embedding algorithm does begin to produce visual artifacts within the video frames. Figure \ref{jpegarti} illustrates this when a capacity setting of 100\% was used.
+
+% figure here...
+
+However, at lower capacity settings it is not possible to visually differentiate between the cover and stego objects\footnote{This claim is verified within the evaluation section.}. Figure \ref{jpegnoart} shows the same frame as above, but using a capacity setting of 20\%.
+
+\noindent
+The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats 
 
 \vfill
 
