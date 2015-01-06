@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-%\usepackage[draft]{graphicx}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
+%\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -1211,9 +1211,22 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
 \noindent
 The above \texttt{FUSE} operations cover the majority of the core file system implementation, successfully implementing all of the decided essential features listed at the start of this subsection.
 
-\subsection{Putting it all together}
+\subsection{Command line application}
 
-Maybe do this, pos move to appendix? Probably mention format vs mount, usage and stuff.
+To complete \texttt{Stegasis} the implemented components must be assembled together and a user interface produced. It was decided that a command line application would be developed allowing the user to utilise the functionality developed within this project. Listing \ref{stegasisrun} shows the process of formatting and mounting a video.
+
+\begin{lstlisting}[caption={Using \texttt{Stagasis} to format and mount a video.}, frame=single, label=stegasisrun]
+$ stegasis format -alg=lsbp -pass=password -cap=25 ~/my_video.avi
+Formatting video...
+Volume size: 30 MB
+Format Successful
+$ stegasis mount -alg=lsbp -pass=password ~/my_video.avi /mnt/video
+Video mounted at /mnt/video
+\end{lstlisting}
+
+At this point, the user can copy files into \texttt{/mnt/video} and they will be embedded within the video. The user can unmount the video by closing the program (for example by pressing Control-C), \texttt{Stegasis} will gracefully exit, writing back any unflushed changes to disk. See the appendix section ?? for some more detailed usage information.
+
+\texttt{Stegasis} works exactly how I envisioned it during the project inception. The example usage I gave within the project proposal is exactly reflected within the finished product\footnote{With the exception of pressing Control-C to exit rather than typing \texttt{stegasis unmount}.}.
 
 \subsection{Extension Tasks}
 
@@ -1226,7 +1239,7 @@ As discussed in the preparation section, there exist several reasons why it woul
 
 Regardless of the video format, a video can be thought of as a sequence of video frames played back at a specific frame rate. This idea is used to allow a universal steganographic method operating on sequences of images to operate across all video formats. Figure \ref{multi} shows an overview of the approach.
 
-\begin{figure}[here]
+\begin{figure}[!htb]
 \centerline{\includegraphics[width=0.9\textwidth]{images/multi.png}}
 \caption{Embedding within multiple video formats.}
 \label{multi}
@@ -1283,7 +1296,7 @@ The implemented algorithms are all based on the \texttt{JPEG} DCT LSB method (al
 
 Listing \ref{dctp} shows the permuted variant of the implemented \texttt{JPEG} embedding algorithm.
 
-\begin{lstlisting}[caption={Permuted \texttt{JPEG} embedding algorithm (\texttt{steg/dctp\_algorithm.cc:48}).}, frame=single, label=dctp,upquote=true]
+\begin{lstlisting}[caption={Permuted \texttt{JPEG} embedding algorithm (\texttt{steg/dctp\_algorithm.cc:48}).}, frame=single, label=dctp,upquote=true,float,floatplacement=!h]
 virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
   int frameByte = lcg.map[offset++];
   int row, block, co, comp;
@@ -1313,11 +1326,41 @@ At higher capacity settings, this embedding algorithm does begin to produce visu
 However, at lower capacity settings it is not possible to visually differentiate between the cover and stego objects\footnote{This claim is verified within the evaluation section.}. Figure \ref{jpegnoart} shows the same frame as above, but using a capacity setting of 20\%.
 
 \noindent
-The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats 
+The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>$100\% embedding capacities claimed within the opening paragraphs of this document. The reason this is possible is due to the final stage of \texttt{JPEG} compression - ``Encode the resulting coefficients using a Huffman variable word-length algorithm''. This effectively compresses the embedded data before it is written back to disk. To show this in action, listing \ref{200cap} shows a 200 MB file embedded within a 100 MB video.
+
+\begin{lstlisting}[caption={Demonstration of 200\% embedding capacity.}, frame=single, label=200cap]
+$ ls -h
+video.mkv 100 MB
+$ stegasis mount -alg=dctp -pass=password ./video.mkv /mnt/video
+Video mounted at /mnt/video
+$ ls /mnt/video
+file 200 MB
+\end{lstlisting}
+
+The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats greatly increasing practicality and successfully completing the extension task.
+
+\subsubsection{File system directory structures}
+
+The core implementation of the file system does not allow the creation and manipulation of directories, forcing all files written to the volume to reside in the root. Although \texttt{Stegasis} is still usable with this limitation, it would be nice to allow users to organise their embedded files using directories as you would expect from a normal file system. To achieve this, the \texttt{mkdir} \texttt{FUSE} operation will need to be implemented along with a few changes made to the current file system implementation.
+
+A third data structure, \texttt{dirs} is first added along side \texttt{fileSizes} and \texttt{fileIndex} containing each of the directories within the file system. The \texttt{mkdir} operation is then trivial to implement as shown in listing \ref{dir}.
+
+\begin{lstlisting}[caption={\texttt{FUSE} mkdir implementation (\texttt{fs/stegfs.cc:158}).}, frame=single, label=dir]
+int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
+  this->dirs.insert(path);
+  return 0;
+}
+\end{lstlisting}
+
+
+
+Blah string manipulation...
+
+%unlink doesnt work check for dirs...
+%also have i implemented mv??
 
 \vfill
 
-\subsubsection{File system directory structures}
 \subsubsection{Plausible deniability}
 \subsubsection{Hiding data within audio streams}
 \subsection{Testing}
