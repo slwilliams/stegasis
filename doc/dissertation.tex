@@ -1352,18 +1352,46 @@ int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
 }
 \end{lstlisting}
 
+Changes will have to be made to a few \texttt{FUSE} functions including \texttt{readdir}. It is no longer correct to just iterate over all files in the file system and return their names since you only want to return a file if the function call is requesting the folder that file directly resides within. Consider the following example wherein the file system contains one sub-directory and two files; \texttt{/test.txt}, \texttt{/folder/other.txt}. If \texttt{readdir} requests a path of \texttt{/folder/} only \texttt{/folder/other.txt} should be returned. This can be accomplished by testing if the requested path is a prefix of the file name. However, this method fails when directories are created within directories - files within sub-directories of the path should not be returned. This is fixed by checking the number of slashes in the file name and comparing this number of slashes in the path. Algorithm \ref{dirs} describes the \texttt{readdir} implementation.
 
+\begin{algorithm}
+\caption{Algorithm for the \texttt{readdir} implementation.}
+\label{dirs}
+\begin{algorithmic}[1]
+\State add(`..')
+\State add(`.')
+\State pathSlashes $\gets$ number of slashes in path
+\For{for file in (fileSizes and dirs)}
+	\State fileSlashes $\gets$ number of slashes in file
+	\If{path == /}
+		\If{file contains one slash}
+			\State add(file)
+		\EndIf
+	\ElsIf{path is a prefix of file and pathSlashes == fileSlashes - 1}
+		\State add(file)
+	\EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
-Blah string manipulation...
+Changes will now need to be made to write the directories to the video file and to read them back, preserving the directory structure between unmounts and remounts of the same video. It was chosen to represent a directory as a file in the header of the video which has a value of $-1$ in the \texttt{number of triples} field. The \texttt{readHeader} and \texttt{writeHeader} functions were modified appropriately.
+
+These changes successfully implement the extension task and greatly improve the usability of the file system. With the exception of permissions and access and modification times, \texttt{Stegasis} now provides all the functionality one would expect from a typical file system.
 
 %unlink doesnt work check for dirs...
 %also have i implemented mv??
 
-\vfill
-
 \subsubsection{Plausible deniability}
+
+Haven't done this yet...
+
 \subsubsection{Hiding data within audio streams}
+
+Not really worth it.
+
 \subsection{Testing}
+
+Integration test suite with zip...
 
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
