@@ -1385,23 +1385,54 @@ These changes successfully implement the extension task and greatly improve the 
 
 Haven't done this yet...
 
-\subsubsection{Hiding data within audio streams}
+\subsubsection{Hiding data within audio}
 
-Not really worth it.
+It is stated within the project proposal that ``a substantial part of an \texttt{AVI} file may be the audio data''. I was correct to use the word ``may'' within this statement since it turns out that only 0.1\% of an uncompressed \texttt{AVI} file is the audio data. Similarly low percentages apply to other video formats due to modern audio compression algorithms such as \texttt{MP3}. The question of how this extra embedding capacity could actually be utilised is also quite prevalent since \texttt{Stegasis} and the file system logic all rely on the idea of the video being broken up into frames. This concept does not translate easily over to audio.
+
+It was therefore deemed not worth perusing this extension task. 
 
 \subsection{Testing}
 
-Integration test suite with zip...
+\texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all 11 embedding algorithms and associated code. Listing \ref{unittest} gives an example unit test.
+
+\begin{lstlisting}[caption={Embedding algorithm unit test (\texttt{steg/steg\_algorithm\_test.cc:100}).}, frame=single, label=unittest]
+int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
+  this->dirs.insert(path);
+  return 0;
+}
+\end{lstlisting}
+
+It was deemed more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. These archives are then copied into the file system and uncompressed. Once the extraction process has completed, the resulting file system is traversed to check the contents is as expected. Visual testing was also employed. For example, large media content such as high definition video was copied into the mounted volume and checked to see if it played back correctly. This is a good test case since the file (due to its size) will be spread across a large proportion of the video. Indeed, several bugs were identified using this testing approach.
+
+The \texttt{AVI} parser was tested using a black box testing approach using a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. For example, the resolution of the video contained within the \texttt{BITMAPINFOHEADER} can be compared against the known value. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
+
+See the appendix section ?? for some more testing code samples. 
 
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
+
+
+Whoo did everything. also website thing.
+
 \subsection{Correctness}
+
+Pretty correct. 
+
 \subsection{Security}
+
+Not that secure but can't see.
+
 \subsection{Performance}
 
+Pretty graphs of time vs algorithm...
+
 \section{Conclusions}
+
+Project went really well.
+
 \subsection{Future Project Directions}
 
+More secure algorithms, cross platform to windows.
 
 \begin{thebibliography}{1}
 
