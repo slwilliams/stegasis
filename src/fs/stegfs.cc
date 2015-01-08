@@ -476,8 +476,12 @@ void SteganographicFileSystem::writeHeader() {
 };
 
 int SteganographicFileSystem::unlink(const char *path) {
-  this->fileIndex.erase(this->fileIndex.find(path));
-  this->fileSizes.erase(this->fileSizes.find(path));
+  if (fileIndex.find(path) != fileIndex.end()) {
+    this->fileIndex.erase(this->fileIndex.find(path));
+    this->fileSizes.erase(this->fileSizes.find(path));
+  } else {
+    this->dirs.erase(this->dirs.find(path));
+  }
   return 0;
 };
 
