@@ -52,17 +52,46 @@ int wrap_mkdir(const char *path, mode_t mode) {
 struct fuse_operations fs_oper;
 
 void wrap_mount(std::string mountPoint) {
-  char **argv = (char **)malloc(3 * sizeof(char*));
+  char **argv = (char **)malloc(8 * sizeof(char*));
   argv[0] = (char *)malloc(sizeof(char)*5);
   argv[1] = (char *)malloc(sizeof(char)*mountPoint.length() + 1);
   for(int i = 0; i < mountPoint.length(); i ++) {
     argv[1][i] = mountPoint.c_str()[i];
   }
-  argv[1][mountPoint.length()] = '\0';
+
   argv[2] = (char *)malloc(sizeof(char)*3);
   argv[2][0] = '-'; 
   argv[2][1] = 'f'; 
   argv[2][2] = '\0';
+
+  std::string writes = "-obig_writes";
+  argv[3] = (char *)malloc(sizeof(char)*writes.length());
+  for(int i = 0; i < writes.length(); i ++) {
+    argv[3][i] = writes.c_str()[i];
+  }
+
+  std::string r = "-odirect_io";
+  argv[6] = (char *)malloc(sizeof(char)*r.length());
+  for(int i = 0; i < r.length(); i ++) {
+    argv[6][i] = r.c_str()[i];
+  }
+  
+  argv[4] = (char *)malloc(sizeof(char)*2);
+  argv[4][0] = '-'; 
+  argv[4][1] = 'o'; 
+
+  std::string reads = "max_read=345600";
+  argv[5] = (char *)malloc(sizeof(char)*reads.length());
+  for(int i = 0; i < reads.length(); i ++) {
+    argv[5][i] = reads.c_str()[i];
+  }
+
+  /*std::string direct = "-odirect_io";
+  argv[6] = (char *)malloc(sizeof(char)*direct.length());
+  for(int i = 0; i < direct.length(); i ++) {
+    argv[6][i] = direct.c_str()[i];
+  }*/
+
 
   fs_oper.getattr  = wrap_getattr;
   fs_oper.readdir  = wrap_readdir;
@@ -77,5 +106,5 @@ void wrap_mount(std::string mountPoint) {
   fs_oper.flush    = wrap_flush;
   fs_oper.mkdir    = wrap_mkdir;
 
-  fuse_main(3, argv, &fs_oper, NULL);
+  fuse_main(7, argv, &fs_oper, NULL);
 }
