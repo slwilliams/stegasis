@@ -89,11 +89,6 @@ class JPEGDecoder : public VideoDecoder {
       string fpsCommand = "ffmpeg -i " + filePath + " 2>&1 | sed -n \"s/.*, \\(.*\\) fp.*/\\1/p\"";
       this->fps = (int)floor(atof(exec((char *)fpsCommand.c_str()).c_str()));
       printf("fps: %d\n", this->fps);
-      if (this->fps != 25) {
-        printf("Warning: FPS is not 25, if you experience audio sync issues, run the following command:\n");
-        string fpsCommand = "ffmpeg -i " + filePath + " -qscale 0 -r 24 -y output.mp4";
-        printf("%s\n", fpsCommand.c_str());
-      }
 
       string mkdir = "mkdir /tmp/output";
       exec((char *)mkdir.c_str());
@@ -159,7 +154,7 @@ class JPEGDecoder : public VideoDecoder {
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
       }
-      string muxCommand = "ffmpeg -r " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy -c:a aac -strict -2 -b:a 192k -shortest output.mkv";
+      string muxCommand = "ffmpeg -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy -c:a aac -strict -2 -b:a 192k -shortest output.mkv";
       exec((char *)muxCommand.c_str());
     };
     virtual void writeBack() {
