@@ -455,34 +455,36 @@ After reviewing the necessary background material and investigating current avai
 
 \texttt{Stegasis} should:
 
-\begin{itemize}
+\begin{enumerate}
 \item Allow users to embed data within video files:
-	\begin{itemize}
+	\begin{enumerate}
 		\item Several steganographic embedding algorithms should be available.
 		\item Each embedding algorithm, $\mathcal{A}$, should satisfy correctness. That is,
 		\begin{center}
 			$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~Ext_{\mathcal{A}}(Emb_{\mathcal{A}}(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}$.
 		\end{center}
+		\item Embedded should occur with no perceivable impact on video quality.
 		\item Steganalysis tools should be developed to test the security of the proposed embedding algorithms.
 		\item An optional user provided password should encrypt data prior to embedding.
 		\item A capacity option should allow users to specify the percentage of each video frame to embed within.
-	\end{itemize}
+	\end{enumerate}
 \item Provide a file system interface:
-	\begin{itemize}
+	\begin{enumerate}
 		\item The presented logical volume should reside at a user provided mount point.		
 		\item Data written to the file system should be embedded on the fly within the chosen video file.
 		\item Data accessed from the file system should be retrieved on the fly from within the video.
 		\item Standard file system operations such as creating, deleting and moving files should work as expected, and standard Unix tools such as \texttt{cp}, \texttt{mv} and \texttt{rm} should also work as expected.
-	\end{itemize}	
+	\end{enumerate}	
 \item Support raw uncompressed \texttt{AVI} video:
-	\begin{itemize}
+	\begin{enumerate}
 		\item Uncompressed \texttt{AVIs} should be natively parsed allowing access to individual pixel data.
-	\end{itemize}	
+	\end{enumerate}	
 \item Provide performance adequate for normal use:
-	\begin{itemize}
+	\begin{enumerate}
 		\item Full HD video content should be playable directly from within the presented file system.
-	\end{itemize}		
-\end{itemize}
+		\item Typical bitrates of full HD video are 8 - 12 Mb/s and therefore the file system should at a minimum give read speeds of 12 Mb/s.
+	\end{enumerate}		
+\end{enumerate}
 
 \subsubsection{Possible Extensions}
 
@@ -491,30 +493,30 @@ If time constraints allow, the following extension tasks shall also be completed
 \noindent
 \texttt{Stegasis} should:
 
-\begin{itemize}
+\begin{enumerate}
 \item Support a wide range of video formats:
-	\begin{itemize}
+	\begin{enumerate}
 		\item Specifically including the popular video format \texttt{MP4}.		
-	\end{itemize}
+	\end{enumerate}
 \item Allow directory operations within the file system:
-	\begin{itemize}
+	\begin{enumerate}
 		\item Creating directories using the \texttt{mkdir} command should work as expected, as should using the \texttt{mv} and \texttt{rm} commands.
 		\item Organising files within directories should also work as expected.
-	\end{itemize}	
+	\end{enumerate}	
 \item Embed also within audio data:
-	\begin{itemize}
+	\begin{enumerate}
 		\item Data should also be embedded within the (possible) audio stream of the video, therefore increasing the embedding capacity.
-	\end{itemize}	
+	\end{enumerate}	
 \item Provide plausible deniability:
-	\begin{itemize}
+	\begin{enumerate}
 		\item A second file system should be (optionally) embedded within the video, mountable with a second passphrase.
 		\item The presence of the second, hidden file system should not be detectable.
-	\end{itemize}
+	\end{enumerate}
 \item Be evaluated for perceivable video impact using a web application:
-	\begin{itemize}
+	\begin{enumerate}
 		\item The web application should evaluate the claim ``Embedding has no perceivable impact on video quality.'' by obtaining data from multiple users.
-	\end{itemize}		
-\end{itemize}
+	\end{enumerate}		
+\end{enumerate}
 
 \subsection{Choice of Languages and Tools}
 
@@ -1321,9 +1323,19 @@ The component to embed within is chosen using the calculation \texttt{(co \% 2) 
 
 At higher capacity settings, this embedding algorithm does begin to produce visual artifacts within the video frames. Figure \ref{jpegarti} illustrates this when a capacity setting of 100\% was used.
 
-% figure here...
+\begin{figure}[!h]
+\centerline{\includegraphics[width=\textwidth]{images/bb_100cap.png}}
+\caption{Embedding artifacts at 100\% capacity.}
+\label{jpegarti}
+\end{figure}
 
-However, at lower capacity settings it is not possible to visually differentiate between the cover and stego objects\footnote{This claim is verified within the evaluation section.}. Figure \ref{jpegnoart} shows the same frame as above, but using a capacity setting of 20\%.
+However, at lower capacity settings it is not possible to visually differentiate between the cover and stego objects\footnote{This claim is verified within the evaluation section \ref{security}.}. Figure \ref{jpegnoart} shows the same frame as above, but using a capacity setting of 20\%. (Left image is the original frame.)
+
+\begin{figure}[!h]
+\centerline{\includegraphics[width=\textwidth]{images/bb_20cap.png}}
+\caption{Frame comparison at 20\% capacity.}
+\label{jpegnoart}
+\end{figure}
 
 \noindent
 The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>$100\% embedding capacities claimed within the opening paragraphs of this document. The reason this is possible is due to the final stage of \texttt{JPEG} compression - ``Encode the resulting coefficients using a Huffman variable word-length algorithm''. This effectively compresses the embedded data before it is written back to disk. To show this in action, listing \ref{200cap} shows a 200 MB file embedded within a 100 MB video.
@@ -1336,6 +1348,8 @@ Video mounted at /mnt/video
 $ ls /mnt/video
 file 200 MB
 \end{lstlisting}
+
+Some interesting points to note about decompressing to ram etc...
 
 The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats greatly increasing practicality and successfully completing the extension task.
 
@@ -1387,11 +1401,14 @@ Haven't done this yet...
 
 \subsubsection{Hiding data within audio}
 
-It is stated within the project proposal that ``a substantial part of an \texttt{AVI} file may be the audio data''. I was correct to use the word ``may'' within this statement since it turns out that only 0.1\% of an uncompressed \texttt{AVI} file is the audio data. Similarly low percentages apply to other video formats due to modern audio compression algorithms such as \texttt{MP3}. The question of how this extra embedding capacity could actually be utilised is also quite prevalent since \texttt{Stegasis} and the file system logic all rely on the idea of the video being broken up into frames. This concept does not translate easily over to audio.
+It is stated within the project proposal that ``a substantial part of an \texttt{AVI} file may be the audio data''. I was correct to use the word ``may'' within this statement since it turns out that only 0.1\% of an uncompressed \texttt{AVI} file is the audio data. Similarly low percentages apply to other video formats due to modern audio compression algorithms such as \texttt{MP3}. The question of how this extra embedding capacity could actually be utilised is also quite prevalent since \texttt{Stegasis} and the file system logic all rely on the idea of the video being broken up into frames. This concept does not translate easily over to audio. It was therefore deemed not worth perusing this extension task. 
 
-It was therefore deemed not worth perusing this extension task. 
+\subsubsection{Evaluation of embedding impact on video quality}
+
+To evaluate the claim ``Embedding 
 
 \subsection{Testing}
+\label{testing}
 
 \texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all 11 embedding algorithms and associated code. Listing \ref{unittest} gives an example unit test.
 
@@ -1402,6 +1419,8 @@ int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
 }
 \end{lstlisting}
 
+The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded using a key \textbf{k} is correctly extracted when using the same key.
+
 It was deemed more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. These archives are then copied into the file system and uncompressed. Once the extraction process has completed, the resulting file system is traversed to check the contents is as expected. Visual testing was also employed. For example, large media content such as high definition video was copied into the mounted volume and checked to see if it played back correctly. This is a good test case since the file (due to its size) will be spread across a large proportion of the video. Indeed, several bugs were identified using this testing approach.
 
 The \texttt{AVI} parser was tested using a black box testing approach using a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. For example, the resolution of the video contained within the \texttt{BITMAPINFOHEADER} can be compared against the known value. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
@@ -1411,20 +1430,59 @@ See the appendix section ?? for some more testing code samples.
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
 
+As stated in the preparation section, the project will be considered a success if all of the core requirements have been satisfied. Each requirement will now be addressed in turn.
 
-Whoo did everything. also website thing.
+\subsubsection{Embedding data within video files}
 
-\subsection{Correctness}
+\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 10 steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by one of the unit test cases as explained in section \ref{testing}.} and, after an evaluation study discussed in section \ref{security} below, it was concluded that \texttt{Stegasis} operates with no perceivable impact on video quality. A number of steganalysis tools were indeed developed and tested the security of the proposed stego systems, prompting the design of more secure embedding algorithms. Encryption functionality is also provided making use of a user provided passphrase. Finally a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity. This satisfies all points of requirement 1.
 
-Pretty correct. 
+\subsubsection{Providing a file system interface}
+
+\texttt{Stegasis} also successfully satisfies the second requirement. Users can specify a mount point at which the volume will be mounted and data written to and read from this volume will embedded and extracted from the video on the fly. Standard Unix tools including \texttt{cp}, \texttt{mv} and \texttt{rm} work as expected and the file system is correctly persevered between unmounts and remounts of the same video.
+
+\subsubsection{Supporting uncompressed AVI}
+
+Raw uncompressed \texttt{AVI} files are supported via a developed native parser which allows access to and modification of individual pixel data, therefore fulfilling requirement 3.
+
+\subsubsection{Adequate performance}
+
+The performance of the file system allows full HD video content to be played back directly from within the volume. The file system provides read (and write) speeds greater that the stated minimum 12 Mb/s, satisfying the final core requirement. Performance is discussed in detail below in section \ref{perf}.\\
+
+\noindent
+\texttt{Stegasis}, having satisfied all of the core requirements can therefore be considered a success. The extension task requirements are now discussed individually. 
+
+\subsubsection{Supporting multiple video formats}
+
+The novel method described in section \ref{extffmpeg} allows \texttt{Stegasis} to seamlessly operate across virtually every video format available today, including the explicitly mentioned \texttt{MP4} format. The implemented embedding algorithms operating on \texttt{JPEG} images enable very large embedding capacities allowing multiple large files to hidden inside of a single video file.
+
+\subsubsection{File system directory operations}
+
+Directory functionality was successfully implemented allowing the creation and manipulation of directory structures, enabling users to organise their files within folders. The \texttt{mv} and \texttt{rm} commands work as expected when operating on directories as well as normal files. 
+
+\subsubsection{Embedding within audio}
+
+This extension task was investigated but was decided not to be implemented.  
+
+\subsubsection{Plausible deniability}
+
+Haven't done this yet.
+
+\subsubsection{Evaluation of the visual impact of embedding}
+
+A website was implemented and hosted for the majority of the duration of the project. A total of *2000* data points were collected from 15 individual users. The results are discussed in detail below in section \ref{security}, but the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
+
+\noindent
+\texttt{Stegasis} therefore has also satisfied all\footnote{I'm considering the audio extension task as satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks.
 
 \subsection{Security}
+\label{security}
 
-Not that secure but can't see.
+Not that secure but can't see, website thing.
 
 \subsection{Performance}
+\label{perf}
 
-Pretty graphs of time vs algorithm...
+Pretty graphs of time vs algorithm... blocksize... read/write performance of FS.
 
 \section{Conclusions}
 
