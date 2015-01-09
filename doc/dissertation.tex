@@ -463,7 +463,7 @@ After reviewing the necessary background material and investigating current avai
 		\begin{center}
 			$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~Ext_{\mathcal{A}}(Emb_{\mathcal{A}}(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}$.
 		\end{center}
-		\item Embedded should occur with no perceivable impact on video quality.
+		\item Embedding should occur with no perceivable impact on video quality.
 		\item Steganalysis tools should be developed to test the security of the proposed embedding algorithms.
 		\item An optional user provided password should encrypt data prior to embedding.
 		\item A capacity option should allow users to specify the percentage of each video frame to embed within.
@@ -514,7 +514,7 @@ If time constraints allow, the following extension tasks shall also be completed
 	\end{enumerate}
 \item Be evaluated for perceivable video impact using a web application:
 	\begin{enumerate}
-		\item The web application should evaluate the claim ``Embedding has no perceivable impact on video quality.'' by obtaining data from multiple users.
+		\item The web application should evaluate the requirement ``Embedding should occur with no perceivable impact on video quality.'' by obtaining data from multiple users.
 	\end{enumerate}		
 \end{enumerate}
 
@@ -927,8 +927,6 @@ Figure \ref{lsbp_chi} shows the result of applying the Chi-Squared attack to the
 
 \noindent
 The above example embedded data within an uncompressed \texttt{AVI} video file which was 10 seconds in duration, had a resolution of $1280\times720$ and was \SI{741}{\mega\byte} in size. Using the permuted LSB embedding algorithm with a capacity setting of 15\% (which resisted the Chi-Squared attack), \texttt{Stegasis} informed me that the formatted volume had a total capacity of \SI{14.49}{\mega\byte}, roughly 2\% of the file size. This embedding capacity is already a lot better than some of the those provided by programs investigated in section \ref{tools}, and will be further improved upon during the extension task within section \ref{extffmpeg}.
-
-
 
 \subsubsection{Permuted and Encrypted LSB Embedding}
 
@@ -1349,8 +1347,9 @@ $ ls /mnt/video
 file 200 MB
 \end{lstlisting}
 
-Some interesting points to note about decompressing to ram etc...
+The performance of \texttt{Stegasis} using this method is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
 
+\noindent
 The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats greatly increasing practicality and successfully completing the extension task.
 
 \subsubsection{File system directory structures}
@@ -1405,7 +1404,20 @@ It is stated within the project proposal that ``a substantial part of an \texttt
 
 \subsubsection{Evaluation of embedding impact on video quality}
 
-To evaluate the claim ``Embedding 
+To evaluate the requirement ``Embedding should occur with no perceivable impact on video quality.'', a web application was required to be developed and hosted. Figure \ref{site} shows a screenshot of the finished website hosted at \texttt{www.stegasis.co.uk} for the majority of the duration of the project.
+
+\begin{figure}[!h]
+\centerline{\includegraphics[width=\textwidth]{images/site.png}}
+\caption{Screen shot of the evaluation study site.}
+\label{site}
+\end{figure}
+
+The user is presented with 2 images and asked the question ``Which image do you think contains hidden data?''. The user may inspect the image for as long as they wish, and by clicking on an image, they then select their choice.
+
+In total there are 14,912 pairs of images, one of which is randomly selected for each page load. One of the images is the original video frame while the other has 2.5 kB of data embedded within it using the permuted \texttt{JPEG} embedding algorithm and a capacity setting of 20\% (the default value). The position of the ``correct'' image is randomly chosen and the file names of the images are also random strings. This tries to thwart any attempts at foul play, possibly damaging the collected results. When a user first visits the site, a cookie containing a unique ID is issued allowing data points from the same user to be logged together.\\
+
+\noindent
+The results of this evaluation study obtained by the implemented web application are discussed in section \ref{security} and give a definitive answer to the question of perceivable embedding impact.
 
 \subsection{Testing}
 \label{testing}
@@ -1469,15 +1481,15 @@ Haven't done this yet.
 
 \subsubsection{Evaluation of the visual impact of embedding}
 
-A website was implemented and hosted for the majority of the duration of the project. A total of *2000* data points were collected from 15 individual users. The results are discussed in detail below in section \ref{security}, but the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
+A website was implemented and hosted for the majority of the duration of the project. A total of *2000* data points were collected from 15 individual users. The results are discussed in detail below in section \ref{security}, and the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
 
 \noindent
-\texttt{Stegasis} therefore has also satisfied all\footnote{I'm considering the audio extension task as satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks.
+\texttt{Stegasis} therefore has also satisfied all\footnote{I'm considering the audio extension task satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks, further cementing the success of the project.
 
 \subsection{Security}
 \label{security}
 
-Not that secure but can't see, website thing.
+Talk about steganalysis attacks in impl, say resists some. Then talk about evaluation study, then talk about hisogram attack. Then talk about plausable deniabliy as all algirhtms are broken...
 
 \subsection{Performance}
 \label{perf}
