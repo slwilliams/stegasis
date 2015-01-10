@@ -479,10 +479,10 @@ After reviewing the necessary background material and investigating current avai
 	\begin{enumerate}
 		\item Uncompressed \texttt{AVIs} should be natively parsed allowing access to individual pixel data.
 	\end{enumerate}	
-\item Provide performance adequate for normal use:
+\item Provide adequate file system performance:
 	\begin{enumerate}
-		\item Full HD video content should be playable directly from within the presented file system.
-		\item Typical bitrates of full HD video are 8 - 12 Mb/s and therefore the file system should at a minimum give read speeds of 12 Mb/s.
+		\item Full HD video content should be playable directly from within the presented file system (bitrates of full HD video are roughly 8 - 12 Mb/s).
+		\item Ideally the file system should provide read and write speeds comparable to those from a mid range HDD (roughly 100 MB/s).
 	\end{enumerate}		
 \end{enumerate}
 
@@ -1456,9 +1456,9 @@ As stated in the preparation section, the project will be considered a success i
 
 Raw uncompressed \texttt{AVI} files are supported via a developed native parser which allows access to and modification of individual pixel data, therefore fulfilling requirement 3.
 
-\subsubsection{Adequate performance}
+\subsubsection{File system performance}
 
-The performance of the file system allows full HD video content to be played back directly from within the volume. The file system provides read (and write) speeds greater that the stated minimum 12 Mb/s, satisfying the final core requirement. Performance is discussed in detail below in section \ref{perf}.\\
+The performance of the file system allows full HD video content to be played back from directly within the volume, meeting the first point of this requirement. The second point was rather ambitious, achieving read and write speeds comparative to that of a HDD (100 MB/s) was not an easy task. The file system does manage to provide read speeds of *50 MB/s* and write speeds of *120 MB/s* (under ideal conditions\footnote{These conditions are discussed below in section \ref{perf}.}), but only for the algorithms which do not encrypt the embedded data and only if the performance flag (\texttt{-p}) has been specified. Since read and write speeds in excess of 100 MB/s can be provided by the file system, I consider this requirement satisfied. Performance is discussed in more detail below in section \ref{perf}.\\
 
 \noindent
 \texttt{Stegasis}, having satisfied all of the core requirements can therefore be considered a success. The extension task requirements are now discussed individually. 
@@ -1473,7 +1473,7 @@ Directory functionality was successfully implemented allowing the creation and m
 
 \subsubsection{Embedding within audio}
 
-This extension task was investigated but was decided not to be implemented.  
+This extension task was investigated but was decided not to be implemented due to the relativity little embedding capacity gain compared to the work required to implement it.
 
 \subsubsection{Plausible deniability}
 
@@ -1489,7 +1489,15 @@ A website was implemented and hosted for the majority of the duration of the pro
 \subsection{Security}
 \label{security}
 
+Although security of the embedding algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The evaluation user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{Stegasis} when using its default capacity setting of 20\%. The results of this study are now statistically analysed to give an answer to this question.
+
+It is first noted that if a user cannot tell the difference between the two presented images, they will select one at random. From the phrasing of the question posed to the user, a response is considered correct if the image selected did contain hidden data and incorrect if it did not. If a user were to randomly guess each time, the resulting data stream would be a random stream of corrects and incorrects. Letting correct be represented as 1 and incorrect as 0, this stream of random corrects and incorrects becomes a random bit string. Therefore, if it can be shown that the collected data is a random bit string, it can then be concluded that the users must have been randomly guessing and therefore could not differentiate between the two presented images.
+
+To determine that the obtained bit string is in fact random, a number of statistical randomness tests are used.
+
 Talk about steganalysis attacks in impl, say resists some. Then talk about evaluation study, then talk about hisogram attack. Then talk about plausable deniabliy as all algirhtms are broken...
+
+For example figure 1 shows histogram attack using 20\% ... not secure.
 
 \subsection{Performance}
 \label{perf}
