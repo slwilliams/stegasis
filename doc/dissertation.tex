@@ -40,14 +40,14 @@
 % --------------------------------------------------------------------
 % Definitions
 % --------------------------------------------------------------------
-\newcommand{\HRule}[1]{\rule{\linewidth}{#1}}     % Horizontal rule
+\newcommand{\HRule}[1]{\rule{\linewidth}{#1}}     
 
-\makeatletter                            % Title
+\makeatletter                            
 \def\printtitle{%                        
     {\centering \@title\par}}
 \makeatother                                    
 
-\makeatletter                            % Author
+\makeatletter                           
 \def\printauthor{%                    
     {\large \@author}}                
 \makeatother       
@@ -99,13 +99,23 @@
 		\LARGE{\textit{Scott Williams}}
 	\end{flushright}
 	~\\[2.0cm]			
-	\normalsize \textsc{Computer Science Part II Project Dissertation}\\[2.0cm]     % Subtitle
-    \HRule{0.5pt} \\                        % Upper rule
-    \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    % Title
-    \HRule{2pt} \\[30pt]        % Lower rule + 0.5cm spacing
+	\normalsize \textsc{Computer Science Part II Project Dissertation}\\[2.0cm]     
+    \HRule{0.5pt} \\                        
+    \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    
+    \HRule{2pt} \\[30pt]        
     \normalsize Christ's College\\[5pt]University of Cambridge\\[25pt]           
-    \normalsize \today            % Todays date
+    \normalsize \today            
 }
+
+\author{
+    \begin{spacing}{1.5}
+        \noindent
+        \uppercase{Project Supervisor}: Daniel Thomas\\    
+        \uppercase{Director of Studies}: Professor Ian Leslie\\    
+        \uppercase{Project Overseers}: Professor Peter Robinson, Dr Robert Watson\\
+    \end{spacing}
+}
+
 
 \begin{document}
 \renewcommand{\thelstlisting}{\thesection.\arabic{lstlisting}}
@@ -113,11 +123,10 @@
 % ------------------------------------------------------------------------------
 % Maketitle
 % ------------------------------------------------------------------------------
-\thispagestyle{empty}        % Remove page numbering on this page
+\thispagestyle{empty}        
 
-\printtitle                    % Print the title data as defined above
+\printtitle                    
 \vfill
-\printauthor                % Print the author data as defined above
 \begin{center}
 \huge{[~}\normalsize \textsc{First Draft}\huge{~]}
 \end{center}
@@ -126,7 +135,7 @@
 % ------------------------------------------------------------------------------
 % Begin document
 % ------------------------------------------------------------------------------
-\setcounter{page}{1}        % Set page numbering to begin on this page
+\setcounter{page}{1}        
 \pagenumbering{roman}
 \section*{Performa}
 \NumTabs{3}
@@ -1493,11 +1502,19 @@ Although security of the embedding algorithms was not a major focus of this proj
 
 It is first noted that if a user cannot tell the difference between the two presented images, they will select one at random. From the phrasing of the question posed to the user, a response is considered correct if the image selected did contain hidden data and incorrect if it did not. If a user were to randomly guess each time, the resulting data stream would be a random stream of corrects and incorrects. Letting correct be represented as 1 and incorrect as 0, this stream of random corrects and incorrects becomes a random bit string. Therefore, if it can be shown that the collected data is a random bit string, it can then be concluded that the users must have been randomly guessing and therefore could not differentiate between the two presented images.
 
-To determine that the obtained bit string is in fact random, a number of statistical randomness tests are used.
+To determine if the obtained bit string is in fact random, a number of statistical randomness tests are used.
 
-Talk about steganalysis attacks in impl, say resists some. Then talk about evaluation study, then talk about hisogram attack. Then talk about plausable deniabliy as all algirhtms are broken...
+Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. Indeed, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the stego systems implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0, that is, coefficients $n$ and $-n$ have roughly equal frequencies. This *charectarisitc* is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
 
-For example figure 1 shows histogram attack using 20\% ... not secure.
+\begin{figure}[!h]
+\centerline{\includegraphics[width=\textwidth]{images/compact.png}}
+\caption{The histogram attack.}
+\label{hist}
+\end{figure}
+
+This does lead to the unfortunate conclusion that the steganography provided by \texttt{Stegasis}, as it stands, is broken - a steganalyst would be able to conclude with relative ease that videos produced by \texttt{Stegasis} contained hidden data. I do not believe however that this renders \texttt{Stegasis} useless. The embedding algorithms employing cryptography ensure that even if the embedded data is identified, it cannot be extracted nor decrypted. Furthermore, the plausible deniability functionality provided by \texttt{Stegasis} keeps sensitvie information safe even if users are forced to give up encryption keys. Blah steganlysis would have to already be targeting video... It is certainly not the case that every video is automatically *something*...
+
+With the above said, it would be a straight forward process to incorporate more secure embedding algorithms which resist the histogram attack (such as F5 and OutGuess) due to the framework \texttt{Stegasis} already provides.
 
 \subsection{Performance}
 \label{perf}
@@ -1512,6 +1529,10 @@ Project went really well.
 
 More secure algorithms, cross platform to windows.
 
+\vfill
+
+\pagebreak
+
 \begin{thebibliography}{1}
 
 \bibitem{digmedia}
@@ -1519,10 +1540,136 @@ More secure algorithms, cross platform to windows.
   Jessica Fridrich, 2010.
 
 \end{thebibliography}
-% ------------------------------------------------------------------------------
-% End document
-% ------------------------------------------------------------------------------
+
+\pagebreak
+
+\appendix
+\section{Blah} 
+\label{app:a}
+
+Blah
+
+\section{Blah2} 
+\label{app:b}
+
+Blah
+
+\section{Blah3} 
+\label{app:c}
+
+Rofl
+
+\vfill
+
+\section{Original Project Proposal} 
+
+\begin{center}	
+ 	~\\[2.0cm]			
+	\normalsize \textsc{Computer Science Part II Project Proposal}\\[2.0cm]     
+    \HRule{0.5pt} \\                        
+    \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    
+    \HRule{2pt} \\[30pt]        
+    \normalsize Scott Williams, Christ's College\\[2pt]Originators: Scott Williams\\[25pt]           
+    \normalsize \today            
+     \vfill
+\end{center}
+\printauthor                
+\newpage
+\section*{Introduction and Description of the Work}
+
+Steganography is the art of hiding messages within inconspicuous objects - a form of covert communication. Whereas cryptography protects only the content of a message, steganography attempts to conceal the fact that the message even exists. Steganography is particularly useful in countries where encryption is illegal or not suitable, e.g. within the UK, where encryption keys can be forced to be handed over.
+
+There exist many freely available programs which offer message hiding functionality within digital media. However, the majority of these programs operate on single image files and therefore impose a hard limit on the size of message you can embed\footnote{JPEG images for example are typically only a few megabytes in size - limiting the size of files you can possibly embed.}. Many programs also constrain the type of message you can embed to be a simple text string. Video files on the other hand can be several gigabytes in size without arousing suspicion\footnote{Raw uncompressed \texttt{AVI} files are roughly 2GB per minute of footage.} providing an ideal container for multiple (possibly large) sensitive files. A file system interface would enable users to hide any number of files of any type - just by copying / creating files within the mounted volume. For these reasons, the proposed project focuses on steganographic file systems within video files.
+
+I propose to develop an application which allows a file system to be embedded within a user provided video file. The application will also enable mounting and unmounting of video files with contained file systems. As part of the project I intend to explore a number of steganographic embedding algorithms all of which will be selectable within the final application.\\
+
+\noindent
+An example use of the final product (henceforward referred to as \texttt{Stegasis}):
+\begin{verbatim}
+  # Prepare an existing video file
+  $ stegasis format –-alg=lsb video.avi
+     
+  # Using stegasis mount we can directly mount the video file
+  $ stegasis mount video.avi /mnt/volume
+ 
+  # Create a file inside the file system
+  $ echo "test" > /mnt/volume/test.txt
+  # Unmount the file system
+  $ stegasis umount /mnt/volume
+\end{verbatim}
+ 
+After doing some initial research on the topic of steganographic file systems, it seems a suitable approach will be to develop a FileSystem in Userspace using the FUSE package. A similar approach was taken within a paper in which a file system was embedded within multiple JPEG images. For the purposes of this project I'll be focusing on uncompressed raw \texttt{AVI} video files.
+ 
+I propose a staged approach to the project where each stage implements an increasingly secure scheme of embedding the file system, for example starting with na\"{i}ve least significant bit embedding, showing how this can be broken using statistical analysis and then moving on to more advanced techniques (each method selectable via the --alg flag).
+The main product of this project - \texttt{Stegasis} - as shown above will be a user facing application, enabling all versions of the algorithms described throughout the stages of the project to be run on user provided video files. A number of programs to analyse and break insecure schemes proposed early on during the project could also be produced.
+This project would tie in nicely with the Part II courses Information Theory and Coding, Digital Signal Processing, and possibly Security II.
+
+\section*{Resources Required}
+I will be using the \texttt{C++} programming language to develop \texttt{Stegasis} of which I have a good amount of experience with. The virtual File System aspect will be implemented using the \texttt{FUSE} package. A scripting language such as \texttt{Python} or \texttt{MATLAB} may also be used to develop some of the steganalysis tools. Raw \texttt{AVI} Video files for testing purposes can be created using \texttt{VirtualDub}'s video conversion tools.
+
+I intend to implement the project on my own desktop computer (running Ubuntu 14.04.1 as well as Windows 7) due to convenience and accessibility. However, there is no reason why development could not happen on the PWF machines, should this be needed.
+Backups will be taken at regular intervals and \texttt{Git}, a revision control system will be used (in conjunction with \texttt{GitHub}) to preserve multiple versions of the project stored both locally and in an offsite location.
+
+\section*{Starting Point}
+Steganography shares a number of concepts with Cryptography for which an introductory course (Security I) was given last year. I have read the introductory chapters of Steganography in Digital Media by Jessica Fridrich, a number of generic steganography papers and also a few papers specific to Steganographic File Systems.
+
+I have implemented a simple ``hello world'' \texttt{FUSE} virtual file system in \texttt{C++} to prove the package works as I would expect.
+
+\section*{Substance and Structure of the Project}
+The project will consist of the following sections:
+\begin{enumerate}
+\item Research and investigation into the theoretical aspects of steganography, identifying appropriate embedding algorithms and steganalysis techniques. Investigation into developing a virtual file system and the \texttt{AVI} video format.
+\item Design and implementation of \texttt{Stegasis} providing a variety of steganographic embedding algorithms, allowing raw \texttt{AVI} files to be formatted, and the mounted file system to be written to and read from. This section will follow an iterative process wherein each iteration will propose an increasingly secure embedding algorithm and an attempt to develop a suitable steganalysis technique to break it.
+\item Evaluation of \texttt{Stegasis} will be based on the following criteria:
+    \begin{itemize}
+    \item Correctness: \texttt{Stegasis} correctly formats and mounts a provided video file presenting the file system as a logical volume. Files written to the volume should persist between unmounts and subsequent mounts of the same unmodified video file.
+    \item Usability: The \texttt{Stegasis} command line tool should be simple and intuative providing useage details for its functionality and helpful error messages.
+    \item Performace: The steganographic embedding process should have no noticeable impact on the file system performance i.e. writes to files should not be perceivably slower than a standard HDD\footnote{For example, it takes roughly 2ms to read a 1MB file from a HDD.}.
+    \end{itemize}
+\end{enumerate}
+
+\section*{Success Criteria}
+
+For the project to be considered a success, \texttt{Stegasis} should provide the following functionality:
+\begin{itemize}
+\item \texttt{Stegasis} should offer a number of steganographic embedding algorithms.
+\item Given a standard raw \texttt{AVI} video file, \texttt{Stegasis} should format\footnote{Format in this case is referring to writing some meta data to the video e.g. which embedding algorithm is being used.} the video such that it can be mounted.
+\item Given a formatted video file, \texttt{Stegasis} should be able to mount the video and present a virtual file system at a given mount point.
+\item Standard file system operations including listing files, reading a file, writing to a file and deleting a file should be supported within the virtual file system.
+\item The above described functionality of \texttt{Stegasis} should operate without noticeable visual impact on the video content.
+\end{itemize}
+
+\section*{Extensions}
+
+If there is sufficient time, the following extensions may be attempted:
+\begin{itemize}
+\item Directory Structure: \texttt{Stegasis} as described only permits files to be created within the root of the virtual file system. It would be beneficial to allow users to create folder structures as you would expect from a standard file system.
+\item Audio Usage: \texttt{Stegasis} as described only makes use of video image frames to embed the file system. However, a substantial part of an \texttt{AVI} file may be the audio data. It would be useful to make use of the audio data to increase the steganographic capacity of the proposed embedding algorithms.
+\item Video Formats: Unfortunately, raw \texttt{AVI} video is (very) uncommon compared with modern compressed video formats such as \texttt{H.264 (mp4)} it would be very beneficial for \texttt{Stegasis} to operate on a variety of video formats, rather than just raw \texttt{AVI}. However, modern video formats are intricate and complex so this may well be outside the scope of this project.
+\item Evaluation of video artifacts: Quantification of ``noticeable visual impact on video content'' via a set of human trials possibly achievable by crowd-sourcing through an online website.
+\end{itemize}
+
+\section*{Timetable}
+\subsection*{Michaelmas Term}
+\begin{itemize}
+\item \textbf{\textit{24th October - 6th November (weeks 3-4):}} Research on the theoretical background of steganography including reading relevant sections of textbooks and academic papers.
+\item \textbf{\textit{7th November - 20th November (weeks 5-6):}} Investigation of appropriate steganographic embedding algorithms suitable for video files. Investigation of the \texttt{AVI} video format and the \texttt{FUSE} package.
+\item \textbf{\textit{21st November - 4th December (weeks 7-8):}} Implementation of \texttt{Stegasis} only offering the simple LSB embedding algorithm and file system functionality.
+\end{itemize}
+
+\subsection*{Winter Vacation}
+\begin{itemize}
+\item \textbf{\textit{5th December - 18th December:}} Implementation of more advanced steganographic embedding techniques and integration of these into \texttt{Stegasis}. Development of steganalysis tools to break proposed embedding schemes.
+\item \textbf{\textit{19th December - 1st January:}} Christmas holiday.
+\item \textbf{\textit{2nd January - 16th January:}} Continuing work on more advanced steganographic embedding and steganalysis techniques.
+\end{itemize}
+
+\subsection*{Lent Term}
+\begin{itemize}
+\item \textbf{\textit{16th January - 22nd January (week 1):}} Polishing of \texttt{Stegasis} and source code (not yet including extension work) - core project should be finished at this point. Write progress report and prepare for the progress presentation.
+\item \textbf{\textit{23rd January - 12th February (weeks 2-4):}} Evaluation of the core project. Identification and implementation of promising extension tasks.
+\item \textbf{\textit{13th February - 26th March (weeks 5-10):}} Work on the dissertation write-up, completing a draft for submission to my supervisor.
+\item \textbf{\textit{27th March -  23rd April (Easter Vacation):}} Revision of dissertation addressing supervisors comments. Dissertation should be ready to submit by 23rd April.
+\end{itemize}
 
 \end{document}
-
-
