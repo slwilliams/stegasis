@@ -137,6 +137,7 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
 
   int totalCapacity = (int)floor((dec->numberOfFrames() * (dec->frameSize() / 8000) * (capacity / 100.0)));
   printf("Volume capacity: %.2fMB\n", totalCapacity/1000.0); 
+  printf("Frame size: %dB\n", dec->frameSize());
 
   delete dec;
   printf("Format successful!\n");
@@ -165,6 +166,7 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new DCTAAlgorithm(pass, dec);
   } else {
     printf("Unknown algorithm\n");
+    printUsage();
     exit(0);
   }
 }
@@ -211,7 +213,7 @@ void printUsage() {
   printf("  Other video formats:\n");
   printf("    dctl:  LSB Sequential Embedding within DCT coefficients\n");
   printf("    dctp:  LSB Permuted Embedding within DCT coefficients\n");
-  printf("    dct2:  Combination of dctl and dctp\n");
+  printf("    dct2:  Combination of dctp and lsbk\n");
   printf("    dcta:  LSB Permuted Embedding encrypted with AES\n");
   printf("    dct3:  LSB Permuted Embedding encrypted with AES->Twofish->Serpent\n");
 }

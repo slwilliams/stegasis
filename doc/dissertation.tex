@@ -16,7 +16,7 @@
 \usepackage{listings}
 
 \usepackage[draft]{graphicx}
-\usepackage{graphicx}
+%\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -1063,7 +1063,7 @@ Writing back the header is a similar process explained within algorithm \ref{wri
 	\State num\_triples $\gets$ triples.length()
 	\State header[offset] $\gets$ num\_triples
 	\State offset += 4
-	\For{triple in triple}
+	\For{triple in triples}
 		\State header[offset] $\gets$ triple
 		\State offset += sizeof(triple)
 	\EndFor
@@ -1519,7 +1519,23 @@ With the above said, it would be a straight forward process to incorporate more 
 \subsection{Performance}
 \label{perf}
 
-Pretty graphs of time vs algorithm... blocksize... read/write performance of FS.
+Performance of \texttt{Stegasis}, and in particular the file system, is very important to consider. Due to the large embedding capacities offered, large files are expected to be copied into the file system and therefore embedded into the video. The write performance of the file system was therefore given a lot of attention during the implementation. The biggest improvement in file system performance was obtained by enabling the \texttt{FUSE} \texttt{big_writes} mount option. By default, \texttt{FUSE} limits writes to the file system to blocks of 4096 bytes. \texttt{big_writes} allows this limit to be increased to a maximum of 128 kB. Figure \ref{writeper} shows the effect of varying the block size on write performance for the LSB embedding algorithm (with the \texttt{-p} flag).
+
+\begin{figure}[!h]
+\centerline{\includegraphics[width=\textwidth]{images/writeper.png}}
+\caption{Write performance whilst varying block size.}
+\label{writeper}
+\end{figure}
+
+The data points for the above figure were obtained using the command line tool \texttt{dd} as shown in the listing below. Note that this is pretty much ideal conditions having a large block size and writing all zeros. Most use cases will not be like this.
+
+\begin{lstlisting}[caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd]
+dd if=/dev/zero of=test bs=128k count=610
+\end{lstlisting}
+
+To evaluate the file system performance under more standard conditions, I timed the copying of an 80 MB video file into and out of the file system using the \texttt{time} tool. This process was repeated multiple time and an average taken. This gave a write speed of 33.6 MB/s and read speed of 46.3 MB/s. This is significantly slower than above, but is still on par with USB 3.0 speeds.
+
+Could write about performance of formatting videos?
 
 \section{Conclusions}
 
@@ -1556,7 +1572,7 @@ Finally it would be great for \texttt{Stegasis} to be cross platform. Developing
 \section{Blah} 
 \label{app:a}
 
-Blah
+Blah123
 
 \section{Blah2} 
 \label{app:b}

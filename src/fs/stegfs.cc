@@ -329,7 +329,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   this->mux.lock();
-  //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
   bool needMoreChunks = true;
@@ -347,7 +348,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
         // This chunk will finish it
         int toWrite = size - bytesWritten;
         printf("\e[1A"); 
-        printf("\e[0K\rEmbeding1_over, nextFrame: %d, size: %zu, nextOffset: %d\n",
+        printf("\e[0K\rEmbeding1_over, nextFrame: %d, size: %d, nextOffset: %d\n",
             t.frame, toWrite, (chunkOffset + t.offset) * 8);
         this->alg->embed(c, (char *)(buf + bytesWritten), toWrite, (chunkOffset + t.offset) * 8);
         this->decoder->getFrame(t.frame)->setDirty(); 
@@ -358,7 +359,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       }
       // Otherwise we can just write into the entire chunk
       printf("\e[1A"); 
-      printf("\e[0K\rEmbeding2_over, nextFrame: %d, size: %zu, nextOffset: %d\n",
+      printf("\e[0K\rEmbeding2_over, nextFrame: %d, size: %d, nextOffset: %d\n",
             t.frame, bytesLeftInChunk, (chunkOffset + t.offset) * 8);
       this->alg->embed(c, (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
       this->decoder->getFrame(t.frame)->setDirty(); 
