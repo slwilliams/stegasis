@@ -16,7 +16,7 @@
 \usepackage{listings}
 
 \usepackage[draft]{graphicx}
-%\usepackage{graphicx}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -1493,7 +1493,7 @@ Haven't done this yet.
 A website was implemented and hosted for the majority of the duration of the project. A total of *2000* data points were collected from 15 individual users. The results are discussed in detail below in section \ref{security}, and the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
 
 \noindent
-\texttt{Stegasis} therefore has also satisfied all\footnote{I'm considering the audio extension task satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks, further cementing the success of the project.
+\texttt{Stegasis} therefore has also satisfied all\footnote{I am considering the audio extension task satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks, further cementing the success of the project.
 
 \subsection{Security}
 \label{security}
@@ -1512,9 +1512,9 @@ Although we have concluded that \texttt{Stegasis} can operate with no perceivabl
 \label{hist}
 \end{figure}
 
-This does lead to the unfortunate conclusion that the steganography provided by \texttt{Stegasis}, as it stands, is broken - a steganalyst would be able to conclude with relative ease that videos produced by \texttt{Stegasis} contained hidden data. I do not believe however that this renders \texttt{Stegasis} useless. The embedding algorithms employing cryptography ensure that even if the embedded data is identified, it cannot be extracted nor decrypted. Furthermore, the plausible deniability functionality provided by \texttt{Stegasis} keeps sensitvie information safe even if users are forced to give up encryption keys. Blah steganlysis would have to already be targeting video... It is certainly not the case that every video is automatically *something*...
+This does lead to the unfortunate conclusion that the steganography provided by \texttt{Stegasis}, as it stands, is broken - a steganalyst would be able to conclude with relative ease that videos produced by \texttt{Stegasis} contained hidden data. I do not believe however that this renders \texttt{Stegasis} useless. The embedding algorithms employing cryptography ensure that even if the embedded data is identified, it cannot be extracted nor decrypted. Furthermore, the plausible deniability functionality provided by \texttt{Stegasis} keeps sensitive information safe even if users are forced to give up encryption keys. Also note that the video file in question would have had to have been specifically targeted for these attacks to occur\footnote{For example, I do not believe automated steganalysis occurs for all video files emailed or uploaded to file sharing websites.}.
 
-With the above said, it would be a straight forward process to incorporate more secure embedding algorithms which resist the histogram attack (such as F5 and OutGuess) due to the framework \texttt{Stegasis} already provides.
+With the above said, it would be a straight forward process to incorporate more secure embedding algorithms which do resist the histogram attack (such as F5 and OutGuess) due to the framework \texttt{Stegasis} already provides.
 
 \subsection{Performance}
 \label{perf}
@@ -1523,11 +1523,20 @@ Pretty graphs of time vs algorithm... blocksize... read/write performance of FS.
 
 \section{Conclusions}
 
-Project went really well.
+Informally, I wanted this project to result in the ``TrueCrypt of video steganography'' focusing on a practical application allowing multiple files to be easily embedded within video files utilising a file system interface. This would involve researching multiple technical fields (mainly Steganography, file systems and video formats) and developing an application to combine them all into a polished tool.
+
+A number of steganographic embedding algorithms were researched and implemented borrowing ideas and algorithms from cryptography to further increase security. A file system in user space residing within a video file was designed and implemented offering the majority of the functionality one would expect from a standard file system. A native \texttt{AVI} parser was developed along with a novel method of decoding other video formats utilising \texttt{FFmpeg}. Finally a Linux command-line application, \texttt{Stegasis}, was produced combining the above into a single application.
+
+\texttt{Stegasis} satisfies all of the core project requirements and implements all of the extension tasks, in reference to the evaluation section of this document, I very much consider this project a success and hope to release \texttt{Stegasis} in the near future.
+
+\subsection{Lessons Learnt}
+
+The ``Launch early, iterate often'' approach taken to development did come with some drawbacks. Most notably design decisions made early on during development were sometimes not given as much thought as they possibly should have. This resulted in some issues arising much later during development which required a lot of work to correct. Had due thought been given to these decision at the start of the development process, a large amount of time spent refactoring code could have been saved. 
 
 \subsection{Future Project Directions}
 
-More secure algorithms, cross platform to windows.
+As discussed in the evaluation section, \texttt{Stegasis} currently lacks secure steganographic embedding algorithms. Further work would therefore likely involve implementing more secure embedding algorithms. Another avenue to explore would be implementing more native video decoders. For example, a native \texttt{MP4} decoder could be produced which embedded data with motion vectors. This has the advantage over the \texttt{FFmpeg} method since a new, \texttt{MKV} video is not produced - the \texttt{MP4} would be modified in place as with \texttt{AVI} files.
+Finally it would be great for \texttt{Stegasis} to be cross platform. Developing only a Linux application severely limits the target audience. However, since the file system was implemented using \texttt{FUSE} (which is not compatible with Windows) this may prove tricky.
 
 \vfill
 
