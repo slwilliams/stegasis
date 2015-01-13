@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-%\usepackage[draft]{graphicx}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
+%\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -417,7 +417,7 @@ int write(const char *path, const char *buf, size_t size, off_t offset, struct f
 \noindent
 It requests that \texttt{size} bytes from the buffer \texttt{buf} should be written to the file \texttt{path} starting at offset \texttt{offset}.
 
-Similar functions exist for all of the standard file system operations, see appendix section ??? for a full list. 
+Similar functions exist for all of the standard file system operations, all of which need to be implemented to provide a fully functional file system.
 
 \subsection{Existing tools}
 \label{tools}
@@ -835,7 +835,7 @@ $p = 1 - \dfrac{1}{2^{\frac{n-1}{2}} \Gamma (\frac{n-1}{2})} \mathlarger{\int}_{
 \end{center}
 
 \noindent
-See appendix section ?? for an implementation of the Chi-squared attack in Python.\\
+See appendix section \ref{app:chi} for an implementation of the Chi-squared attack in Python.\\
 
 \noindent
 The Chi-squared attack produces very good results for the na\"ive sequential LSB embedding algorithm. Figure \ref{chi} show an example of it in use operating on a video frame with a capacity setting of 50\%. It obvious that information has been embedded within the firth half of the frame.\\
@@ -1143,7 +1143,7 @@ Which requests that \texttt{size} bytes from the buffer \texttt{buf} should be w
 \end{algorithmic}
 \end{algorithm}
 
-The above explanation doesn't address the case where writes occur to a file already existent within the file system, that is, it is being overwritten or extended. This is more complicated since it is beneficial to reuse the previously allocated chunks for the file and is therefore listed in the appendix section ??.
+The above explanation doesn't address the case where writes occur to a file already existent within the file system, that is, it is being overwritten or extended. This is more complicated since it is beneficial to reuse the previously allocated chunks for the file and is therefore listed in the appendix section \ref{app:codewrite}.
 
 Finally, \texttt{flush} is called which will write the header and ask the video decoder to write back to disk. Note the conditional flag \textit{performance}, it is not necessary to flush to disk and by running \texttt{Stegasis} with the \texttt{-p} flag, this will be skipped.
 
@@ -1200,7 +1200,7 @@ which requests that \texttt{size} bytes of the file \texttt{path} starting at of
 \end{algorithmic}
 \end{algorithm}
 
-The described algorithm doesn't work for chunks spanning multiple frames as it is rather verbose to list here, a complete version which does is listed in appendix section ??.
+The described algorithm doesn't work for chunks spanning multiple frames as it is rather verbose to list here, a complete version which does is listed in appendix section \ref{app:coderead}.
 
 \subsubsection{Listing files in the file system}
 
@@ -1233,7 +1233,7 @@ $ stegasis mount -alg=lsbp -pass=password ~/my_video.avi /mnt/video
 Video mounted at /mnt/video
 \end{lstlisting}
 
-At this point, the user can copy files into \texttt{/mnt/video} and they will be embedded within the video. The user can unmount the video by closing the program (for example by pressing Control-C), \texttt{Stegasis} will gracefully exit, writing back any unflushed changes to disk. See the appendix section ?? for some more detailed usage information.
+At this point, the user can copy files into \texttt{/mnt/video} and they will be embedded within the video. The user can unmount the video by closing the program (for example by pressing Control-C), \texttt{Stegasis} will gracefully exit, writing back any unflushed changes to disk. See the appendix section \ref{app:steg} for some more detailed usage information.
 
 \texttt{Stegasis} works exactly how I envisioned it during the project inception. The example usage I gave within the project proposal is exactly reflected within the finished product\footnote{With the exception of pressing Control-C to exit rather than typing \texttt{stegasis unmount}.}.
 
@@ -1446,7 +1446,7 @@ It was deemed more appropriate to test the file system functionality via an inte
 
 The \texttt{AVI} parser was tested using a black box testing approach using a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. For example, the resolution of the video contained within the \texttt{BITMAPINFOHEADER} can be compared against the known value. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
 
-See the appendix section ?? for some more testing code samples. 
+See the appendix section \ref{app:codetest} for some more testing code samples. 
 
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
@@ -1507,7 +1507,7 @@ To determine if the obtained bit string is in fact random, a number of statistic
 Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. Indeed, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the stego systems implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0, that is, coefficients $n$ and $-n$ have roughly equal frequencies. This *charectarisitc* is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
 
 \begin{figure}[!h]
-\centerline{\includegraphics[width=\textwidth]{images/compact.png}}
+\centerline{\includegraphics[width=\textwidth]{images/hist.png}}
 \caption{The histogram attack.}
 \label{hist}
 \end{figure}
@@ -1546,13 +1546,13 @@ Another area worth considering is the time \texttt{Stegasis} takes to format vid
 
 \begin{table}[h]
 \centering
-\begin{tabular}{|c|c|lll}
-\cline{1-2}
-\textbf{Video file} & \textbf{Volume capacity (MB)} & \textbf{Format Time (seconds)}      \\ \cline{1-2}
-700 MB 10 second \texttt{AVI} & 96.60 & 6.146   \\ \cline{1-2}
-34 MB 4 minute \texttt{MP4} & 159.07 & 29.270   \\ \cline{1-2}
-14 MB 3 minute \texttt{MP4} & 28.98 & 13.143   \\ \cline{1-2}
-80 MB 18 minute \texttt{FLV} & 55.63 & 45.810  \\ \cline{1-2}
+\begin{tabular}{|c|c|c|lll}
+\cline{1-3}
+\textbf{Video file} & \textbf{Volume capacity (MB)} & \textbf{Format Time (seconds)}      \\ \cline{1-3}
+700 MB 10 second \texttt{AVI} & 96.60 & 6.146   \\ \cline{1-3}
+14 MB 3 minute \texttt{MP4} & 28.98 & 13.143   \\ \cline{1-3}
+34 MB 4 minute \texttt{MP4} & 159.07 & 29.270   \\ \cline{1-3}
+80 MB 18 minute \texttt{FLV} & 55.63 & 45.810  \\ \cline{1-3}
 \end{tabular}
 \caption{Video format times}
 \label{formatres}
@@ -1590,22 +1590,296 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \pagebreak
 
 \appendix
-\section{Blah} 
-\label{app:a}
-
-Blah123
-
-\section{Blah2} 
-\label{app:b}
+\section{Stegasis example use} 
+\label{app:steg}
 
 Blah
 
-\section{Blah3} 
-\label{app:c}
+\section{Detailed Code samples} 
+\label{app:code}
 
-Rofl
+This section contains select detailed code samples.
 
-\vfill
+\subsection{Chi-Squared attack}
+\label{app:chi}
+
+Listing \ref{chipy} shows an implementation of the Chi-Squared attack in Python which operates on the \texttt{PPM} image format.
+
+\begin{lstlisting}[language=Python,caption={Chi-Squared attack Python implementation.}, frame=single, label=chipy,showstringspaces=false,upquote=true]
+from scipy import integrate, special
+
+file_bytes = open(sys.argv[1], 'rb').read()
+
+header = file_bytes[:2]
+if header != 'P6':
+  print 'File is not a P6 ppm.'
+  sys.exit(0)
+
+fp = 3
+width = ''
+while True:
+  b = file_bytes[fp]
+  fp += 1
+  if b == ' ':
+      break
+  width += b
+
+height = ''
+while True:
+  b = file_bytes[fp]
+  fp += 1
+  if b == ' ':
+      break
+  height += b
+
+max_pixel_val = ''
+while True:
+  b = file_bytes[fp]
+  fp += 1
+  if b == ' ':
+      break
+  max_pixel_val += b
+
+output = [0]*100
+
+# fp is now on the first pixel red byte
+frameStart = fp
+for h in range(1, 100):
+  fp = frameStart
+  totalPixels = math.floor((h/100.0)*int(width)*int(height))
+  X = [0]*(128*3) # X[k] = frequency(2k)
+  Y = [0]*(128*3) # Y[k] = frequeincy(2k+1)
+  Z = [0.0]*(128*3)
+
+  # Populate the frequency arrays
+  end = fp + totalPixels*3
+  while fp < end:
+      b = ord(file_bytes[fp])
+      if b % 2 == 0:
+          X[b/2] += 1
+      else:
+          Y[(b-1)/2] += 1
+      fp += 1
+
+   # Calculate theoretically expected frequency
+  for i in range(len(Z)):
+      Z[i] = (X[i] + Y[i]) / 2.0
+
+  n = 128
+  for k in range(127):
+      if X[k] + Y[k] <= 4:
+          X[k] = 0
+          Y[k] = 0
+          n -= 1
+
+  X2 = 0.0
+  for i in range(128):
+      if Z[i] == 0:
+          continue
+      X2 += ((X[i] - Z[i])**2) / Z[i]
+
+  # Calculate probability of embedding
+  p = 1.0 - special.gammainc((n-1)/2.0, X2/2.0)
+  output[h] = p
+
+# Print results to stdout
+for i in range(1, len(output)):
+  print str(i) + " " + str(output[i])
+\end{lstlisting}
+
+\subsection{Reading from the file system}
+\label{app:coderead}
+
+Listing \ref{readfs} shows the final implemented version of the \texttt{FUSE} read function call implementation. (Is this in too much detail?)
+
+\begin{lstlisting}[caption={\texttt{FUSE} read function call implementation.}, frame=single, label=readfs,showstringspaces=false,upquote=true]
+int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  auto file = this->fileSizes.find(path);
+  vector<tripleT> triples = this->fileIndex[path];
+  int bytesWritten = 0;
+  int readBytes = 0;
+  int i = 0;
+  for (struct Triple t : triples) {
+    if (readBytes + t.bytes > offset) {
+      while (bytesWritten < size) {
+        struct Triple t1 = triples.at(i);
+        int frameSizeBytes = this->decoder->frameSize() / 8;
+        bool spansMultipleFrames = ((int)t1.bytes+(int)t1.offset) > frameSizeBytes;
+        if (spansMultipleFrames) {
+          // This chunk spans multiple frames, deal with it separately
+          // chunkOffset is frame relative to either the top of the frame, or top of the chunk
+          int chunkOffset, actualFrame, chunkBytesInThisFrame;
+          bool firstFrame = (offset-readBytes) < frameSizeBytes-t1.offset;
+          if (firstFrame) {
+            chunkOffset = offset - readBytes;
+            actualFrame = t1.frame;
+            chunkBytesInThisFrame=frameSizeBytes-(chunkOffset+t1.offset);
+          } else {
+            // tmpOffset is the offset from top of the chunks second frame
+            // if tmpOffset is 0 we would be at the top of the next frame
+            int tmpOffset = offset-readBytes-(frameSizeBytes-t1.offset);
+            chunkOffset = tmpOffset % frameSizeBytes;
+            actualFrame = t1.frame + (tmpOffset / frameSizeBytes) + 1;
+            chunkBytesInThisFrame = frameSizeBytes - chunkOffset;
+            t1.offset = 0;
+          }
+          while (bytesWritten < t1.bytes) {
+            Chunk *c = this->decoder->getFrame(actualFrame++);
+            if (size - bytesWritten <= chunkBytesInThisFrame) {
+              if (chunkOffset == 0) {
+                this->alg->extract(c, buf + bytesWritten, size - bytesWritten, t1.offset * 8);
+              } else {
+                char *temp = (char *)malloc((frameSizeBytes - t1.offset) * sizeof(char));
+                this->alg->extract(c, temp, frameSizeBytes - t1.offset, t1.offset * 8);
+                memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
+                free(temp);
+              }
+              delete c;
+              return size;
+            }
+            if (chunkOffset == 0) {
+              this->alg->extract(c, buf + bytesWritten, chunkBytesInThisFrame, t1.offset * 8);
+            } else {
+              char *temp = (char *)malloc((frameSizeBytes - t1.offset) * sizeof(char));
+              this->alg->extract(c, temp, frameSizeBytes - t1.offset, t1.offset * 8);
+              memcpy(buf + bytesWritten, temp + chunkOffset, chunkBytesInThisFrame);
+              free(temp);
+            }
+            bytesWritten += chunkBytesInThisFrame;
+            chunkOffset = 0;
+            t1.offset = 0;
+            chunkBytesInThisFrame = frameSizeBytes;
+            delete c;
+          }
+        } else {
+          // This is a standard chunk, need 2 cases for when chunkoffset
+          // is in the middle of a chunk due to encrypting sequences
+          int chunkOffset = offset - readBytes;
+          int bytesLeftInChunk = t1.bytes - chunkOffset;
+           Chunk *c = this->decoder->getFrame(t1.frame);
+          if (size - bytesWritten <= bytesLeftInChunk) {
+            if (chunkOffset == 0) {
+              this->alg->extract(c, buf+bytesWritten, size-bytesWritten,  t1.offset*8);
+            } else {
+              char *temp = (char *)malloc(t1.bytes * sizeof(char));
+              this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
+              memcpy(buf + bytesWritten, temp + chunkOffset,            size - bytesWritten);
+              free(temp);
+          }
+          delete c;
+          return size;
+        }
+        if (chunkOffset == 0) {
+          this->alg->extract(c, buf + bytesWritten, bytesLeftInChunk, t1.offset * 8);
+        } else {
+          char *temp = (char *)malloc(t1.bytes * sizeof(char));
+          this->alg->extract(c, temp, t1.bytes, t1.offset * 8);
+          memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
+          free(temp);
+        }
+        delete c;
+        bytesWritten += bytesLeftInChunk;
+        readBytes = offset;
+        i ++;
+      }
+    }
+    return size;
+    } else {
+      readBytes += t.bytes;
+      i ++;
+    }
+  }
+  return -ENOENT;
+};
+\end{lstlisting}
+
+\subsection{Writing to the file system}
+\label{app:codewrite}
+
+Listing \ref{writefs} shows the final implemented version of the \texttt{FUSE} write function call implementation. (This one is a bit more manageable, but this might still be too much detail?)
+
+\begin{lstlisting}[caption={\texttt{FUSE} write function call implementation.}, frame=single, label=writefs,showstringspaces=false,upquote=true]
+int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  // Attempt to find the correct chunk
+  bool needMoreChunks = true;
+  int byteCount = 0;
+  int bytesWritten = 0;
+  for (struct tripleT t : this->fileIndex[path]) {
+    if (byteCount + t.bytes > offset) {
+      int chunkOffset = offset - byteCount;
+      int bytesLeftInChunk = t.bytes - chunkOffset;
+      Chunk *c = this->decoder->getFrame(t.frame);
+      if (bytesLeftInChunk + bytesWritten >= size) {
+        // This chunk will finish it
+        int toWite = size - bytesWritten;
+        this->alg->embed(c, (char *)(buf + bytesWritten), toWrite, (chunkOffset + t.offset) * 8);
+        this->decoder->getFrame(t.frame)->setDirty();
+        t.bytes = toWrite;
+        needMoreChunks = false;
+        delete c;
+        break;
+      }
+      // Otherwise we can just write into the entire chunk
+      this->alg->embed(c, (char *)(buf + bytesWritten), bytesLeftInChunk, (chunkOffset + t.offset) * 8);
+      this->decoder->getFrame(t.frame)->setDirty();
+      bytesWritten += bytesLeftInChunk;
+      // Force chunkOffset to be 0 next time round
+      byteCount = offset;
+      delete c;
+    } else {
+      byteCount += t.bytes;
+    }
+  }
+  if (needMoreChunks == true) {
+    // Need to allocate some new chunks
+    while (bytesWritten < size) {
+      int nextFrame = 0;
+      int nextOffset = 0;
+      this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);
+      struct tripleT triple;
+      int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;
+      // *8 since it takes 8 bytes to embed one byte
+      if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
+        triple.bytes = size - bytesWritten;
+        triple.frame = nextFrame;
+        triple.offset = nextOffset;
+        Chunk *c = this->decoder->getFrame(nextFrame);
+        this->alg->embed(c, (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
+        c->setDirty();
+        delete c;
+        this->fileIndex[path].push_back(triple);
+        this->decoder->setNextFrameOffset(nextFrame, nextOffset + size-bytesWritten);
+        bytesWritten += size-bytesWritten;
+      } else {
+        // Write all bytes left in frame and go around again
+        triple.bytes = bytesLeftInFrame / 8;
+        triple.frame = nextFrame;
+        triple.offset = nextOffset;
+        Chunk *c = this->decoder->getFrame(nextFrame);
+        this->alg->embed(c, (char *)(buf + bytesWritten), triple.bytes, nextOffset * 8);
+        c->setDirty();
+        delete c;
+        this->fileIndex[path].push_back(triple);
+        bytesWritten += bytesLeftInFrame / 8;
+        this->decoder->setNextFrameOffset(nextFrame + 1, 0);
+      }
+    }
+  }
+  if (offset == 0) {
+    this->fileSizes[path] = size;
+  } else {
+    this->fileSizes[path] += size;
+  }
+  return size;
+};
+\end{lstlisting}
+
+\subsection{Testing}
+\label{app:codetest}
+
+Testing...
+
+\pagebreak
 
 \section{Original Project Proposal} 
 
