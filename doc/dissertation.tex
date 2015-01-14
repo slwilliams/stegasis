@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-\usepackage[draft]{graphicx}
-%\usepackage{graphicx}
+%\usepackage[draft]{graphicx}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -85,7 +85,7 @@
   escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
   keywordstyle=\color{blue},       % keyword style
   stringstyle=\color{mymauve},     % string literal style
-  morekeywords={uint32_t},
+  morekeywords={uint32_t, int32_t},
     literate={~} {$\sim$}{1},
 }
 
@@ -287,35 +287,36 @@ Steganalysis methods can be split into two main categories, \textit{Targeted Ste
 \label{avi}
 As specified within the project proposal, this project only (initially) looks at raw uncompressed \texttt{AVI} files. Furthermore, only \texttt{AVI} version 1.0\footnote{Not including the Open-DML extension (version 1.02).} files are investigated and therefore supported natively\footnote{All other video formats (including compressed \texttt{AVI}) are supported via the use of \texttt{FFmpeg}, as described in section \ref{extffmpeg}.} by \texttt{Stegasis}. Unfortunately, uncompressed \texttt{AVI} is today, a very uncommon video format. This is likely due to its relatively huge file sizes when compared to a modern compressed format such as \texttt{MP4} \texttt{H.264}. For example, one minute of 720p HD footage encoded as uncompressed \texttt{AVI} is roughly 4.2 GB.
 
-The \texttt{AVI} file format is a Resource Interchange File Format (\texttt{RIFF}) file specification developed by Microsoft and originally introduced in November 1992. The data within \texttt{RIFF} files is divided into chunks and lists, each of which is identified by a \texttt{FourCC} tag. An \texttt{AVI} file takes the form of a single chunk in a \texttt{RIFF} formatted file, which is then subdivided into two mandatory lists and one optional chunk. The first sub-list is the file header containing metadata about the video (for example framerate, width and height). The second sub-list contains the actual audio/video data and the optional chunk indexes the offsets of the data chunks within the file.
+The \texttt{AVI} file format is a Resource Interchange File Format (\texttt{RIFF}) file specification developed by Microsoft and originally introduced in November 1992. The data within \texttt{RIFF} files is divided into chunks and lists, each of which is identified by a \texttt{FourCC} tag. An \texttt{AVI} file takes the form of a single chunk in a \texttt{RIFF} formatted file, which is then subdivided into two mandatory lists and one optional chunk. The first sub-list is the file header containing metadata about the video (for example framerate, width and height). The second sub-list contains the actual audio/video data and the optional chunk indexes the offsets of the data chunks within the file. See the appendix section \ref{section:avi} for more detailed definitions of the data structures used.
 
-We therefore have an \texttt{AVI} file laid out as follows, see the appendix for a more detailed expanded form.
-\begin{lstlisting}[language=C, caption={\texttt{AVI RIFF} form}, frame=single, upquote=true]
-RIFF ('AVI '
-      LIST ('hdrl' ... )
-      LIST ('movi' ... )
-      ['idx1' (<AVI Index>)]
-     )
+We therefore have an \texttt{AVI} file laid out as follows.
+\begin{lstlisting}[language=C, caption={\texttt{AVI RIFF} form}, frame=single, upquote=true, showstringspaces=false]
+RIFF (
+  'AVI '
+  LIST ('hdrl' ... )
+  LIST ('movi' ... )
+  ['idx1' (<AVI Index>)]
+)
 \end{lstlisting}
 
 \noindent
 With a \texttt{RIFF} chunk being defined as follows:
 
-\begin{lstlisting}[language=C, caption={\texttt{RIFF} chunk}, frame=single]
+\begin{lstlisting}[caption={\texttt{RIFF} chunk}, frame=single]
 struct CHUNK {
   char fourCC[4],
-  int ckSize,
-  char ckData[ckSize] // contains headers or video/audio data
+  int32_t ckSize,
+  char ckData[ckSize] // Contains headers or video/audio data
 };
 \end{lstlisting}
 
 \noindent
 And a \texttt{RIFF} list defined as:
 
-\begin{lstlisting}[language=C, caption={\texttt{RIFF} list}, frame=single]
+\begin{lstlisting}[caption={\texttt{RIFF} list}, frame=single]
 struct LIST {
   char listCC[4], // Will always be the literal 'LIST'
-  int listSize,
+  int32_t listSize,
   char listType[4],
   char listData[listSize]
 };
@@ -1356,7 +1357,7 @@ $ ls /mnt/video
 file 200 MB
 \end{lstlisting}
 
-The performance of \texttt{Stegasis} using this method is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
+The performance of \texttt{Stegasis} using this method is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the large amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
 
 \noindent
 The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats greatly increasing practicality and successfully completing the extension task.
@@ -1455,7 +1456,7 @@ As stated in the preparation section, the project will be considered a success i
 
 \subsubsection{Embedding data within video files}
 
-\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 10 steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by one of the unit test cases as explained in section \ref{testing}.} and, after an evaluation study discussed in section \ref{security} below, it was concluded that \texttt{Stegasis} operates with no perceivable impact on video quality. A number of steganalysis tools were indeed developed and tested the security of the proposed stego systems, prompting the design of more secure embedding algorithms. Encryption functionality is also provided making use of a user provided passphrase. Finally a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity. This satisfies all points of requirement 1.
+\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 10 steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by one of the unit test cases as explained in section \ref{testing}.} and, after an evaluation study discussed in section \ref{security} below, it was concluded that \texttt{Stegasis} operates with no perceivable impact on video quality. A number of steganalysis tools were indeed developed and tested the security of the proposed stego systems, prompting the design of more secure embedding algorithms. Encryption functionality is also provided making use of a user provided passphrase. Finally, a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity. This satisfies all points of the first requirement.
 
 \subsubsection{Providing a file system interface}
 
@@ -1467,7 +1468,7 @@ Raw uncompressed \texttt{AVI} files are supported via a developed native parser 
 
 \subsubsection{File system performance}
 
-The performance of the file system allows full HD video content to be played back from directly within the volume, meeting the first point of this requirement. The second point was harder to satisfy; achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system does manage to provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed below in section \ref{perf}.} these speeds can reach 160MB/s.), but only for the algorithms which do not encrypt the embedded data and only if the performance flag (\texttt{-p}) has been specified. Since read and write speeds in excess of 20 MB/s can be provided by the file system, I consider this requirement satisfied. Performance is discussed in more detail below in section \ref{perf}.\\
+The performance of the file system allows full HD video content to be played back from directly within the volume, meeting the first point of this requirement. The second point was harder to satisfy; achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system does manage to provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed below in section \ref{perf}.}, these speeds can reach 160MB/s.), but only for the algorithms which do not encrypt the embedded data and only if the performance flag (\texttt{-p}) has been specified. Since read and write speeds in excess of 20 MB/s can be provided by the file system, I consider this requirement satisfied. Performance is discussed in more detail below in section \ref{perf}.\\
 
 \noindent
 \texttt{Stegasis}, having satisfied all of the core requirements can therefore be considered a success. The extension task requirements are now discussed individually. 
@@ -1590,6 +1591,69 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \pagebreak
 
 \appendix
+\section{Details of the AVI file format}
+\label{app:avi}
+
+\subsection{Detailed AVI form}
+
+Listing \ref{aviform} shows an expanded form of the \texttt{AVI} structure.
+
+\begin{lstlisting}[language=C, caption={Detailed \texttt{AVI RIFF} form}, frame=single, upquote=true,label=aviform,showstringspaces=false]
+RIFF (
+  'AVI '
+  LIST (
+    'hdrl'
+    'avih'(<Main AVI Header>)
+    LIST (
+      'strl'
+      'strh'(<Stream header>)
+      'strf'(<Stream format>)
+      [ 'strd'(<Additional header data>) ]
+      [ 'strn'(<Stream name>) ]
+      ...
+    )
+    ...
+  )
+  LIST (
+    'movi'
+    {SubChunk | 
+      LIST (
+        'rec '
+        SubChunk1
+        SubChunk2
+        ...
+        )
+      ...
+    }
+    ...
+  )
+  ['idx1' (<AVI Index>) ]
+)
+\end{lstlisting}
+
+\subsection{The AVI header}
+
+Listing \ref{aviheader} shows the definition of the main \texttt{AVI} header.
+
+\begin{lstlisting}[caption={The \texttt{AVIMAINHEADER} structure.},frame=single, upquote=true,label=aviheader,showstringspaces=false]
+typedef struct _avimainheader {
+  char     fcc[4];
+  int32_t  cb;
+  int32_t  dwMicroSecPerFrame;
+  int32_t  dwMaxBytesPerSec;
+  int32_t  dwPaddingGranularity;
+  int32_t  dwFlags;
+  int32_t  dwTotalFrames;
+  int32_t  dwInitialFrames;
+  int32_t  dwStreams;
+  int32_t  dwSuggestedBufferSize;
+  int32_t  dwWidth;
+  int32_t  dwHeight;
+  int32_t  dwReserved[4];
+} AVIMAINHEADER;
+\end{lstlisting}
+
+
 \section{Stegasis example use} 
 \label{app:steg}
 
@@ -1605,7 +1669,7 @@ This section contains select detailed code samples.
 
 Listing \ref{chipy} shows an implementation of the Chi-Squared attack in Python which operates on the \texttt{PPM} image format.
 
-\begin{lstlisting}[language=Python,caption={Chi-Squared attack Python implementation.}, frame=single, label=chipy,showstringspaces=false,upquote=true]
+\begin{lstlisting}[language=Python,caption={Chi-Squared attack Python implementation.}, frame=single,label=chipy,showstringspaces=false,upquote=true]
 from scipy import integrate, special
 
 file_bytes = open(sys.argv[1], 'rb').read()
