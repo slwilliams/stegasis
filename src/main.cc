@@ -203,7 +203,7 @@ void printUsage() {
   printf("Optional flags:\n");
   printf("  --pass  Passphrase used for encrypting and permuting data\n");
   printf("  -p  Do not flush writes to disk until unmount\n");
-  printf("  -g  Use green channel for embedding\n");
+  printf("  -f  Force the FFmpeg decoder to be used\n");
   printf("Embedding Algorithms:\n");
   printf("  Uncompressed AVI only:\n");
   printf("    lsb:  Least Significant Bit Sequential Embedding\n");
