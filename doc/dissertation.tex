@@ -1474,7 +1474,7 @@ Haven't done this yet.
 
 \subsubsection{Evaluation of the visual impact of embedding}
 
-A website was implemented and hosted for the majority of the duration of the project. A total of *2000* data points were collected from 15 individual users. The results are discussed in detail below in section \ref{security}, and the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
+A website was implemented and hosted for the majority of the duration of the project. A total of 2057 data points were collected from 21 unique users. The results are discussed below in section \ref{security}, and the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
 
 \noindent
 \texttt{Stegasis} therefore has also satisfied all\footnote{I am considering the audio extension task satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks, further cementing the success of the project.
@@ -1486,7 +1486,25 @@ Although security of the embedding algorithms was not a major focus of this proj
 
 It is first noted that if a user cannot tell the difference between the two presented images, they will select one at random. From the phrasing of the question posed to the user, a response is considered correct if the image selected did contain hidden data and incorrect if it did not. If a user were to randomly guess each time, the resulting data stream would be a random stream of corrects and incorrects. Letting correct be represented as 1 and incorrect as 0, this stream of random corrects and incorrects becomes a random bit string. Therefore, if it can be shown that the collected data is a random bit string, it can then be concluded that the users must have been randomly guessing and therefore could not differentiate between the two presented images.
 
-To determine if the obtained bit string is in fact random, a number of statistical randomness tests are used.
+To determine if the obtained bit string is in fact random, a number of statistical randomness tests are used, provided by \texttt{ent}\textsuperscript{\cite{ent}}, a pseudorandom number sequence test program. Listing \ref{entout} shows the output of \texttt{ent} when applied to the bit string.
+
+\begin{lstlisting}[caption={Output of \texttt{ent}.},frame=single, upquote=true,label=entout,showstringspaces=false]
+Entropy = 0.999664 bits per bit.
+
+Optimum compression would reduce the size
+of this 2040 bit file by 0 percent.
+
+Chi square distribution for 2040 samples is 0.95, and randomly
+would exceed this value 33.00 percent of the times.
+
+Arithmetic mean value of data bits is 0.5108 (0.5 = random).
+Monte Carlo value for Pi is 3.523809524 (error 12.17 percent).
+Serial correlation coefficient is -0.035776 (totally uncorrelated = 0.0).
+\end{lstlisting}
+
+These results strongly indicate that the bit string is random. Quoting the \texttt{ent} web page ``The chi-square test is the most commonly used test for the randomness of data [...] If the percentage is greater than 99\% or less than 1\%, the sequence is almost certainly not random. If the percentage is between 99\% and 95\% or between 1\% and 5\%, the sequence is suspect. Percentages between 90\% and 95\% and 5\% and 10\% indicate the sequence is ``almost suspect''. [...] A chi-square result of a genuine random sequence created by timing radioactive decay events: Chi square distribution for 500000 samples is 249.51, and randomly would exceed this value 40.98 percent of the times.''
+
+I feel this is enough evidence to conclude the bit string is random enough and therefore that the users within the evaluation study could not differentiate between the stego and cover images.
 
 Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. Indeed, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the stego systems implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0, that is, coefficients $n$ and $-n$ have roughly equal frequencies. This characteristic is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
 
@@ -1518,8 +1536,10 @@ Due to the large embedding capacities offered, large files are expected to be co
 The data points for the graph were obtained using the command line tool \texttt{dd} as shown in the listing below. Note that this test provides ideal conditions, having a large block size and writing all zeros - most use cases will not be like this.
 
 \begin{lstlisting}[caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,float,floatplacement=!htH]
-dd if=/dev/zero of=test bs=128k count=610
-Give command line output here...
+$ dd if=/dev/zero of=test bs=128k count=610
+610+0 records in
+610+0 records out
+79953920 bytes (80 MB) copied, 0.456444 s, 175 MB/s
 \end{lstlisting}
 
 To evaluate the file system performance under more standard conditions, I timed the copying of an 80 MB video file into and out of the file system using the \texttt{time} tool. This process was repeated multiple time and an average taken giving an average write speed of 33.6 MB/s and read speed of 46.3 MB/s. This is significantly slower than above, but is still on par with USB 3.0 device speeds\textsuperscript{\cite{usb3}}, surpassing the performance requirement. As expected, the embedding algorithms which permute and encrypt data give worse file system performance, but I think this is a fair trade off.
@@ -1679,6 +1699,8 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \bibitem{pool} \emph{The Whirlpool Secure Hash Function}, Williams Stallings 2006\\
 \path{www.seas.gwu.edu/~poorvi/Classes/CS381_2007/Whirlpool.pdf}
 
+\bibitem{ent} \emph{Ent: A Pseudorandom Number Sequence Test Program}, John Walker 2008\\
+\path{www.fourmilab.ch/random}
 
 \bibitem{usb3} \emph{Lexar 8GB USB 3.0 JumpDrive}, Ebuyer 2015\\
 \path{www.ebuyer.com/399229-lexar-8gb-jumpdrive}
