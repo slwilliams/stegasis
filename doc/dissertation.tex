@@ -153,7 +153,7 @@
 To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality.
 
 \subsection*{Work Completed}
-A complete software package has been developed enabling the embedding of arbitrary files within many video formats (including MP4 and AVI) via a file system interface. A total of 9 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Most common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Performance of the system is adequate for general use allowing high definition media content to be played directly out of the embedded volume.
+A complete software package has been developed enabling the embedding of arbitrary files within many video formats via a file system interface. A total of 10 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Most common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Embedding capacities in excess of 100\% of the video size are available (for example allowing a 100 MB video file to contain 150 MB of embedded data) and performance of the system is adequate for general use providing read and write speeds on par with USB 3.0 devices.
 
 \subsection*{Special Difficulties}
 None.
@@ -435,7 +435,7 @@ The relatively little work on steganography within video was reflected in my sea
 
 \subsubsection{TCSteg}
 
-\texttt{TCSteg}\textsuperscript{\cite{tcsteg}} is a Python script accompanying a blog post written by Martin Fiedler discussing hiding TrueCrypt volumes within \texttt{MP4} files. The method described embeds the TrueCrypt volume within the \texttt{MP4} atom \texttt{mdat} and modifies the chunk offset table within the \texttt{moov} atom so that any application playing the video will ignore the embedded data. A nice property of \texttt{TCSteg} is that the resulting video file can be directly mounted by TrueCrypt since it ignores the \texttt{MP4} header data prior to the embedded volume.\\
+\texttt{TCSteg}\textsuperscript{\cite{tcsteg}} is a Python script accompanying a blog post written by Martin Fiedler discussing hiding \texttt{TrueCrypt} volumes within \texttt{MP4} files. The method described embeds the \texttt{TrueCrypt} volume within the \texttt{MP4} atom \texttt{mdat} and modifies the chunk offset table within the \texttt{moov} atom so that any application playing the video will ignore the embedded data. A nice property of \texttt{TCSteg} is that the resulting video file can be directly mounted by \texttt{TrueCrypt} since it ignores the \texttt{MP4} header data prior to the embedded volume.\\
 
 \noindent
 The above programs all resort to embedding within video files by either appending the embedded data to the end of the video, or inserting the embedded data at some point within the video file. I do not consider this approach to embedding data secure, and it should be a trivial task for any steganalyst to detect the presence of embedded data within the stego objects using a simple hex editor. Therefore, the above stegosystems should be considered broken and definitely not used for the hiding of sensitive data.
@@ -450,7 +450,7 @@ The above programs all resort to embedding within video files by either appendin
 
 \subsubsection{Steganosaurus}
 
-\texttt{Steganosaurus}\textsuperscript{\cite{steganosaurus}} is a cross platform steganograhpic program developed by James Ridgway. It allows users to embed a file within \texttt{MP4} (\texttt{H264}) files via the modification of motion vectors. The input file is encrypted using \texttt{AES} with a user provided pass phrase. Need to test this in Linux.\\
+\texttt{Steganosaurus}\textsuperscript{\cite{steganosaurus}} is a cross platform steganograhpic program developed by James Ridgway. It allows users to embed a file within \texttt{MP4} (\texttt{H264}) video files via the modification of motion vectors. Two embedding algorithm variants are provided and the input file is encrypted using \texttt{AES} with a user provided passphrase. A modified version of \texttt{FFmpeg} was used to access and modify the motion vectors, these modifications have not yet been open sourced. I unfortunately could not get \texttt{Steganosaurus} to run on my computer (using Linux or Windows) and therefore could not test its operation.\\
 
 \noindent
 The above 3 programs are much more promising from a steganogrphic security point of view and some of them also support multiple video formats. However, all feature the same limitation of only allowing the user to embed one chosen file and the offered embedding capacities are far from practical for use with large files.
@@ -1329,15 +1329,19 @@ However, at lower capacity settings it is not possible to visually differentiate
 \end{figure}
 
 \noindent
-The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>$100\% embedding capacities claimed within the opening paragraphs of this document. The reason this is possible is due to the final stage of \texttt{JPEG} compression - ``Encode the resulting coefficients using a Huffman variable word-length algorithm''. This effectively compresses the embedded data before it is written back to disk. To show this in action, listing \ref{200cap} shows a 200 MB file embedded within a 100 MB video.
+The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>$100\% embedding capacities claimed within the opening paragraph of this document. The reason this is possible is due to the final stage of \texttt{JPEG} compression - ``Encode the resulting coefficients using a Huffman variable word-length algorithm''. This effectively compresses the embedded data before it is written back to disk. To show this in action, listing \ref{200cap} shows a 306 MB file embedded within a 189 MB video.
 
-\begin{lstlisting}[caption={Demonstration of 200\% embedding capacity.}, frame=single, label=200cap]
-$ ls -h
-video.mkv 100 MB
-$ stegasis mount -alg=dctp -pass=password ./video.mkv /mnt/video
-Video mounted at /mnt/video
-$ ls /mnt/video
-file 200 MB
+\begin{lstlisting}[caption={Demonstration of 162\% embedding capacity.}, frame=single, label=200cap]
+$ ls -lah
+-rw-rw-r-- 1 darkskill darkskill 189M Jan 15 22:30 video.mkv
+$ stegasis mount -alg=dctl video.mkv /mnt/video
+[...]
+Mounting...
+$ ls -lah /mnt/video
+total 4.0K
+drwxr-xr-x  2 root root    0 Jan  1  1970 .
+drwxrwxrwt 12 root root 4.0K Jan 15 22:26 ..
+-rwxr-xr-x  1 root root 306M Jan  1  1970 file1
 \end{lstlisting}
 
 The performance of \texttt{Stegasis} using this method is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the large amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
@@ -1705,6 +1709,7 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \bibitem{usb3} \emph{Lexar 8GB USB 3.0 JumpDrive}, Ebuyer 2015\\
 \path{www.ebuyer.com/399229-lexar-8gb-jumpdrive}
 
+\vfill
 
 \end{thebibliography}
 
@@ -1823,8 +1828,81 @@ Embedding Algorithms:
 
 \subsection{Example use case}
 
-balh
+Listing \ref{usecase} shows an example use of \texttt{Stegasis}, formatting and mounting a video with complete command line output.
 
+\begin{lstlisting}[caption={\texttt{Stegasis} example use.},frame=single, upquote=true,label=usecase,showstringspaces=false]
+$ stegasis format --alg=lsbp --pass=hunter2 --cap=20 /media/Backup/video.avi 
+   _____ _                                  
+  / ____| |                     (_)         
+ | (___ | |_ ___  __ _  __ _ ___ _ ___      
+  \___ \| __/ _ \/ _` |/ _` / __| / __|  
+  ____) | ||  __/ (_| | (_| \__ \ \__ \ 
+ |_____/ \__\___|\__, |\__,_|___/_|___/ 
+                  __/ | v2.1a               
+                 |___/                      
+Filesize: 776143108
+Totalframes: 280
+Width: 1280
+Height: 720
+
+Reading AVI chunks...
+100% [==================================================]
+Finished parsing AVI file
+
+Volume capacity: 19.32MB
+
+Writing back to disc...
+100% [==================================================]
+Format successful!
+
+$ stegasis mount --alg=lsbp --pass=hunter2 /media/Backup/video.avi /tmp/steg
+   _____ _                                  
+  / ____| |                     (_)         
+ | (___ | |_ ___  __ _  __ _ ___ _ ___      
+  \___ \| __/ _ \/ _` |/ _` / __| / __|  
+  ____) | ||  __/ (_| | (_| \__ \ \__ \ 
+ |_____/ \__\___|\__, |\__,_|___/_|___/ 
+                  __/ | v2.1a               
+                 |___/                      
+Filesize: 776143108
+Totalframes: 280
+Width: 1280
+Height: 720
+
+Reading AVI chunks...
+100% [==================================================]
+Finished parsing AVI file
+
+Header: STEG
+Mounting...
+
+[Second Terminal]
+$ cd /tmp/steg
+/tmp/steg$ cp ~/vid.mp4 .
+
+[Stegasis Terminal]
+Embeding, Frame: 203, Size: 36158, Offset: 0
+Compacting header...
+100% [==================================================]
+Writing back to disc...
+100% [==================================================]
+
+[Second Terminal]
+/tmp/steg$ ls -lah
+total 4.0K
+drwxr-xr-x  2 root root    0 Jan  1  1970 .
+drwxrwxrwt 10 root root 4.0K Jan 15 21:59 ..
+-rwxr-xr-x  1 root root  14M Jan  1  1970 lba2.mp4
+
+[Stegasis Terminal]
+<Control-C>
+Unmounting...
+Compacting header...
+100% [==================================================]
+Writing back to disc...
+100% [==================================================]
+Sucsessfully unmounted
+\end{lstlisting}
 
 \section{Detailed Code samples} 
 \label{app:code}

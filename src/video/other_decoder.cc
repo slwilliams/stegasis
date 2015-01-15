@@ -97,7 +97,7 @@ class JPEGDecoder : public VideoDecoder {
 
       string extractCommand;
       if (this->format) {
-        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 1 -f image2 /tmp/output/image-%d.jpeg";
+        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
       } else {
         extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
       }
@@ -108,7 +108,7 @@ class JPEGDecoder : public VideoDecoder {
       printf("totalframes: %d\n", this->totalFrames);
 
       // TODO: Change this to .mp3
-      string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.wav";
+      string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.mp3";
       exec((char *)getAudioCommand.c_str());
 
       transformoption.transform = JXFORM_NONE;
@@ -154,7 +154,7 @@ class JPEGDecoder : public VideoDecoder {
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
       }
-      string muxCommand = "ffmpeg -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.wav -codec copy -c:a aac -strict -2 -b:a 192k -shortest output.mkv";
+      string muxCommand = "ffmpeg -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.mp3 -codec copy -shortest output.mkv";
       exec((char *)muxCommand.c_str());
     };
     virtual void writeBack() {
@@ -233,6 +233,6 @@ class JPEGDecoder : public VideoDecoder {
       this->capacity = capacity;
     };
     virtual int frameSize() {
-      return (int)floor(this->width * this->height * 63 * (capacity / 100.0));
+      return (int)floor(this->width * this->height * 63 * (capacity / 100.0) * 2);
     };
 };

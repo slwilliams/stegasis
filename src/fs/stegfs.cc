@@ -329,8 +329,8 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   this->mux.lock();
-  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
-  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+ // printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
+//  printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
 
   // Attempt to find the correct chunk
   bool needMoreChunks = true;
