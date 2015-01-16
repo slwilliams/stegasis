@@ -158,7 +158,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
   if (pass2 != "") {
     // Hidden volume requested
-    Chunk *headerFrame2 = dec->getFrame(dec->numberOfFrames()/2);
+    Chunk *headerFrame2 = dec->getFrame(dec->numberOfFrames() / 2);
     SteganographicAlgorithm *alg2 = getAlg(algorithm, pass2, dec);
 
     char header2[4] = {'S', 'T', 'E', 'G'};
@@ -222,7 +222,7 @@ void printName() {
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");
   printf("  ____) | ||  __/ (_| | (_| \\__ \\ \\__ \\ \n");
   printf(" |_____/ \\__\\___|\\__, |\\__,_|___/_|___/ \n");
-  printf("                  __/ | v2.1a               \n");
+  printf("                  __/ | v3.1a               \n");
   printf("                 |___/                      \n");
 }
 
@@ -241,6 +241,7 @@ void printUsage() {
   printf("  --cap  Percentage of frame to embed within in percent\n");
   printf("Optional flags:\n");
   printf("  --pass  Passphrase used for encrypting and permuting data\n");
+  printf("  --pass2  Passphrase used for encrypting and permuting the hidden volume\n");
   printf("  -p  Do not flush writes to disk until unmount\n");
   printf("  -f  Force the FFmpeg decoder to be used\n");
   printf("Embedding Algorithms:\n");
@@ -249,6 +250,7 @@ void printUsage() {
   printf("    lsbk:  LSB Sequential Embedding XOR'd with a psudo random stream\n");
   printf("    lsbp:  LSB Permuted Embedding using a seeded LCG\n");
   printf("    lsb2:  Combination of lsbk and lsbp\n");
+  printf("    lsba:  LSB Permuted Embedding encrypted using AES\n");
   printf("  Other video formats:\n");
   printf("    dctl:  LSB Sequential Embedding within DCT coefficients\n");
   printf("    dctp:  LSB Permuted Embedding within DCT coefficients\n");

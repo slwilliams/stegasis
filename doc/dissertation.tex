@@ -1402,9 +1402,28 @@ The modifications to \texttt{Stegasis} required to implement this feature were s
 Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
 \begin{lstlisting}[caption={\texttt{Stegasis} plausible deniability functionality.}, frame=single, label=deny]
-Blah steg...
+$ stegasis format -alg=lsba -pass=outer -pass2=hidden /media/Backup/video.avi
+[...]
+Format successful!
+$ stegasis mount -alg=lsba -pass=outer /media/Backup/video.avi /tmp/steg
+[...]
+Mounting...
+
+[Second Terminal]
+$ echo 'outer' > /tmp/steg/outer.txt
+
+[First Terminal]
+<Control-C>
+[...]
+$ stegasis mount -alg=lsba -pass=hidden /media/Backup/video.avi /tmp/steg
+[...]
+Mounting...
+
+[Second Terminal]
+$ echo 'inner' > /tmp/steg/sensitivefile.txt
 \end{lstlisting}
 
+Since the header and data for the hidden file system is stored within the middle video frame onwards, it is possible to damage it by writing too much data to the outer volume, thus overwriting the hidden volume header. The user has sacrificed half of the total embedding capacity in return for plausible deniability.
 
 \subsubsection{Hiding data within audio}
 
@@ -1809,7 +1828,7 @@ Listing \ref{usage} shows the information displayed to the user when the program
                  |___/                      
 
 Stegasis usage:
-  stegasis <command> [-p,-f] --alg=<alg> --pass=<pass> --cap=<capacity> <video_path> <mount_point>
+  stegasis <command> [-p,-f] -alg=<alg> -pass=<pass> -cap=<capacity> <video_path> <mount_point>
 -----------------------------------------------------------------
 Example useage:
   stegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi
@@ -1818,10 +1837,11 @@ Commands:
   format  Formats a video for use with stegasis
   mount  Mounts a formatted video to a given mount point
 Required Flags:
-  --alg  Embedding algorithm to use, see below
-  --cap  Percentage of frame to embed within in percent
+  -alg  Embedding algorithm to use, see below
+  -cap  Percentage of frame to embed within in percent
 Optional flags:
-  --pass  Passphrase used for encrypting and permuting data
+  -pass  Passphrase used for encrypting and permuting data
+  -pass2 Passphrase used for encrypting and permuting the hidden volume
   -p  Do not flush writes to disk until unmount
   -f  Force the FFmpeg decoder to be used
 Embedding Algorithms:
@@ -1830,6 +1850,8 @@ Embedding Algorithms:
     lsbk:  LSB Sequential Embedding XORd with a psudo random stream
     lsbp:  LSB Permuted Embedding using a seeded LCG
     lsb2:  Combination of lsbk and lsbp
+    lsba:  LSB Permuted Embedding encrypted using AES
+    
   Other video formats:
     dctl:  LSB Sequential Embedding within DCT coefficients
     dctp:  LSB Permuted Embedding within DCT coefficients
@@ -1843,7 +1865,7 @@ Embedding Algorithms:
 Listing \ref{usecase} shows an example use of \texttt{Stegasis}, formatting and mounting a video with complete command line output.
 
 \begin{lstlisting}[caption={\texttt{Stegasis} example use.},frame=single, upquote=true,label=usecase,showstringspaces=false]
-$ stegasis format --alg=lsbp --pass=hunter2 --cap=20 /media/Backup/video.avi 
+$ stegasis format -alg=lsbp -pass=hunter2 -cap=20 /media/Backup/video.avi 
    _____ _                                  
   / ____| |                     (_)         
  | (___ | |_ ___  __ _  __ _ ___ _ ___      
@@ -1867,7 +1889,7 @@ Writing back to disc...
 100% [==================================================]
 Format successful!
 
-$ stegasis mount --alg=lsbp --pass=hunter2 /media/Backup/video.avi /tmp/steg
+$ stegasis mount -alg=lsbp -pass=hunter2 /media/Backup/video.avi /tmp/steg
    _____ _                                  
   / ____| |                     (_)         
  | (___ | |_ ___  __ _  __ _ ___ _ ___      
@@ -1913,7 +1935,7 @@ Compacting header...
 100% [==================================================]
 Writing back to disc...
 100% [==================================================]
-Sucsessfully unmounted
+Successfully unmounted
 \end{lstlisting}
 
 \section{Detailed Code samples} 
