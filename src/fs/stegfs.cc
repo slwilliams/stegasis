@@ -19,16 +19,22 @@ SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg,
     bool performance): decoder(decoder), alg(alg), performance(performance) {
-  this->log = new Logger("/tmp/test.txt", false);
+  bool hiddenVolume = false;
 
-  Chunk *headerFrame = this->decoder->getFrame(0);
+  Chunk *headerFrame = this->decoder->getHeaderFrame();
   char headerSig[4] = {0,0,0,0};
   this->alg->extract(headerFrame, headerSig, 4, 0);
-  printf("Header: %.4s\n", headerSig);
   if (strncmp(headerSig, "STEG", 4) != 0) {
-    printf("Could not read header. Has this video been formated?\n");
-    exit(0);
+    this->decoder->setHiddenVolume(); 
+    headerFrame = this->decoder->getHeaderFrame();
+    this->alg->extract(headerFrame, headerSig, 4, 0);
+    if (strncmp(headerSig, "STEG", 4) != 0) {
+      printf("Could not read header. Has this video been formated?\n");
+      exit(0);
+    }
+    hiddenVolume = true;
   }
+  printf("Header: %.4s\n", headerSig);
 
   char algE[4] = {0,0,0,0};
   this->alg->extract(headerFrame, algE, 4, 4 * 8);
@@ -44,6 +50,17 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   char *headerData = (char *)malloc(sizeof(char) * headerBytes);
   this->alg->extract(headerFrame, headerData, headerBytes, 13 * 8);
   this->readHeader(headerData, headerBytes); 
+
+  if (hiddenVolume) {
+    int currentFrameOffset;
+    int currentFrame;
+    this->decoder->getNextFrameOffset(&currentFrame, &currentFrameOffset);
+    if (currentFrame == 1 && currentFrameOffset == 0) {
+      currentFrame = (this->decoder->numberOfFrames() / 2) + 1;
+      this->decoder->setNextFrameOffset(currentFrame, 0);
+    }
+  }
+  
 };
 
 void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
@@ -434,7 +451,7 @@ void SteganographicFileSystem::writeHeader() {
   char *header = (char *)malloc(this->decoder->frameSize() * sizeof(char));
   int headerBytes = 0;
   int offset = 0;
-  Chunk *headerFrame = this->decoder->getFrame(0);
+  Chunk *headerFrame = this->decoder->getHeaderFrame();
   for (auto f : this->fileIndex) {
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
@@ -506,7 +523,7 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
-   char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+    char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
@@ -544,7 +561,7 @@ void SteganographicFileSystem::compactHeader() {
     }
     this->fileIndex[f.first] = f.second;
   }
-  this->decoder->getFrame(0)->setDirty();
+  this->decoder->getHeaderFrame()->setDirty();
   this->mux.unlock();
 };
 

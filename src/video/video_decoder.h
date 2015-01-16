@@ -15,6 +15,7 @@ class Chunk {
 class VideoDecoder {
   public:
     virtual Chunk *getFrame(int frame) = 0;
+    virtual Chunk *getHeaderFrame() = 0;
     virtual int getFileSize() = 0;
     virtual int numberOfFrames() = 0;
     virtual void getNextFrameOffset(int *frame, int *offset) = 0;
@@ -24,6 +25,7 @@ class VideoDecoder {
     virtual int frameWidth() = 0;
     virtual void writeBack() = 0;
     virtual void setCapacity(char capacity) = 0;
+    virtual void setHiddenVolume() = 0;
     virtual ~VideoDecoder() {};
 };
 

@@ -135,6 +135,7 @@ class AVIDecoder : public VideoDecoder {
     int nextFrame = 1;
     int nextOffset = 0;
     char capacity = 100;
+    bool hidden = false;
 
   public:
     AVIDecoder(string filePath): filePath(filePath) {
@@ -272,6 +273,13 @@ class AVIDecoder : public VideoDecoder {
     virtual Chunk *getFrame(int frame) {
       return new AviChunkWrapper(&this->frameChunks[frame]); 
     };                                     
+    virtual Chunk *getHeaderFrame() {
+      if (this->hidden) {
+        return new AviChunkWrapper(&this->frameChunks[this->numberOfFrames()/2]);
+      } else {
+        return new AviChunkWrapper(&this->frameChunks[0]);
+      }
+    };
     virtual int getFileSize() {
       return this->riffHeader.fileSize; 
     };                                                 
@@ -282,21 +290,24 @@ class AVIDecoder : public VideoDecoder {
       *frame = this->nextFrame;
       *offset = this->nextOffset;
     };
-   virtual void setNextFrameOffset(int frame, int offset) {
-      this->nextFrame = frame;
-      this->nextOffset = offset;
-   };
-   virtual int frameHeight() {
-     return this->aviHeader.height;  
-   };
-   virtual int frameWidth() {
-     return this->aviHeader.width; 
-   };
-   virtual void setCapacity(char capacity) { 
-     this->capacity = capacity;
-   };
-   virtual int frameSize() {
-     // 24 bits per pixel
-     return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
-   };
+    virtual void setNextFrameOffset(int frame, int offset) {
+       this->nextFrame = frame;
+       this->nextOffset = offset;
+    };
+    virtual int frameHeight() {
+      return this->aviHeader.height;  
+    };
+    virtual int frameWidth() {
+      return this->aviHeader.width; 
+    };
+    virtual void setCapacity(char capacity) { 
+      this->capacity = capacity;
+    };
+    virtual void setHiddenVolume() {
+      this->hidden = true;  
+    };
+    virtual int frameSize() {
+      // 24 bits per pixel
+      return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
+    };
 };

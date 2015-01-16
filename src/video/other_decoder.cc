@@ -74,6 +74,7 @@ class JPEGDecoder : public VideoDecoder {
     int *jpegSizes;
     unsigned char **jpegs;
     bool format;
+    bool hidden = false;
 
     int nextFrame = 1;
     int nextOffset = 0;
@@ -208,6 +209,13 @@ class JPEGDecoder : public VideoDecoder {
       mtx.unlock();
       return new JPEGChunkWrapper(&this->frameChunks.back()); 
     };                                     
+    virtual Chunk *getHeaderFrame() {
+      if (this->hidden) {
+        return this->getFrame(this->numberOfFrames() / 2);
+      } else {
+        return this->getFrame(0);
+      }
+    };
     virtual int getFileSize() {
       return 100;
       return this->jpegSizes[0]; 
@@ -231,6 +239,9 @@ class JPEGDecoder : public VideoDecoder {
     };
     virtual void setCapacity(char capacity) { 
       this->capacity = capacity;
+    };
+    virtual void setHiddenVolume() {
+      this->hidden = true;
     };
     virtual int frameSize() {
       return (int)floor(this->width * this->height * 63 * (capacity / 100.0) * 2);

@@ -5,6 +5,8 @@
 
 #include <gflags/gflags.h>
 
+#include "common/progress_bar.h"
+
 #include "fs/fswrapper.h"
 #include "fs/stegfs.h"
 
@@ -29,13 +31,14 @@ using namespace std;
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
-void doFormat(string algorithm, string pass, int capacity, string videoPath);
+void doFormat(string algorithm, string pass, string pass2, int capacity, string videoPath);
 void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
 
-DEFINE_string(alg, "", "Embedding algorithm to use");
+DEFINE_string(alg, "dctl", "Embedding algorithm to use");
 DEFINE_string(pass, "", "Passphrase to encrypt and permute data with");
-DEFINE_int32(cap, 100, "Percentage of frame to embed within");
+DEFINE_string(pass2, "", "Passphrase to encrypt and permute the hidden volume");
+DEFINE_int32(cap, 20, "Percentage of frame to embed within");
 DEFINE_bool(p, false, "Do not write back to disk until unmount");
 DEFINE_bool(f, false, "Force FFmpeg decoder to be used");
 
@@ -58,7 +61,7 @@ int main(int argc, char *argv[]) {
       return 1;
     }
     string videoPath = argv[2];
-    doFormat(FLAGS_alg, FLAGS_pass, FLAGS_cap, videoPath);
+    doFormat(FLAGS_alg, FLAGS_pass, FLAGS_pass2, FLAGS_cap, videoPath);
   } else if (command == "mount") {
     // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
     if (argc != 4) {
@@ -106,7 +109,7 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   printf("Sucsessfully unmounted\n");
 }
 
-void doFormat(string algorithm, string pass, int capacity, string videoPath) {
+void doFormat(string algorithm, string pass, string pass2, int capacity, string videoPath) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
   VideoDecoder *dec = NULL;
   if (FLAGS_f) {
@@ -115,7 +118,24 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
     dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, true);
   }
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
+
+  if (capacity < 0) capacity = 0;
+  if (capacity > 100) capacity = 100;
+  char capacityB = (char)capacity;
   
+  if (pass2 != "") {
+    // Hidden volume requested, write random data to every frame
+    printf("Writing random data to video frames...\n");
+    char *randomData = (char *)malloc(sizeof(char) * dec->frameSize()/8);
+    for (int i = 0; i < dec->frameSize()/8; i ++) {
+      randomData[i] = (char)rand();
+    }
+    for (int i = 0; i < dec->numberOfFrames(); i ++) {
+      loadBar(i, dec->numberOfFrames() - 1, 50);
+      alg->embed(dec->getFrame(i), randomData, dec->frameSize() / 8, 0);
+    }
+  }
+
   Chunk *headerFrame = dec->getFrame(0);
   char header[4] = {'S', 'T', 'E', 'G'};
   alg->embed(headerFrame, header, 4, 0);
@@ -124,9 +144,6 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   alg->getAlgorithmCode(algCode);
   alg->embed(headerFrame, algCode, 4, 4 * 8);
 
-  if (capacity < 0) capacity = 0;
-  if (capacity > 100) capacity = 100;
-  char capacityB = (char)capacity;
   alg->embed(headerFrame, &capacityB, 1, 8 * 8);
 
   int headerBytes = 0;
@@ -138,6 +155,28 @@ void doFormat(string algorithm, string pass, int capacity, string videoPath) {
   int totalCapacity = (int)floor((dec->numberOfFrames() * (dec->frameSize() / 8000) * (capacity / 100.0)));
   printf("Volume capacity: %.2fMB\n", totalCapacity/1000.0); 
   printf("Frame size: %dB\n", dec->frameSize());
+
+  if (pass2 != "") {
+    // Hidden volume requested
+    Chunk *headerFrame2 = dec->getFrame(dec->numberOfFrames()/2);
+    SteganographicAlgorithm *alg2 = getAlg(algorithm, pass2, dec);
+
+    char header2[4] = {'S', 'T', 'E', 'G'};
+    alg2->embed(headerFrame2, header2, 4, 0);
+
+    char algCode2[4];
+    alg2->getAlgorithmCode(algCode);
+    alg2->embed(headerFrame2, algCode2, 4, 4 * 8);
+
+    alg2->embed(headerFrame2, &capacityB, 1, 8 * 8);
+
+    int headerBytes2 = 0;
+    alg2->embed(headerFrame2, (char *)&headerBytes2, 4, 9 * 8);
+    
+    // Make sure the hidden header is written back
+    headerFrame2->setDirty();
+  }
+
 
   delete dec;
   printf("Format successful!\n");
