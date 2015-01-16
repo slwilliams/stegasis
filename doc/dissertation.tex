@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-\usepackage[draft]{graphicx}
-%\usepackage{graphicx}
+%\usepackage[draft]{graphicx}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -1333,7 +1333,7 @@ The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>
 
 \begin{lstlisting}[caption={Demonstration of 162\% embedding capacity.}, frame=single, label=200cap]
 $ ls -lah
--rw-rw-r-- 1 darkskill darkskill 189M Jan 15 22:30 video.mkv
+-rw-rw-r-- 1 scott scott 189M Jan 15 22:30 video.mkv
 $ stegasis mount -alg=dctl video.mkv /mnt/video
 [...]
 Mounting...
@@ -1393,7 +1393,11 @@ These changes successfully implement the extension task and greatly improve the 
 
 \subsubsection{Plausible deniability}
 
-Haven't done this yet...
+Similar to \texttt{TrueCrypts} hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using different user provided passphrases. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to have seen. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files within here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
+
+This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video, prior to the outer and inner volumes being embedded. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just random data. 
+
+
 
 \subsubsection{Hiding data within audio}
 
@@ -1473,6 +1477,7 @@ Directory functionality was successfully implemented allowing the creation and m
 This extension task was investigated but was decided not to be implemented due to the relativity little embedding capacity gain compared to the work required to implement it.
 
 \subsubsection{Plausible deniability}
+
 
 Haven't done this yet.
 
@@ -1815,7 +1820,7 @@ Optional flags:
 Embedding Algorithms:
   Uncompressed AVI only:
     lsb:  Least Significant Bit Sequential Embedding
-    lsbk:  LSB Sequential Embedding XOR'd with a psudo random stream
+    lsbk:  LSB Sequential Embedding XORd with a psudo random stream
     lsbp:  LSB Permuted Embedding using a seeded LCG
     lsb2:  Combination of lsbk and lsbp
   Other video formats:
