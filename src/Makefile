@@ -6,10 +6,10 @@ LINKFLAGS = $(LIB) `pkg-config fuse --libs`
 all: main
 
 clean:
-	        rm -rf obj && rm stegasis.o
+	        rm -rf obj && rm stegasis
 
 main: obj obj/fswrapper.o obj/bar.o obj/main.o
-	        g++ -g -O3 -m64 -o stegasis.o obj/* $(LINKFLAGS) 
+	        g++ -g -O3 -m64 -o stegasis obj/* $(LINKFLAGS) 
 
 obj:
 	        mkdir -p obj
