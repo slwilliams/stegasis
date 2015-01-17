@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-%\usepackage[draft]{graphicx}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
+%\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -86,7 +86,7 @@
   escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
   keywordstyle=\color{blue},       % keyword style
   stringstyle=\color{mymauve},     % string literal style
-  morekeywords={uint32_t, int32_t},
+  morekeywords={uint32_t, int32_t, uint16_t},
   literate={~} {$\sim$}{1},
 }
 
@@ -538,7 +538,7 @@ The file system is an important aspect of \texttt{Stegasis} and so it is initial
 
 We now address the choice of primary programming language for the development of \texttt{Stegasis}.
 
-Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library, and libraries provided by \texttt{FFmpeg}). Although wrappers for other languages (including Java) do exist\textsuperscript{\cite{javafuse} \cite{turbojpeg}}, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{There have been numerous studies showing that C/C++ code performs better than equivalent Java code\textsuperscript{\cite{javaper1} \cite{javaper2} \cite{javaper3}}.} due to the JVM overheads. 
+Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library, and libraries provided by \texttt{FFmpeg}). Although wrappers for other languages (including Java) do exist\textsuperscript{\cite{javafuse} \cite{turbojpeg}}, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{Numerous studies have shown that C/C++ code performs better than equivalent Java code\textsuperscript{\cite{javaper1} \cite{javaper2} \cite{javaper3}}.} due to the JVM overheads. 
 
 The reasons above led to the conclusion that C++ should be the primary language used to develop \texttt{Stegasis}.
 
@@ -756,7 +756,7 @@ Sequential LSB embedding is arguably the simplest steganographic algorithm. It w
 \end{algorithm}
 
 \noindent
-The actual implementation is relatively short and so is included below in listing \ref{lsbimp}.
+The actual implementation is relatively short and so is included below in listing \ref{lsbimp} along with figure \ref{lsbill} which illustrates the algorithms operation.
 
 \begin{lstlisting}[language=C++, caption={LSB implementation (\texttt{steg/lsb\_algorithm.cc:8})}, frame=single, label=lsbimp]
 virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
@@ -773,15 +773,13 @@ virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
 };
 \end{lstlisting}
 
-\noindent
-The operation of the sequential LSB embedding algorithm is illustrated in figure \ref{lsbill}.
-
 \begin{figure}[!htb]
 \centerline{\includegraphics[width=\textwidth]{images/lsb_ill.png}}
 \caption{Illustration of the LSB Embedding algorithm.}
 \label{lsbill}
 \end{figure}
 
+\noindent
 Using the algorithm as shown above, \SI{43.2}{\kilo\byte} of data is is embedded into a 1280 $\times$ 720 resolution video frame (a capacity setting of 100\%). The result of this is shown in figure \ref{lsbemb_full}. The left image is the cover object and the right image is the stego object. 
 
 \begin{figure}[!h]
@@ -846,7 +844,7 @@ The Chi-squared attack produces very good results for the na\"ive sequential LSB
 \end{figure}
 
 \noindent
-The Chi-Squared attack motivates the development of a \textit{permuted} LSB embedding algorithm. The attack works so well because regardless of the capacity setting, the data is sequentially embedded from the top of the video frame. It would be better to distribute the data uniformly throughout the entire frame. A permuted LSB embedding algorithm achieves this and resists the Chi-Squared attack when using a small capacity setting.\footnote{Of course, a permuted embedding using a capacity of 100\% is comparatively no different to sequential embedding!}.
+The Chi-Squared attack motivates the development of a \textit{permuted} LSB embedding algorithm. The attack works so well because regardless of the capacity setting, the data is sequentially embedded from the top of the video frame. It would be better to distribute the data uniformly throughout the entire frame. A permuted LSB embedding algorithm achieves this and resists the Chi-Squared attack when using a small capacity setting.\footnote{Of course, a permuted embedding using a capacity of 100\% is no different to sequential embedding!}.
 
 \subsubsection{Permuted LSB Embedding}
 
@@ -1452,10 +1450,12 @@ The results of this evaluation study obtained by the implemented web application
 \texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all 11 embedding algorithms and associated code. Listing \ref{unittest} gives an example unit test.
 
 \begin{lstlisting}[caption={Embedding algorithm unit test (\texttt{steg/steg\_algorithm\_test.cc:100}).}, frame=single, label=unittest]
-bool SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
-  this->dirs.insert(path);
-  return 0;
-}
+bool SteganographicUnitTests::completeness(SteganographicAlgorithm alg) {
+   char *in, *out; this->initRandomData(in, out);
+   alg->embed(this->dummyChunk, in, this->dataSize, 0); 
+   alg->extract(this->dummyChunk, out, this->dataSize, 0);
+   return compareData(in, out);
+};
 \end{lstlisting}
 
 The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded using a key \textbf{k} is correctly extracted when using the same key.
@@ -1466,6 +1466,9 @@ The \texttt{AVI} parser was tested using a black box testing approach on a numbe
 
 See the appendix section \ref{app:codetest} for some more testing code samples. 
 
+\vfill
+\pagebreak
+
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
 
@@ -1473,7 +1476,7 @@ As stated in the preparation section, the project will be considered a success i
 
 \subsubsection{Embedding data within video files}
 
-\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 10 steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by one of the unit test cases as explained in section \ref{testing}.} and, after an evaluation study discussed in section \ref{security} below, it was concluded that \texttt{Stegasis} operates with no perceivable impact on video quality. A number of steganalysis tools were indeed developed and tested the security of the proposed stego systems, prompting the design of more secure embedding algorithms. Encryption functionality is also provided making use of a user provided passphrase. Finally, a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity. This satisfies all points of the first requirement.
+\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 10 steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by one of the unit test cases as explained in section \ref{testing}.} and, after an evaluation study discussed in section \ref{security} below, it was concluded that \texttt{Stegasis} can operate with no perceivable impact on video quality. A number of steganalysis tools were developed and tested the security of the proposed stego systems, prompting the design of more secure embedding algorithms. Encryption functionality is also provided making use of a user provided passphrase. Finally, a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity. This satisfies all points of the first requirement.
 
 \subsubsection{Providing a file system interface}
 
@@ -1481,18 +1484,18 @@ As stated in the preparation section, the project will be considered a success i
 
 \subsubsection{Supporting uncompressed AVI}
 
-Raw uncompressed \texttt{AVI} files are supported via a developed native parser which allows access to and modification of individual pixel data, therefore fulfilling the third requirement.
+Raw uncompressed \texttt{AVI} files are supported via a developed native parser which allows access to and modification of individual pixel data, therefore fulfilling this requirement.
 
 \subsubsection{File system performance}
 
-The performance of the file system allows full HD video content to be played back from directly within the volume, meeting the first point of this requirement. The second point was harder to satisfy; achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system does manage to provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed below in section \ref{perf}.}, these speeds can reach 160MB/s.), but only for the algorithms which do not encrypt the embedded data and only if the performance flag (\texttt{-p}) has been specified. Since read and write speeds in excess of 20 MB/s can be provided by the file system, I consider this requirement satisfied. Performance is discussed in more detail below in section \ref{perf}.\\
+The performance of the file system allows full HD video content to be played back from within the volume, meeting the first point of this requirement. The second point was harder to satisfy; achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system can provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed in section \ref{perf}.},  160MB/s.), but only for the algorithms which do not encrypt the embedded data and only if the performance flag has been specified. Since read and write speeds in excess of 20 MB/s can be provided by the file system, I consider this requirement satisfied. Performance is discussed in more detail in section \ref{perf}.
 
 \noindent
 \texttt{Stegasis}, having satisfied all of the core requirements can therefore be considered a success. The extension task requirements are now discussed individually. 
 
 \subsubsection{Supporting multiple video formats}
 
-The novel method described in section \ref{extffmpeg} allows \texttt{Stegasis} to seamlessly operate across virtually every video format available today, including the explicitly mentioned \texttt{MP4} format. The implemented embedding algorithms operating on \texttt{JPEG} images enable very large embedding capacities allowing multiple large files to hidden inside of a single video file.
+The novel method described in section \ref{extffmpeg} allows \texttt{Stegasis} to seamlessly operate across virtually every video format available today, including the explicitly mentioned \texttt{MP4} format. The implemented embedding algorithms operating on \texttt{JPEG} images enable very large embedding capacities allowing multiple large files to hidden inside of a single video.
 
 \subsubsection{File system directory operations}
 
@@ -1522,7 +1525,7 @@ It is first noted that if a user cannot tell the difference between the two pres
 
 To determine if the obtained bit string is in fact random, a number of statistical randomness tests are used, provided by \texttt{ent}\textsuperscript{\cite{ent}}, a pseudorandom number sequence test program. Listing \ref{entout} shows the output of \texttt{ent} when applied to the bit string.
 
-\begin{lstlisting}[caption={Output of \texttt{ent}.},frame=single, upquote=true,label=entout,showstringspaces=false]
+\begin{lstlisting}[language={},caption={Output of \texttt{ent}.},frame=single, upquote=true,label=entout,showstringspaces=false]
 Entropy = 0.999664 bits per bit.
 
 Optimum compression would reduce the size
@@ -1548,28 +1551,28 @@ Although we have concluded that \texttt{Stegasis} can operate with no perceivabl
 \label{hist}
 \end{figure}
 
-This does lead to the unfortunate conclusion that the steganography provided by \texttt{Stegasis}, as it stands, is broken - a steganalyst would be able to conclude with relative ease that videos produced by \texttt{Stegasis} contained hidden data. I do not believe however that this renders \texttt{Stegasis} useless. The embedding algorithms employing cryptography ensure that even if the embedded data is identified, it cannot be extracted nor decrypted. Furthermore, the plausible deniability functionality provided by \texttt{Stegasis} keeps sensitive information safe even if users are forced to give up encryption keys. Also note that the video file in question would have had to have been specifically targeted for these attacks to occur\footnote{For example, I do not believe automated steganalysis occurs for all video files emailed or uploaded to file sharing websites.}.
+This does lead to the unfortunate conclusion that the steganography currently provided by \texttt{Stegasis} is broken - a steganalyst would be able to conclude with relative ease that videos produced by \texttt{Stegasis} contain hidden data. I do not believe however that this renders \texttt{Stegasis} useless. The embedding algorithms employing cryptography ensure that even if embedded data is identified, it cannot be extracted nor decrypted. Furthermore, the plausible deniability functionality provided by \texttt{Stegasis} keeps sensitive information safe even if users are forced to give up encryption keys. Also note that the video file in question would have had to have been specifically targeted for these attacks to occur\footnote{I do not believe automated steganalysis occurs for all video files emailed for example.}.
 
 With the above said, it would be a straight forward process to incorporate more secure embedding algorithms which do resist the histogram attack (such as F5 and OutGuess) due to the framework \texttt{Stegasis} already provides.
 
 \subsection{Performance}
 \label{perf}
 
-The performance of \texttt{Stegasis}, and in particular the file system, is very important to consider. As with \texttt{TrueCrypt}, using \texttt{Stegasis} should constitute? a similar experience to copying files onto removable storage. 
+The performance of \texttt{Stegasis}, and in particular the file system, is very important to consider. As with \texttt{TrueCrypt}, using \texttt{Stegasis} should constitute a similar experience to copying files onto removable storage. 
 
 \subsubsection{Performance of the file system}
 
-Due to the large embedding capacities offered, large files are expected to be copied into the file system and therefore embedded into the video. The write performance of the file system was therefore given a lot of attention during the implementation. The biggest improvement in file system performance was obtained by enabling the \texttt{FUSE} \texttt{big\_writes} mount option. By default, \texttt{FUSE} limits write calls to blocks of 4096 bytes. \texttt{big\_writes} allows this limit to be increased to a maximum of 128 kB. Figure \ref{writeper} shows the effect of varying the block size on write performance for the LSB embedding algorithm (with the \texttt{-p} flag).
+Due to the large embedding capacities offered, large files are expected to be copied into the file system and therefore embedded into the video. The write performance of the file system was therefore given a lot of attention during the implementation. The biggest improvement in file system performance was obtained by enabling the \texttt{FUSE} \texttt{big\_writes} mount option. By default, \texttt{FUSE} limits write calls to blocks of 4096 bytes, \texttt{big\_writes} allows this limit to be increased to 128 kB. Figure \ref{writeper} shows the effect of varying the block size on write performance for the LSB embedding algorithm (with the \texttt{-p} flag).
 
 \begin{figure}[!tbh]
-\centerline{\includegraphics[width=\textwidth]{images/writeper.png}}
+\centerline{\includegraphics[width=0.9\textwidth]{images/writeper.png}}
 \caption{Write performance whilst varying block size.}
 \label{writeper}
 \end{figure}
 
-The data points for the graph were obtained using the command line tool \texttt{dd} as shown in the listing below. Note that this test provides ideal conditions, having a large block size and writing all zeros - most use cases will not be like this.
+The data points for the graph were obtained using the command line tool \texttt{dd} as shown in listing \ref{dd}. Note that this test provides ideal conditions, having a large block size and writing all zeros - most use cases will not be like this.
 
-\begin{lstlisting}[caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,float,floatplacement=!htH]
+\begin{lstlisting}[caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd, float, floatplacement=!htHb]
 $ dd if=/dev/zero of=test bs=128k count=610
 610+0 records in
 610+0 records out
@@ -1595,6 +1598,9 @@ Another area worth considering is the time \texttt{Stegasis} takes to format vid
 \caption{Video format times}
 \label{formatres}
 \end{table}
+
+\vfill
+\pagebreak
 
 \section{Conclusions}
 
@@ -1790,6 +1796,9 @@ RIFF (
 )
 \end{lstlisting}
 
+\vfill
+\pagebreak
+
 \subsection{The AVI header}
 
 Listing \ref{aviheader} shows the definition of the main \texttt{AVI} header.
@@ -1812,6 +1821,28 @@ typedef struct _avimainheader {
 } AVIMAINHEADER;
 \end{lstlisting}
 
+\subsection{The Bitmapinfoheader}
+
+Listing \ref{bitmap} shows the definition of the \texttt{BITMAPINFOHEADER}.
+
+\begin{lstlisting}[caption={The \texttt{BITMAPINFOHEADER} structure.},frame=single, upquote=true,label=bitmap,showstringspaces=false]
+typedef struct tagBITMAPINFOHEADER {
+  uint32_t biSize;
+  uint32_t  biWidth;
+  uint32_t  biHeight;
+  uint16_t  biPlanes;
+  uint16_t  biBitCount;
+  uint32_t biCompression;
+  uint32_t biSizeImage;
+  uint32_t  biXPelsPerMeter;
+  uint32_t  biYPelsPerMeter;
+  uint32_t biClrUsed;
+  uint32_t biClrImportant;
+} BITMAPINFOHEADER;
+\end{lstlisting}
+
+\vfill
+\pagebreak
 
 \section{Stegasis example use} 
 \label{app:steg}
@@ -1940,6 +1971,9 @@ Writing back to disc...
 100% [==================================================]
 Successfully unmounted
 \end{lstlisting}
+
+\vfill
+\pagebreak
 
 \section{Detailed Code samples} 
 \label{app:code}
@@ -2223,7 +2257,13 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 \subsection{Testing}
 \label{app:codetest}
 
-Testing...
+\subsubsection{Unit Testing}
+
+Unit tests...
+
+\subsubsection{Integration Testing}
+
+Archives and stuff...
 
 \vfill
 \pagebreak
