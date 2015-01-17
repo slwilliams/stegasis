@@ -1331,7 +1331,7 @@ However, at lower capacity settings it is not possible to visually differentiate
 \noindent
 The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>$100\% embedding capacities claimed within the opening paragraph of this document. The reason this is possible is due to the final stage of \texttt{JPEG} compression - ``Encode the resulting coefficients using a Huffman variable word-length algorithm''. This effectively compresses the embedded data before it is written back to disk. To show this in action, listing \ref{200cap} shows a 306 MB file embedded within a 189 MB video.
 
-\begin{lstlisting}[caption={Demonstration of 162\% embedding capacity.}, frame=single, label=200cap]
+\begin{lstlisting}[language=bash,caption={Demonstration of 162\% embedding capacity.}, frame=single, label=200cap]
 $ ls -lah
 -rw-rw-r-- 1 scott scott 189M Jan 15 22:30 video.mkv
 $ stegasis mount -alg=dctl video.mkv /mnt/video
@@ -1393,16 +1393,14 @@ These changes successfully implement the extension task and greatly improve the 
 
 \subsubsection{Plausible deniability}
 
-Similar to \texttt{TrueCrypts} hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using different user provided passphrases. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to have seen. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files within here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
+Similar to \texttt{TrueCrypts} hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using different user provided passphrases. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to have seen. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
 
 This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process.
 
-The modifications to \texttt{Stegasis} required to implement this feature were surprisingly simple. A second passphrase command line flag \texttt{pass2} was added, if this is specified during the format process random data is written to each frame of the video and two headers written at the start and in the middle of the video. The mount process will now attempt to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user.
+The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag, \texttt{pass2} was added, if this is specified during the format process random data is written to each frame of the video and two headers are written at the start and in the middle of the video. The mount process will now attempt to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
-Listing \ref{deny} shows an example use case of the plausible deniability functionality.
-
-\begin{lstlisting}[caption={\texttt{Stegasis} plausible deniability functionality.}, frame=single, label=deny]
-$ stegasis format -alg=lsba -pass=outer -pass2=hidden /media/Backup/video.avi
+\begin{lstlisting}[language=bash,caption={\texttt{Stegasis} plausible deniability functionality.}, frame=single, label=deny,float,floatplacement=!htb]
+$ stegasis format -alg=lsba -pass=outer -pass2=hidden -cap=20 /media/Backup/video.avi
 [...]
 Format successful!
 $ stegasis mount -alg=lsba -pass=outer /media/Backup/video.avi /tmp/steg
@@ -1423,7 +1421,9 @@ Mounting...
 $ echo 'inner' > /tmp/steg/sensitivefile.txt
 \end{lstlisting}
 
-Since the header and data for the hidden file system is stored within the middle video frame onwards, it is possible to damage it by writing too much data to the outer volume, thus overwriting the hidden volume header. The user has sacrificed half of the total embedding capacity in return for plausible deniability.
+Since the header and data for the hidden file system is stored within the middle video frame onwards, it is possible to damage it by writing too much data to the outer volume. The user has effectively sacrificed half of the total embedding capacity in return for plausible deniability.
+
+A subtlety to note here is that since the random data is only written to the video when a hidden volume is requested, this itself becomes an indication of the hidden volumes presence. To combat this, a \texttt{random} command is added to \texttt{Stegasis} which will simply write random data to the entire video. A user can then confidently claim this is the reason why the video in question has random data written to it, not because a hidden volume resides within it. 
 
 \subsubsection{Hiding data within audio}
 
@@ -1452,7 +1452,7 @@ The results of this evaluation study obtained by the implemented web application
 \texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all 11 embedding algorithms and associated code. Listing \ref{unittest} gives an example unit test.
 
 \begin{lstlisting}[caption={Embedding algorithm unit test (\texttt{steg/steg\_algorithm\_test.cc:100}).}, frame=single, label=unittest]
-int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
+bool SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
   this->dirs.insert(path);
   return 0;
 }
@@ -1504,8 +1504,7 @@ This extension task was investigated but was decided not to be implemented due t
 
 \subsubsection{Plausible deniability}
 
-
-Haven't done this yet.
+Plausible deniability functionality was implemented within \texttt{Stegasis} allowing a second hidden file system to be optionally embedded within a video. Depending on the passphrase provided by the user during mounting, either the outer or inner volume is presented. This satisfies the first requirement point. The second point, that the hidden volume should not be detectable, is more complex. Although it will not be possible to differentiate between random data and an encrypted volume\textsuperscript{\cite{random}}, steganalysis attacks may still be able to detect the presence of the volume when using low capacity settings. This is because two different passphrases are being used to permute the randomly written data and the inner volume data. A steganalysis technique may be able to detect the two seperate embedding permutations if they do not overlap significantly. This can be alleviated by using a large capacity setting, and fixed completely by using a capacity setting of 100\%. However, this would produce visual artifacts as illustrated in the implementation section (figure \ref{jpegarti}). As with other similar tradeoffs, this choice is given to the user.
 
 \subsubsection{Evaluation of the visual impact of embedding}
 
@@ -1623,7 +1622,8 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \bibitem{digmedia} \emph{Steganography in Digital Media}, Jessica Fridrich 2010, pp. xv - xvi
 
 \bibitem{uklaw} \emph{Contested UK encryption disclosure law takes effect}, Jeremy Kirk 2007, Washington Post\\ 
-\path{www.washingtonpost.com/wp-dyn/content/article/2007/10/01/AR2007100100511.html}
+\path{www.washingtonpost.com/wp-dyn/content/article/2007/10/01/AR2007100100511.html}\\
+\path{www.legislation.gov.uk/ukpga/2000/23/section/53}
 
 \bibitem{digmedia2} \emph{Steganography in Digital Media}, Jessica Fridrich 2010, p. xvii
 
@@ -1734,6 +1734,9 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \bibitem{pool} \emph{The Whirlpool Secure Hash Function}, Williams Stallings 2006\\
 \path{www.seas.gwu.edu/~poorvi/Classes/CS381_2007/Whirlpool.pdf}
 
+\bibitem{random} \emph{Random versus Encrypted Data}, A. G. Basile 2008\\
+\path{opensource.dyc.edu/sites/default/files/random-vs-encrypted.pdf}
+
 \bibitem{ent} \emph{Ent: A Pseudorandom Number Sequence Test Program}, John Walker 2008\\
 \path{www.fourmilab.ch/random}
 
@@ -1817,7 +1820,7 @@ typedef struct _avimainheader {
 
 Listing \ref{usage} shows the information displayed to the user when the program is run with no (or incorrect) arguments supplied.
 
-\begin{lstlisting}[caption={\texttt{Stegasis} usage information.},frame=single, upquote=true,label=usage,showstringspaces=false]
+\begin{lstlisting}[language={},caption={\texttt{Stegasis} usage information.},frame=single, upquote=true,label=usage,showstringspaces=false]
    _____ _                                  
   / ____| |                     (_)         
  | (___ | |_ ___  __ _  __ _ ___ _ ___      
@@ -1828,11 +1831,11 @@ Listing \ref{usage} shows the information displayed to the user when the program
                  |___/                      
 
 Stegasis usage:
-  stegasis <command> [-p,-f] -alg=<alg> -pass=<pass> -cap=<capacity> <video_path> <mount_point>
------------------------------------------------------------------
+  stegasis <command> [-p,-f] -alg=<alg> -pass=<pass> -cap=<capacity>       <video_path> <mount_point>
+------------------------------------------------------------------------
 Example useage:
-  stegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi
-  stegasis mount --alg=lsbk --pass=password123 /media/video.avi /tmp/test
+  stegasis format -alg=lsbk -pass=password123 -cap=50 /media/video.avi
+  stegasis mount -alg=lsbk -pass=password123 /media/video.avi /tmp/test
 Commands:
   format  Formats a video for use with stegasis
   mount  Mounts a formatted video to a given mount point
@@ -2222,6 +2225,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
 Testing...
 
+\vfill
 \pagebreak
 
 \section{Original Project Proposal} 
