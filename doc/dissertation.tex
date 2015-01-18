@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-\usepackage[draft]{graphicx}
-%\usepackage{graphicx}
+%\usepackage[draft]{graphicx}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -2254,6 +2254,9 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 };
 \end{lstlisting}
 
+\vfill
+\pagebreak
+
 \section{Testing}
 \label{app:codetest}
 
@@ -2265,7 +2268,7 @@ Unit tests...
 
 As briefly mentioned in the implementation section, the integration test suite makes use of a number of test archives. These archives are copied into the volume presented by \texttt{Stegasis} and extracted. The resulting file system is then traversed and the contents of files checked to make sure they match their original content. This process is automated using several bash scripts as shown in listing \ref{inttest}.
 
-\begin{lstlisting}[lanuage=bash,caption={The simple integration test suite (\texttt{test/simple\_integration\_tests.sh}).},frame=single, upquote=true,label=usecase,showstringspaces=false]
+\begin{lstlisting}[language=bash,caption={The simple integration test suite (\texttt{test/simple\_integration\_tests.sh}).},frame=single, upquote=true,label=inttest,showstringspaces=false]
 #!/bin/bash
 
 function cleanExit() {
