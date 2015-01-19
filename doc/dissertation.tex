@@ -145,7 +145,7 @@
 \textsc{Project Title}: \tab{Steganographic file systems within video files}\\
 \textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
 \textsc{Year}: \tab{2015}\\
-\textsc{Word Count}: \tab{12,000}\\
+\textsc{Word Count}: \tab{14,628}\\
 \textsc{Project Originator}: \tab{Scott Williams}\\
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
@@ -208,7 +208,7 @@ This project is concerned with only the case of the passive warden. As such, any
 A steganographic system consists of a number of individual components:
 \begin{itemize}
 	\item A \textit{Cover object} is the original object that the message will be embedded within.
-	\item A \textit{Message} is an arbitrary length sequence of symbols. For this project we consider a message $\mathcal{M} \in \{0,1\}^{n} $ that is, a binary string.
+	\item A \textit{Message} is an arbitrary length sequence of symbols. For this project we consider a message $\mathcal{M} \in \{0,1\}^{n} $ for some $n$, that is, a binary string.
 	\item A \textit{Stego key} is a secret key used within the embedding process.
 	\item A \textit{Stego object} is the result of embedding a message inside a cover object.
 \end{itemize}
@@ -222,18 +222,18 @@ Let $\mathcal{C}$ be the set of all cover objects. For a given $\textbf{c} \in \
 \end{center}
 satisfying,
 \begin{center}
-	$\forall ~\textbf{c}, \textbf{k}, \textbf{m}. ~\textbf{c} \in \mathcal{C} ~\land ~ \textbf{k} \in \mathcal{K} _{\textbf{c}} ~\land ~ \textbf{m} \in \mathcal{M} _{\textbf{c}} \Rightarrow$ Ext(Emb(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}	
+	$\forall ~\textbf{c} \in \mathcal{C}, \textbf{k} \in \mathcal{K}_{\textbf{c}}, \textbf{m} \in \mathcal{M}_{\textbf{c}}.$ Ext(Emb(\textbf{c}, \textbf{k}, \textbf{m}), \textbf{k}) = \textbf{m}	
 \end{center}
 \end{ddef}
 \begin{ddef}
 \textsc{Embedding Capacity}\\[5pt]
 The \textit{Embedding Capacity} (payload) $\mathcal{P} _{\textbf{c}}$ for a given cover object \textbf{c} $\in \mathcal{C}$ is defined in bits as,
 \begin{center}
-	$\mathcal{P} _{\textbf{c}} = \log_{2}|\mathcal{M}(\textbf{c})| $
+	$\mathcal{P} _{\textbf{c}} = \log_{2}|\mathcal{M}_{\textbf{c}}| $
 \end{center}
 The relative embedding capacity $\mathcal{R} _{\textbf{c}}$ for a given cover object \textbf{c} $\in \mathcal{C}$ is defined as,
 \begin{center}
-	$\mathcal{R} _{\textbf{c}} = \dfrac{\log_{2}|\mathcal{M}(\textbf{c})|}{n} $
+	$\mathcal{R} _{\textbf{c}} = \dfrac{\log_{2}|\mathcal{M}_{\textbf{c}}|}{n} $
 \end{center}
 where n is the number of elements in \textbf{c}.
 \end{ddef}
@@ -245,13 +245,13 @@ Using the definitions above, we can define a simple expression for the embedding
 \textsc{Embedding Capacity for video}\\[5pt]
 With $\mathcal{C}$ as the set of all video files, the embedding capacity $\mathcal{V} _{\textbf{c}}$ for a given video $\textbf{c} \in \mathcal{C}$ can be expressed as,
 \begin{center}
-	$\mathcal{V} _{\textbf{c}} ~= \mathlarger{\mathlarger{\sum}}\limits_{f ~\in ~frames(\textbf{c})} \mathcal{P} _{f}$
+	$\mathcal{V} _{\textbf{c}} ~= \mathlarger{\mathlarger{\sum}}\limits_{f ~\in ~\textnormal{frames}(\textbf{c})} \mathcal{P} _{f}$
 \end{center}
 \end{ddef}
 \noindent
 Note that for certain embedding algorithms, the embedding capacity can depend on both the input data and the cover object\footnote{Many algorithms operating on \texttt{JPEG} images for example will not embedded within zero valued DCT coefficients.}. However, in some cases the following expression is also valid,
 \begin{center}
-	$\mathcal{V} _{\textbf{c}} ~=~ |frames(\textbf{c})| \cdot \mathcal{P} _{f _{0}}$
+	$\mathcal{V} _{\textbf{c}} ~=~ |\text{frames}(\textbf{c})| \cdot \mathcal{P} _{f _{0}}$
 \end{center}
 
 \begin{ddef}
@@ -261,7 +261,7 @@ The concept of Steganographic Capacity is loosely defined as the maximum number 
 \noindent
 For completeness, the least significant bit (LSB) of a given number is defined as follows,
 \begin{center}
-	LSB($x$) = $x$ mod 2
+	LSB($x$) = $x \mod 2$
 \end{center}
 
 \noindent
@@ -269,9 +269,9 @@ It will be useful to visually inspect the effect of steganographic embedding alg
 
 \begin{ddef}
 \textsc{LSB Plane}\\[5pt]
-The Least Significant Bit Plane of a given image $\mathcal{\textbf{c}}$ and a specified colour channel $q$ is defined as the 1 bit image $LSBP(\mathcal{\textbf{c}},q)$ which has resolution equal to that of image $\mathcal{\textbf{c}}$ and with pixel values  $LSBP(\mathcal{\textbf{c}},q)(x,y)$ given by,
+The Least Significant Bit Plane of a given image $\mathcal{\textbf{c}}$ and a specified colour channel $q$ is defined as the 1 bit image $\textnormal{LSBP}(\mathcal{\textbf{c}},q)$ which has resolution equal to that of image $\mathcal{\textbf{c}}$ and with pixel values  $\textnormal{LSBP}(\mathcal{\textbf{c}},q)(x,y)$ given by,
 \begin{center}
-	$LSBP(\mathcal{\textbf{c}},q)(x,y) = LSB(\mathcal{\textbf{c}}(x,y))$
+	$\textnormal{LSBP}(\mathcal{\textbf{c}},q)(x,y) = \textnormal{LSB}(\mathcal{\textbf{c}}(x,y))$
 \end{center} 
 \end{ddef}
 
@@ -344,9 +344,10 @@ Each stream has a corresponding \texttt{AVI} stream header and format chunk with
 
 The \texttt{movi} list contains the raw video and audio data within sequential \texttt{RIFF} chunks. Each chunk for the DIB video stream contains one frames worth of pixel data, with each pixel represented by a 3 byte BGR (Blue Green Red) triple - a total of 24 bits per pixel. The first 3 byte triple corresponds to the lower left pixel of the final image\footnote{This can be inverted via the use of an option within the \texttt{BITMAPINFOHEADER}.}. 
 
-If we use an embedding algorithm which embeds 3 bits per pixel (that is, 1 bit per colour channel per pixel) we can derive an expression for the embedding capacity of a video \textbf{c} in terms of the height $h$ and width $w$ in pixels, the total number of frames $t$ and the frame rate $f$ in frames per second:
+If we use an embedding algorithm which embeds 3 bits per pixel (that is, 1 bit per colour channel per pixel), we can derive a simple expression for the embedding capacity of an uncompressed \texttt{AVI} video \textbf{c}, in terms of the height $h$ and width $w$ in pixels and the total number of frames $t$:
+
 \begin{center}
-	$\mathcal{V} _{\textbf{c}} = \dfrac{3 \cdot w \cdot h \cdot t}{f}$
+	$\mathcal{V} _{\textbf{c}} = 3 \cdot w \cdot h \cdot t$
 \end{center}
 
 \noindent
@@ -361,7 +362,7 @@ The \texttt{JPEG} compression process consists of 5 main procedures:
 \begin{enumerate}
 	\item Transform the image into an optimal color space. 
 	\item Downsample chrominance components by averaging groups of pixels together.
-	\item Apply a Discrete Cosine Transform (DCT) to blocks of pixels. 
+	\item Apply a \textit{Discrete Cosine Transform} (DCT) to blocks of pixels. 
 	\item Quantise each block of DCT coefficients using a quantisation table. 
 	\item Encode the resulting coefficients using a Huffman variable word-length algorithm. 
 \end{enumerate}
@@ -431,7 +432,7 @@ The relatively little work on steganography within video was reflected in my sea
 
 \subsubsection{StegoMagic}
 
-\texttt{StegoMagic}\textsuperscript{\cite{stegomagic}} claims to ``work on all types of files and all size of data'' which again sounds as though it's appending the file to the end of the cover object. This is indeed the case, embedding an image within a video and inspecting the modified file shows that data has just been appended to the end of the video, albeit encrypted. \texttt{StegoMagic} does not specify the encryption algorithm used and the source code is not available to view. Furthermore, the user cannot specify an encryption key to use. Instead, \texttt{StegoMagic} generates a 5 digit number during the embedding process and echos this to the user.  
+\texttt{StegoMagic}\textsuperscript{\cite{stegomagic}} claims to ``work on all types of files and all size of data'' which again sounds as though it's appending the file to the end of the cover object. This is indeed the case, embedding an image within a video and inspecting the modified file shows that data has just been appended to the end of the video, albeit encrypted. \texttt{StegoMagic} does not specify the encryption algorithm used and the source code is not available to view. Furthermore, the user cannot specify an encryption key to use. Instead, \texttt{StegoMagic} generates a 5 digit number during the embedding process and echoes this to the user.  
 
 \subsubsection{TCSteg}
 
@@ -538,7 +539,7 @@ The file system is an important aspect of \texttt{Stegasis} and so it is initial
 
 We now address the choice of primary programming language for the development of \texttt{Stegasis}.
 
-Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library, and libraries provided by \texttt{FFmpeg}). Although wrappers for other languages (including Java) do exist\textsuperscript{\cite{javafuse} \cite{turbojpeg}}, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{Numerous studies have shown that C/C++ code performs better than equivalent Java code\textsuperscript{\cite{javaper1} \cite{javaper2} \cite{javaper3}}.} due to the JVM overheads. 
+Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. The identified library for implementing the file system aspect - \texttt{FUSE} - is natively a C library (as is the \texttt{libjpeg} library, and libraries provided by \texttt{FFmpeg}). Although wrappers for other languages (including Java) do exist\textsuperscript{\cite{javafuse} \cite{turbojpeg}}, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{Steganographic Algorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{Numerous studies have shown that C/C++ code performs better than equivalent Java code\textsuperscript{\cite{javaper1} \cite{javaper2} \cite{javaper3}}.} due to the JVM overheads. 
 
 The reasons above led to the conclusion that C++ should be the primary language used to develop \texttt{Stegasis}.
 
@@ -553,7 +554,7 @@ The extension task ``\texttt{Stegasis} should be evaluated for perceivable video
 
 \subsection{Introduction}
 
-The development of \texttt{Stegasis} consisted of the 5 main stages sectioned within this chapter. Firstly, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} was developed allowing direct access to video pixel data. Next, steganographic embedding algorithms were implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system was then developed utilising the \texttt{AVI} decoder and steganogrphic algorithms to embed and extract data directly into and out of video files. Finally, the extension tasks were individually addressed providing support for multiple video formats, directory structures and plausible deniability\footnote{The evaluation site extension task is discussed within the evaluation chapter.}. The testing section provides an overview of the testing processes applied throughout development. 
+The development of \texttt{Stegasis} consisted of the five main stages detailed within this chapter. Firstly, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} was developed allowing direct access to video pixel data. Next, steganographic embedding algorithms were implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system was then developed utilising the \texttt{AVI} decoder and steganogrphic algorithms to embed and extract data directly into and out of video files. Finally, the extension tasks were individually addressed providing support for multiple video formats, directory structures and plausible deniability\footnote{The evaluation site extension task is discussed within the evaluation chapter.}. The testing section provides an overview of the testing processes applied throughout development. 
 
 The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next. Instead, an iterative process was taken across all sections, embracing the modern ``Launch early, iterate often'' methodology\textsuperscript{\cite{iterate}}. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate component.
 
@@ -564,7 +565,7 @@ The concept of an \texttt{AVI} decoder is first abstracted to that of a generic 
 
 This gives the definition for the \texttt{Video Decoder} interface as described in listing \ref{viddec} (\texttt{NextFrameOffset} will be discussed in section \ref{fsi}):
 
-\begin{lstlisting}[language=C++, caption={Video Decoder interface (\texttt{video/video\_decoder.h:15})},frame=single, float,floatplacement=H,label=viddec]
+\begin{lstlisting}[language=C++, caption={\texttt{Video Decoder} interface (\texttt{video/video\_decoder.h:15})},frame=single, float,floatplacement=H,label=viddec]
 class VideoDecoder {
   public:
     virtual Chunk *getFrame(int frame) = 0;
@@ -605,7 +606,7 @@ class Chunk {
 \noindent
 Note that the parameters for \texttt{getFrameData} are optional. For the \texttt{AVI} decoder, these will not be used.
 
-The \texttt{AVI} parssing process can be thought of consisting of two main parts; parsing the video headers and parsing the video chunk data. The pseudocode in algorithm \ref{parseavi} illustrates this with the headers being parsed lines 1-12 and the chunks being parsed lines 15-22.
+The \texttt{AVI} parsing process can be thought of consisting of two main parts; parsing the video headers and parsing the video chunk data. The pseudocode in algorithm \ref{parseavi} illustrates this with the headers being parsed lines 1-12 and the chunks being parsed lines 15-22.
 
 \begin{algorithm}[!h]
 \caption{\texttt{AVI} parsing process}
@@ -758,7 +759,7 @@ Sequential LSB embedding is arguably the simplest steganographic algorithm. It w
 \noindent
 The actual implementation is relatively short and so is included below in listing \ref{lsbimp} along with figure \ref{lsbill} which illustrates the algorithms operation.
 
-\begin{lstlisting}[language=C++, caption={LSB implementation (\texttt{steg/lsb\_algorithm.cc:8})}, frame=single, label=lsbimp]
+\begin{lstlisting}[language=C++, caption={LSB embedding implementation (\texttt{steg/lsb\_algorithm.cc:8})}, frame=single, label=lsbimp]
 virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
   char *frame = c->getFrameData();
   for (int i = 0; i < dataBytes; i ++) {
@@ -1007,7 +1008,7 @@ Within figure \ref{header}, a single triple is indicated with square brackets, a
 
 \subsubsection{Reading and writing the header}
 
-Internally, the header data will be stored in memory as a pair of \texttt{unordered\_maps}, one mapping from file name to file size and the other from file name to a vector\footnote{This is an ordered data structure, the triple contained in vector[0] will contain the file data immediately preceding vector[1].} of \texttt{Triples}. These are named \texttt{fileSizes} and \texttt{fileIndex}.
+Internally, the header data will be stored in memory as a pair of \texttt{unordered\_map}s, one mapping from file name to file size and the other from file name to a vector\footnote{This is an ordered data structure, the triple contained in vector[0] will contain the file data immediately preceding vector[1].} of \texttt{Triple}s. These are named \texttt{fileSizes} and \texttt{fileIndex}.
 
 The process of reading the header is split up into 2 main sections, reading the header data and reading the file data. These are both illustrated within Algorithm \ref{readheader}.
 
@@ -1391,9 +1392,9 @@ These changes successfully implement the extension task and greatly improve the 
 
 \subsubsection{Plausible deniability}
 
-Similar to \texttt{TrueCrypts} hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using different user provided passphrases. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to have seen. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
+Similar to \texttt{TrueCrypt}'s hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using a different user provided passphrase. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to have seen. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
 
-This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process.
+This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process\textsuperscript{\cite{random}}.
 
 The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag, \texttt{pass2} was added, if this is specified during the format process random data is written to each frame of the video and two headers are written at the start and in the middle of the video. The mount process will now attempt to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
@@ -1799,7 +1800,7 @@ RIFF (
 \vfill
 \pagebreak
 
-\subsection{The AVI header}
+\subsection{The AVI and Bitmapinfo headers}
 
 Listing \ref{aviheader} shows the definition of the main \texttt{AVI} header.
 
@@ -1821,23 +1822,21 @@ typedef struct _avimainheader {
 } AVIMAINHEADER;
 \end{lstlisting}
 
-\subsection{The Bitmapinfoheader}
-
 Listing \ref{bitmap} shows the definition of the \texttt{BITMAPINFOHEADER}.
 
 \begin{lstlisting}[caption={The \texttt{BITMAPINFOHEADER} structure.},frame=single, upquote=true,label=bitmap,showstringspaces=false]
 typedef struct tagBITMAPINFOHEADER {
-  uint32_t biSize;
+  uint32_t  biSize;
   uint32_t  biWidth;
   uint32_t  biHeight;
   uint16_t  biPlanes;
   uint16_t  biBitCount;
-  uint32_t biCompression;
-  uint32_t biSizeImage;
+  uint32_t  biCompression;
+  uint32_t  biSizeImage;
   uint32_t  biXPelsPerMeter;
   uint32_t  biYPelsPerMeter;
-  uint32_t biClrUsed;
-  uint32_t biClrImportant;
+  uint32_t  biClrUsed;
+  uint32_t  biClrImportant;
 } BITMAPINFOHEADER;
 \end{lstlisting}
 
