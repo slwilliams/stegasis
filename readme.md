@@ -11,8 +11,8 @@ Example Usage
     # Prepare an existing video file
     $ stegasis format --alg=dctp --pass=password123 --cap=40 video.mp4
      
-    # We can now mount the video file
-    $ stegasis mount --alg=dctp --pass=password123 video.mp4 /mnt/volume
+    # We can now mount the output video file
+    $ stegasis mount --alg=dctp --pass=password123 video.mkv /mnt/volume
  
     # Create a file inside the file system
     $ echo "test" > /mnt/volume/test.txt
@@ -23,7 +23,7 @@ Example Usage
 
 Detailed Options
 -----------------
-    stegasis <command> [-p,-g,-f] --alg=<alg> --pass=<pass> --cap=<capacity> <video_path> <mount_point>
+    stegasis <command> [-p,-f] --alg=<alg> --pass=<pass> [--pass2=<pass2>] --cap=<capacity> <video_path> <mount_point>
 
 Commands:
   * format  Formats a video for use with stegasis
@@ -33,6 +33,7 @@ Flags:
   * --alg  Embedding algorithm to use, see below
   * --cap  Percentage of frame to embed within in percent
   * --pass  Passphrase used for encrypting and permuting data
+  * --pass2 Pasphrase used for encrypting and permuting the hidden volume
   * -p  Do not flush writes to disk until unmount
   * -f  Force FFmpeg decoder to be used
 
@@ -56,10 +57,3 @@ To run Stegasis you will need the FUSE package installed <http://fuse.sourceforg
 
 sudo addgroup username fuse
 
-If you experience audio sync issues run the following command to convert your video to 25 FPS:
-
-ffmpeg -i input.mp4 -qscale 0 -r 25 -y output.mp4
-
-libc6-dev-i386
-
-sudo apt-get install gcc-4.8-multilib g++-4.8-multilib

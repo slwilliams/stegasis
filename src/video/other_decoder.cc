@@ -155,7 +155,8 @@ class JPEGDecoder : public VideoDecoder {
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
       }
-      string muxCommand = "ffmpeg -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.mp3 -codec copy -shortest output.mkv";
+      string newFilePath = this->filePath.substr(0, this->filePath.find_last_of(".") + 1) + "mkv";
+      string muxCommand = "ffmpeg -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.mp3 -codec copy -shortest " + newFilePath;
       exec((char *)muxCommand.c_str());
     };
     virtual void writeBack() {
