@@ -111,7 +111,7 @@ class MP4Decoder : public VideoDecoder {
     };                                     
     virtual Chunk *getHeaderFrame() {
       if (this->hidden) {
-        return this->getFrame(this->numberOfFrames() / 2);
+        return this->getFrame(this->getNumberOfFrames() / 2);
       } else {
         return this->getFrame(0);
       }
@@ -119,7 +119,7 @@ class MP4Decoder : public VideoDecoder {
     virtual int getFileSize() {
       return 100;
     };                                                 
-    virtual int numberOfFrames() {
+    virtual int getNumberOfFrames() {
       return this->totalFrames; 
     };
     virtual void getNextFrameOffset(int *frame, int *offset) {
@@ -130,10 +130,10 @@ class MP4Decoder : public VideoDecoder {
       this->nextFrame = frame;
       this->nextOffset = offset;
     };
-    virtual int frameHeight() {
+    virtual int getFrameHeight() {
       return this->height; 
     };
-    virtual int frameWidth() {
+    virtual int getFrameWidth() {
       return this->width; 
     };
     virtual void setCapacity(char capacity) { 
@@ -142,7 +142,7 @@ class MP4Decoder : public VideoDecoder {
     virtual void setHiddenVolume() {
       this->hidden = true;
     };
-    virtual int frameSize() {
+    virtual int getFrameSize() {
       return (int)floor(this->width * this->height * 63 * (capacity / 100.0) * 2);
     };
 };
