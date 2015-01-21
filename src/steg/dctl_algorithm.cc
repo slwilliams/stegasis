@@ -10,8 +10,8 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
       this->dec = dec;
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
-      *row = frameByte / (DCTSIZE2 * this->dec->frameWidth());
-      *block = (frameByte - *row * this->dec->frameWidth() * DCTSIZE2) / DCTSIZE2;
+      *row = frameByte / (DCTSIZE2 * this->dec->getFrameWidth());
+      *block = (frameByte - *row * this->dec->getFrameWidth() * DCTSIZE2) / DCTSIZE2;
       if (*block < 0) *block = 0;
       *co = frameByte % DCTSIZE2;
     };

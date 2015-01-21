@@ -275,7 +275,7 @@ class AVIDecoder : public VideoDecoder {
     };                                     
     virtual Chunk *getHeaderFrame() {
       if (this->hidden) {
-        return new AviChunkWrapper(&this->frameChunks[this->numberOfFrames()/2]);
+        return new AviChunkWrapper(&this->frameChunks[this->getNumberOfFrames()/2]);
       } else {
         return new AviChunkWrapper(&this->frameChunks[0]);
       }
@@ -283,7 +283,7 @@ class AVIDecoder : public VideoDecoder {
     virtual int getFileSize() {
       return this->riffHeader.fileSize; 
     };                                                 
-    virtual int numberOfFrames() {
+    virtual int getNumberOfFrames() {
       return this->aviHeader.totalFrames; 
     };
     virtual void getNextFrameOffset(int *frame, int *offset) {
@@ -294,10 +294,10 @@ class AVIDecoder : public VideoDecoder {
        this->nextFrame = frame;
        this->nextOffset = offset;
     };
-    virtual int frameHeight() {
+    virtual int getFrameHeight() {
       return this->aviHeader.height;  
     };
-    virtual int frameWidth() {
+    virtual int getFrameWidth() {
       return this->aviHeader.width; 
     };
     virtual void setCapacity(char capacity) { 
@@ -306,7 +306,7 @@ class AVIDecoder : public VideoDecoder {
     virtual void setHiddenVolume() {
       this->hidden = true;  
     };
-    virtual int frameSize() {
+    virtual int getFrameSize() {
       // 24 bits per pixel
       return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
     };

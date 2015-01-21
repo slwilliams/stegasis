@@ -22,9 +22,9 @@ class LSB2Algorithm : public SteganographicAlgorithm {
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
       int fileSize = this->dec->getFileSize();
-      int numFrames = this->dec->numberOfFrames();
-      int height = this->dec->frameHeight();
-      int width = this->dec->frameWidth();
+      int numFrames = this->dec->getNumberOfFrames();
+      int height = this->dec->getFrameHeight();
+      int width = this->dec->getFrameWidth();
       memcpy(salt, &fileSize, 4); 
       memcpy(salt + 4, &numFrames, 4); 
       memcpy(salt + 8, &height, 4); 
@@ -35,7 +35,7 @@ class LSB2Algorithm : public SteganographicAlgorithm {
           (const unsigned char *)salt, 16, 32, 0) ;
       int lcgKey = key[0] | key[1] << 8 | key[2] << 16 | key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
-      this->lcg = LCG(this->dec->frameSize(), lcgKey);
+      this->lcg = LCG(this->dec->getFrameSize(), lcgKey);
     };
     virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
       char *frame = c->getFrameData(0);
