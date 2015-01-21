@@ -126,13 +126,13 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   if (pass2 != "") {
     // Hidden volume requested, write random data to every frame
     printf("Writing random data to video frames...\n");
-    char *randomData = (char *)malloc(sizeof(char) * dec->frameSize()/8);
-    for (int i = 0; i < dec->frameSize()/8; i ++) {
+    char *randomData = (char *)malloc(sizeof(char) * dec->getFrameSize()/8);
+    for (int i = 0; i < dec->getFrameSize()/8; i ++) {
       randomData[i] = (char)rand();
     }
-    for (int i = 0; i < dec->numberOfFrames(); i ++) {
-      loadBar(i, dec->numberOfFrames() - 1, 50);
-      alg->embed(dec->getFrame(i), randomData, dec->frameSize() / 8, 0);
+    for (int i = 0; i < dec->getNumberOfFrames(); i ++) {
+      loadBar(i, dec->getNumberOfFrames() - 1, 50);
+      alg->embed(dec->getFrame(i), randomData, dec->getFrameSize() / 8, 0);
     }
   }
 
@@ -152,13 +152,13 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   // Make sure the header is written back
   headerFrame->setDirty();
 
-  int totalCapacity = (int)floor((dec->numberOfFrames() * (dec->frameSize() / 8000) * (capacity / 100.0)));
+  int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
   printf("Volume capacity: %.2fMB\n", totalCapacity/1000.0); 
-  printf("Frame size: %dB\n", dec->frameSize());
+  printf("Frame size: %dB\n", dec->getFrameSize());
 
   if (pass2 != "") {
     // Hidden volume requested
-    Chunk *headerFrame2 = dec->getFrame(dec->numberOfFrames() / 2);
+    Chunk *headerFrame2 = dec->getFrame(dec->getNumberOfFrames() / 2);
     SteganographicAlgorithm *alg2 = getAlg(algorithm, pass2, dec);
 
     char header2[4] = {'S', 'T', 'E', 'G'};
@@ -228,7 +228,7 @@ void printName() {
 
 void printUsage() {
   printf("\nStegasis usage:\n");
-  printf("  stegasis <command> [-p,-g] --alg=<alg> --pass=<pass> --cap=<capacity> <video_path> <mount_point>\n");
+  printf("  stegasis <command> [-p,-g] --alg=<alg> --pass=<pass> [--pass2=<pass2>] --cap=<capacity> <video_path> <mount_point>\n");
   printf("-----------------------------------------------------------------\n");
   printf("Example useage:\n");
   printf("  stegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");

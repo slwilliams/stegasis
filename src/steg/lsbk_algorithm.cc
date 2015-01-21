@@ -19,9 +19,9 @@ class LSBKAlgorithm : public SteganographicAlgorithm {
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
       int fileSize = this->dec->getFileSize();
-      int numFrames = this->dec->numberOfFrames();
-      int height = this->dec->frameHeight();
-      int width = this->dec->frameWidth();
+      int numFrames = this->dec->getNumberOfFrames();
+      int height = this->dec->getFrameHeight();
+      int width = this->dec->getFrameWidth();
       memcpy(salt, &fileSize, 4); 
       memcpy(salt + 4, &numFrames, 4); 
       memcpy(salt + 8, &height, 4); 

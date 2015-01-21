@@ -17,12 +17,12 @@ class VideoDecoder {
     virtual Chunk *getFrame(int frame) = 0;
     virtual Chunk *getHeaderFrame() = 0;
     virtual int getFileSize() = 0;
-    virtual int numberOfFrames() = 0;
+    virtual int getNumberOfFrames() = 0;
     virtual void getNextFrameOffset(int *frame, int *offset) = 0;
     virtual void setNextFrameOffset(int frame, int offset) = 0;
-    virtual int frameSize() = 0;
-    virtual int frameHeight() = 0;
-    virtual int frameWidth() = 0;
+    virtual int getFrameSize() = 0;
+    virtual int getFrameHeight() = 0;
+    virtual int getFrameWidth() = 0;
     virtual void writeBack() = 0;
     virtual void setCapacity(char capacity) = 0;
     virtual void setHiddenVolume() = 0;

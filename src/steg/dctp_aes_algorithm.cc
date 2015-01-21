@@ -23,10 +23,10 @@ class DCTAAlgorithm : public SteganographicAlgorithm {
       this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
-      int numFrames = this->dec->numberOfFrames();
-      int frameSize = this->dec->frameSize();
-      int width = this->dec->frameWidth();
-      int height = this->dec->frameHeight();
+      int numFrames = this->dec->getNumberOfFrames();
+      int frameSize = this->dec->getFrameSize();
+      int width = this->dec->getFrameWidth();
+      int height = this->dec->getFrameHeight();
       memcpy(salt, &height, 4);
       memcpy(salt + 4, &numFrames, 4);
       memcpy(salt + 8, &frameSize, 4);
@@ -38,13 +38,13 @@ class DCTAAlgorithm : public SteganographicAlgorithm {
           (const unsigned char *)salt, 16, 32, 0);
       int lcgKey = key[0] | key[1] << 8 | key[2] << 16 | key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
-      this->lcg = LCG(frameSize+(dec->frameWidth() * dec->frameHeight()), lcgKey, true);
+      this->lcg = LCG(frameSize+(dec->getFrameWidth() * dec->getFrameHeight()), lcgKey, true);
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
       //height is num of rows, width is the 
       //width is blocks per row
-      *row = frameByte / (DCTSIZE2 * this->dec->frameWidth());
-      *block = (frameByte - *row * this->dec->frameWidth() * DCTSIZE2) / DCTSIZE2;
+      *row = frameByte / (DCTSIZE2 * this->dec->getFrameWidth());
+      *block = (frameByte - *row * this->dec->getFrameWidth() * DCTSIZE2) / DCTSIZE2;
       if (*block < 0) *block = 0;
       *co = frameByte % DCTSIZE2;
     };

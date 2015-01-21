@@ -56,7 +56,7 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
     int currentFrame;
     this->decoder->getNextFrameOffset(&currentFrame, &currentFrameOffset);
     if (currentFrame == 1 && currentFrameOffset == 0) {
-      currentFrame = (this->decoder->numberOfFrames() / 2) + 1;
+      currentFrame = (this->decoder->getNumberOfFrames() / 2) + 1;
       this->decoder->setNextFrameOffset(currentFrame, 0);
     }
   }
@@ -101,18 +101,18 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
       if (triple.frame > nextFrame) {
         nextFrame = triple.frame;
         nextOffset = triple.offset + triple.bytes;
-        if (nextOffset > this->decoder->frameSize() / 8) {
+        if (nextOffset > this->decoder->getFrameSize() / 8) {
           // Chunk spanning multiple frames...
-          nextFrame += nextOffset / (this->decoder->frameSize() / 8);
-          nextOffset %= (this->decoder->frameSize() / 8); 
+          nextFrame += nextOffset / (this->decoder->getFrameSize() / 8);
+          nextOffset %= (this->decoder->getFrameSize() / 8); 
         }
       } else if (triple.frame == nextFrame) {
         if (triple.offset + triple.bytes > nextOffset) {
           nextOffset = triple.offset + triple.bytes;
-          if (nextOffset > this->decoder->frameSize() / 8) {
+          if (nextOffset > this->decoder->getFrameSize() / 8) {
             // Chunk spanning multiple frames...
-            nextFrame += nextOffset / (this->decoder->frameSize() / 8);
-            nextOffset %= (this->decoder->frameSize() / 8); 
+            nextFrame += nextOffset / (this->decoder->getFrameSize() / 8);
+            nextOffset %= (this->decoder->getFrameSize() / 8); 
           }
         }
       }
@@ -245,7 +245,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
     if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
         struct tripleT t1 = triples.at(i);
-        int frameSizeBytes = this->decoder->frameSize() / 8;
+        int frameSizeBytes = this->decoder->getFrameSize() / 8;
         bool spansMultipleFrames = ((int)t1.bytes + (int)t1.offset) > frameSizeBytes;
         if (spansMultipleFrames) {
           // This chunk spans multiple frames, deal with it seperatly
@@ -397,7 +397,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
       
       struct tripleT triple;
-      int bytesLeftInFrame = this->decoder->frameSize() - nextOffset * 8;  
+      int bytesLeftInFrame = this->decoder->getFrameSize() - nextOffset * 8;  
       // *8 since it takes 8 bytes to embed one byte
       if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
         triple.bytes = size - bytesWritten;
@@ -448,7 +448,7 @@ int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
 
 void SteganographicFileSystem::writeHeader() {
   this->compactHeader();
-  char *header = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+  char *header = (char *)malloc(this->decoder->getFrameSize() * sizeof(char));
   int headerBytes = 0;
   int offset = 0;
   Chunk *headerFrame = this->decoder->getHeaderFrame();
@@ -463,7 +463,7 @@ void SteganographicFileSystem::writeHeader() {
     // Embed all the triples
     int embedded = 0;
     for (struct tripleT t : f.second) {
-      if (offset > (this->decoder->frameSize() / 8) - 50) break;
+      if (offset > (this->decoder->getFrameSize() / 8) - 50) break;
       memcpy(header + offset, (char *)&t, sizeof(tripleT));
       offset += sizeof(tripleT);
       embedded ++;
@@ -473,7 +473,7 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += f.first.length() + 1;
     headerBytes += 4;
     headerBytes += sizeof(tripleT)*embedded;
-    if (offset > (this->decoder->frameSize() / 8) - 50) break;
+    if (offset > (this->decoder->getFrameSize() / 8) - 50) break;
   }
   // Embed dirs
   for (auto d : this->dirs) {
@@ -523,7 +523,7 @@ void SteganographicFileSystem::compactHeader() {
         i ++;
       }
     }
-    char *tmp = (char *)malloc(this->decoder->frameSize() * sizeof(char));
+    char *tmp = (char *)malloc(this->decoder->getFrameSize() * sizeof(char));
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
@@ -549,7 +549,7 @@ void SteganographicFileSystem::compactHeader() {
       struct tripleT current = f.second.at(i);
       struct tripleT next = f.second.at(i+1);
       // TODO: This wont' work for the case where 2 spanning chunks sandwich a normal chunk...
-      if (next.offset == 0 && current.offset + current.bytes == (this->decoder->frameSize() / 8) * framesAhead) {
+      if (next.offset == 0 && current.offset + current.bytes == (this->decoder->getFrameSize() / 8) * framesAhead) {
         current.bytes += next.bytes;
         f.second[i] = current;
         f.second.erase(f.second.begin() + i+1);
