@@ -1,7 +1,7 @@
-LIB = -L ../lib/crypto/ -L ../lib/libjpeg/ -L ../lib/gflags/ -lgflags -lcryptopp -ljpeg
+LIB = -L ../lib/crypto/ -L ../lib/libjpeg/ -L ../lib/gflags/ -L ../lib/ffmpeg/libavcodec/ -L ../lib/ffmpeg/libavformat -L ../lib/ffmpeg/libavutil -ldl -pthread -static -lavformat -lavcodec -lbz2 -lz -lswresample -lswscale -lavutil -lm -lgflags -lcryptopp -ljpeg
 INCLUDE = -I . -I ../lib
-CFLAGS = $(LIB) -DFUSE_USE_VERSION=26 `pkg-config fuse --cflags` 
-LINKFLAGS = $(LIB) `pkg-config fuse --libs`
+CFLAGS = -DFUSE_USE_VERSION=26 -ldl `pkg-config fuse --cflags` $(LIB)
+LINKFLAGS = -ldl `pkg-config fuse --libs` $(LIB)
 
 all: main
 
