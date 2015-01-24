@@ -602,6 +602,7 @@ static int alloc_picture_tables(MpegEncContext *s, Picture *pic)
             return AVERROR(ENOMEM);
     }
 
+    
     if (s->out_format == FMT_H263 || s->encoding || s->avctx->debug_mv ||
         (s->avctx->flags2 & CODEC_FLAG2_EXPORT_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);

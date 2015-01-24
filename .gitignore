@@ -1,6 +1,7 @@
 *.swp
 *.d
 *.o
+*.a
 *.exe
 stegasis
 src/site/public/images*
@@ -10,3 +11,9 @@ doc/*.dvi
 doc/*.out
 doc/*.gz
 doc/*.toc
+lib/ffmpeg/ffmpeg
+lib/ffmpeg/ffmpeg_g
+lib/ffmpeg/ffprobe
+lib/ffmpeg/ffprobe_g
+lib/ffmpeg/ffserver
+lib/ffmpeg/ffserver_g
