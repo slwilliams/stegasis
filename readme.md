@@ -40,7 +40,7 @@ Flags:
 Embedding Algorithms:
   * Uncompressed AVI only:
     * lsb: Least Significant Bit Sequential Embedding
-    * lsbk: LSB Sequential Embedding XOR'd with a psudo random stream
+    * lsbk: LSB Sequential Embedding XORd with a psudo random stream
     * lsbp: LSB Permuted Embedding using a seeded LCG
     * lsb2: Combination of lsbk and lsbp
   * Other video formats:
@@ -56,4 +56,7 @@ Notes
 To run Stegasis you will need the FUSE package installed <http://fuse.sourceforge.net>
 
 sudo addgroup username fuse
+
+Compile ffmpeg:
+./configure --enable-static  --disable-shared --extra-libs=-static --extra-cflags=--static --enable-gpl --enable-version3 --enable-nonfree --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libfaac --enable-libgsm --enable-libmp3lame --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libxvid
 

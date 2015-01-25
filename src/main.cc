@@ -112,13 +112,13 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
 
 void doFormat(string algorithm, string pass, string pass2, int capacity, string videoPath) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
-  VideoDecoder *dec = NULL; 
-  //VideoDecoder *dec = (VideoDecoder *)new MP4Decoder(videoPath);
-  if (FLAGS_f) {
+  //VideoDecoder *dec = NULL; 
+  VideoDecoder *dec = (VideoDecoder *)new MP4Decoder(videoPath);
+  /*if (FLAGS_f) {
     dec = (VideoDecoder *)new JPEGDecoder(videoPath, true);
   } else {
     dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, true);
-  }
+  }*/
   exit(0);
   SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
 

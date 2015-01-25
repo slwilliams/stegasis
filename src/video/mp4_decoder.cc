@@ -42,6 +42,128 @@ class MP4ChunkWrapper : public Chunk {
     };
 };
 
+static int open_output_file(AVFormatContext *ifmt_ctx, AVFormatContext *ofmt_ctx, const char *filename)
+{
+    AVStream *out_stream;
+    AVStream *in_stream;
+    AVCodecContext *dec_ctx, *enc_ctx;
+    AVCodec *encoder;
+    int ret;
+    unsigned int i;
+
+    ofmt_ctx = NULL;
+    avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, filename);
+    if (!ofmt_ctx) {
+        av_log(NULL, AV_LOG_ERROR, "Could not create output context\n");
+        return AVERROR_UNKNOWN;
+    }
+
+
+    for (i = 0; i < ifmt_ctx->nb_streams; i++) {
+        out_stream = avformat_new_stream(ofmt_ctx, NULL);
+        if (!out_stream) {
+            av_log(NULL, AV_LOG_ERROR, "Failed allocating output stream\n");
+            return AVERROR_UNKNOWN;
+        }
+
+        in_stream = ifmt_ctx->streams[i];
+        dec_ctx = in_stream->codec;
+        enc_ctx = out_stream->codec;
+
+        if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO
+                || dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+            /* in this example, we choose transcoding to same codec */
+            encoder = avcodec_find_encoder(dec_ctx->codec_id);
+            if (!encoder) {
+                av_log(NULL, AV_LOG_FATAL, "Neccessary encoder not found\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            /* In this example, we transcode to same properties (picture size,
+             * sample rate etc.). These properties can be changed for output
+             * streams easily using filters */
+            if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+                enc_ctx->height = dec_ctx->height;
+                enc_ctx->width = dec_ctx->width;
+                enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
+                /* take first format from list of supported formats */
+                enc_ctx->pix_fmt = encoder->pix_fmts[0];
+                /* video time_base can be set to whatever is handy and supported by encoder */
+                enc_ctx->time_base = dec_ctx->time_base;
+            } else {
+                enc_ctx->sample_rate = dec_ctx->sample_rate;
+                enc_ctx->channel_layout = dec_ctx->channel_layout;
+                enc_ctx->channels = av_get_channel_layout_nb_channels(enc_ctx->channel_layout);
+                /* take first format from list of supported formats */
+                enc_ctx->sample_fmt = encoder->sample_fmts[0];
+                enc_ctx->time_base = (AVRational){1, enc_ctx->sample_rate};
+            }
+
+            /* Third parameter can be used to pass settings to encoder */
+             
+enc_ctx->bit_rate = 500*1000;
+          enc_ctx->bit_rate_tolerance = 0;
+          enc_ctx->rc_max_rate = 0;
+          enc_ctx->rc_buffer_size = 0;
+          enc_ctx->gop_size = 40;
+          enc_ctx->max_b_frames = 3;
+          enc_ctx->b_frame_strategy = 1;
+          enc_ctx->coder_type = 1;
+          enc_ctx->me_cmp = 1;
+          enc_ctx->me_range = 16;
+          enc_ctx->qmin = 10;
+          enc_ctx->qmax = 51;
+          enc_ctx->scenechange_threshold = 40;
+          enc_ctx->flags |= CODEC_FLAG_LOOP_FILTER;
+          enc_ctx->me_method = ME_HEX;
+          enc_ctx->me_subpel_quality = 5;
+          enc_ctx->i_quant_factor = 0.71;
+          enc_ctx->qcompress = 0.6;
+          enc_ctx->max_qdiff = 4;
+
+            ret = avcodec_open2(enc_ctx, encoder, NULL);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Cannot open video encoder for stream #%u\n", i);
+                return ret;
+            }
+        } else if (dec_ctx->codec_type == AVMEDIA_TYPE_UNKNOWN) {
+            av_log(NULL, AV_LOG_FATAL, "Elementary stream #%d is of unknown type, cannot proceed\n", i);
+            return AVERROR_INVALIDDATA;
+        } else {
+            /* if this stream must be remuxed */
+            ret = avcodec_copy_context(ofmt_ctx->streams[i]->codec,
+                    ifmt_ctx->streams[i]->codec);
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Copying stream context failed\n");
+                return ret;
+            }
+        }
+
+        if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
+            enc_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+    }
+    av_dump_format(ofmt_ctx, 0, filename, 1);
+
+    if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+        ret = avio_open(&ofmt_ctx->pb, filename, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Could not open output file '%s'", filename);
+            return ret;
+        }
+    }
+
+    /* init muxer, write output file header */
+    ret = avformat_write_header(ofmt_ctx, NULL);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error occurred when opening output file\n");
+        return ret;
+    }
+
+    return 0;
+}
+
+
 static int open_codec_context(int *stream_idx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
   int ret;
   AVStream *st;
@@ -100,11 +222,11 @@ static int decode_packet(AVFormatContext *fmt, AVPacket pkt, AVFrame *frame, AVC
               AVMotionVector *mvs = (AVMotionVector *)sd->data;
               for (i = 0; i < sd->size / sizeof(*mvs); i++) {
                   AVMotionVector *mv = &mvs[i];
-                  /*printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%" PRIx64"\n",
+/*                  printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%" PRIx64"\n",
                          0, mv->source,
                          mv->w, mv->h, mv->src_x, mv->src_y,
-                         mv->dst_x, mv->dst_y, mv->flags);*/
-                  mv->dst_x=20;
+                         mv->dst_x, mv->dst_y, mv->flags);
+ */                 mv->dst_x=20;
                   mv->dst_y=20;
               }
           }
@@ -135,6 +257,7 @@ class MP4Decoder : public VideoDecoder {
   public:
     MP4Decoder(string filePath): filePath(filePath) {
       AVFormatContext *fmt_ctx = NULL;                                         
+      AVFormatContext *out_ctx = NULL;                                         
       AVCodecContext *video_dec_ctx = NULL;                                    
       AVStream *video_stream = NULL;                                           
       const char *src_filename = NULL;                                         
@@ -168,7 +291,10 @@ class MP4Decoder : public VideoDecoder {
 
       // Dump information about file onto standard error
       av_dump_format(fmt_ctx, 0, filePath.c_str(), false);
-      
+
+      string out = "/tmp/out.mp4";
+      int ret = open_output_file(fmt_ctx, out_ctx, out.c_str()); 
+      printf("Red: %d\n", ret); 
       if (!video_stream) {
         printf("Could not fine video stream.\n");
         exit(0);
