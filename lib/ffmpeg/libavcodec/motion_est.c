@@ -887,6 +887,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 void ff_estimate_p_frame_motion(MpegEncContext * s,
                                 int mb_x, int mb_y)
 {
+    printf("I AM CALLED------------------------\n");
     MotionEstContext * const c= &s->me;
     uint8_t *pix, *ppix;
     int sum, mx, my, dmin;
