@@ -35,7 +35,7 @@ STRIP=strip
 CP=cp -p
 LN_S=ln -s -f
 CPPFLAGS= -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -DZLIB_CONST
-CFLAGS=  --static -std=c99 -fomit-frame-pointer -pthread  -g -Wdeclaration-after-statement -Wall -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes -Wno-pointer-to-int-cast -Wstrict-prototypes -Wempty-body -Wno-parentheses -Wno-switch -Wno-format-zero-length -Wno-pointer-sign -O3 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes -Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized
+CFLAGS=  --static -std=c99 -fomit-frame-pointer -pthread -I/usr/local/include -g -Wdeclaration-after-statement -Wall -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes -Wno-pointer-to-int-cast -Wstrict-prototypes -Wempty-body -Wno-parentheses -Wno-switch -Wno-format-zero-length -Wno-pointer-sign -O3 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes -Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized
 CXXFLAGS=  -D__STDC_CONSTANT_MACROS
 ASFLAGS=  --static -g
 AS_C=-c
@@ -95,7 +95,7 @@ TARGET_SAMPLES=$(SAMPLES)
 CFLAGS-ffplay=
 ZLIB=-lz
 LIB_INSTALL_EXTRA_CMD=$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"
-EXTRALIBS=-lxvidcore -lx264 -lpthread -lm -ldl -lvorbisenc -lvorbis -logg -ltheoraenc -ltheoradec -logg -lopencore-amrwb -lopencore-amrnb -lmp3lame -lgsm -lfaac -lm -lbz2 -lz -pthread -static 
+EXTRALIBS=-lxvidcore -L/usr/local/lib -lx264 -lpthread -lm -ldl -lvorbisenc -lvorbis -logg -ltheoraenc -ltheoradec -logg -lopencore-amrwb -lopencore-amrnb -lmp3lame -lgsm -lfaac -lm -lbz2 -lz -pthread -static 
 COMPAT_OBJS=
 EXEOBJS=
 INSTALL=install

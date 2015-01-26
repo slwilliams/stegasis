@@ -1057,6 +1057,7 @@ enc_encode(Encoder * pEnc,
 			   xvid_enc_frame_t * xFrame,
 			   xvid_enc_stats_t * stats)
 {
+  printf("maybe hello\n");
 	xvid_enc_frame_t * frame;
 	int type;
 	Bitstream bs;
