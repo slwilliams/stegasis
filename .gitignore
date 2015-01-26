@@ -21,3 +21,4 @@ lib/ffmpeg/doc/*
 *.so.*
 *.56
 *.ver
+*.pc
