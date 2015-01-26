@@ -18,6 +18,6 @@ lib/ffmpeg/ffprobe_g
 lib/ffmpeg/ffserver
 lib/ffmpeg/ffserver_g
 lib/ffmpeg/doc/*
-*.so
+*.so.*
 *.56
-
+*.ver
