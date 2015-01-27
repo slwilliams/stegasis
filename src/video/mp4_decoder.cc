@@ -212,9 +212,7 @@ static int decode_packet(AVFormatContext *fmt, AVPacket pkt, AVFrame *frame, AVC
 
       if (*got_frame) {
           int i;
-          if (frame->motion_val[0]) {
-            printf("yay?\n");
-          }
+          printf("got frame\n");
           AVFrameSideData *sd;
 
           sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
@@ -222,12 +220,10 @@ static int decode_packet(AVFormatContext *fmt, AVPacket pkt, AVFrame *frame, AVC
               AVMotionVector *mvs = (AVMotionVector *)sd->data;
               for (i = 0; i < sd->size / sizeof(*mvs); i++) {
                   AVMotionVector *mv = &mvs[i];
-/*                  printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%" PRIx64"\n",
+                  printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%" PRIx64"\n",
                          0, mv->source,
                          mv->w, mv->h, mv->src_x, mv->src_y,
                          mv->dst_x, mv->dst_y, mv->flags);
- */                 mv->dst_x=20;
-                  mv->dst_y=20;
               }
           }
       }
@@ -294,7 +290,6 @@ class MP4Decoder : public VideoDecoder {
 
       string out = "/tmp/out.mp4";
       int ret = open_output_file(fmt_ctx, out_ctx, out.c_str()); 
-      printf("Red: %d\n", ret); 
       if (!video_stream) {
         printf("Could not fine video stream.\n");
         exit(0);

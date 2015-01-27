@@ -1524,7 +1524,7 @@ x264_t *x264_encoder_open( x264_param_t *param )
     mbcmp_init( h );
     chroma_dsp_init( h );
 
-    p = buf + sprintf( buf, "using cpu capabilities ROFL4:" );
+    p = buf + sprintf( buf, "using cpu capabilities ROFL5:" );
     for( int i = 0; x264_cpu_names[i].flags; i++ )
     {
         if( !strcmp(x264_cpu_names[i].name, "SSE")
@@ -2722,7 +2722,9 @@ static intptr_t x264_slice_write( x264_t *h )
         else
             x264_macroblock_cache_load_progressive( h, i_mb_x, i_mb_y );
 
+        h->mb.cache.mv[0][0][0] *= -1;
         x264_macroblock_analyse( h );
+
 
         /* encode this macroblock -> be careful it can change the mb type to P_SKIP if needed */
 reencode:

@@ -598,7 +598,6 @@ void x264_predict_lossless_16x16( x264_t *h, int p, int i_mode )
 // I am called
 static ALWAYS_INLINE void x264_macroblock_encode_internal( x264_t *h, int plane_count, int chroma )
 {
-     
     int i_qp = h->mb.i_qp;
     int b_decimate = h->mb.b_dct_decimate;
     int b_force_no_skip = 0;

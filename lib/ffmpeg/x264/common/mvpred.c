@@ -33,8 +33,10 @@ void x264_mb_predict_mv( x264_t *h, int i_list, int idx, int i_width, int16_t mv
     const int i_ref= h->mb.cache.ref[i_list][i8];
     int     i_refa = h->mb.cache.ref[i_list][i8 - 1];
     int16_t *mv_a  = h->mb.cache.mv[i_list][i8 - 1];
+    printf("mv_a ilist: %d, i8: %d\n", i_list, i8-1);
     int     i_refb = h->mb.cache.ref[i_list][i8 - 8];
     int16_t *mv_b  = h->mb.cache.mv[i_list][i8 - 8];
+    printf("mv_b ilist: %d, i8: %d\n", i_list, i8-8);
     int     i_refc = h->mb.cache.ref[i_list][i8 - 8 + i_width];
     int16_t *mv_c  = h->mb.cache.mv[i_list][i8 - 8 + i_width];
 
@@ -125,8 +127,6 @@ median:
     else
         goto median;
 
-   mv_a[0] += 10;
-   mv_b[0] += 10;
 }
 
 void x264_mb_predict_mv_16x16( x264_t *h, int i_list, int i_ref, int16_t mvp[2] )
