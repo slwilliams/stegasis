@@ -1,0 +1,19 @@
+Part II project progress report
+
+Name: Scott Williams
+Email: slw69@cam.ac.uk
+Title: Steganographic file systems within video files.
+Supervisor: Daniel Thomas
+Director of Studies: Ian Leslie
+Overseers: Peter Robinson and Robert Watson
+
+
+The project is currently 8 weeks ahead of schedule and no unexpected difficulties have arisen. The core project has been implemented and all of the proposed extension tasks have also been completed. A first draft of the dissertation has been produced and reviewed by my supervisor. Feedback is now being addressed and incorporated into the document.
+
+A complete software package has been developed enabling the embedding of arbitrary files within many video formats via a file system interface. A total of 11 steganographic embedding algorithms are currently supported, along with encryption (AES, TwoFish and Serpent) and plausible deniability functionality. Most ile system operations work as expected within the mounted volume (including directory structures) and the embedding process can operate without any perceivable impact on video quality. Embedding capacities in excess of 100% of the video size can be achieved (for example, allowing a 100 MB video file to contain within it, 150 MB of steganographically embedded data (this is possible due to lossless video compression)) and performance of the file system is adequate for general use providing read and write speeds on par with USB 3.0 devices.
+
+In particular, a native uncompressed AVI decoder has been produced, several steganographic embedding algorithms have been developed and a file system residing within video frames has been designed and implemented - satisfying the core project requirements.
+In addition, a second video decoder utilising FFmpeg and libjpeg was implemented allowing the program to operate on a large number of video formats via the embedding of data into JPEG images.
+Other implemented features include encrypting the embedded data via a user provided passphrase (using several well known encryption algorithms), permuting the embedded data throughout the video frame using a linear congruential generator, again using a user provided passphrase, and plausible deniability, allowing two independent file systems to reside within a single video, each mountable via separate passphrases.
+A user study was carried out obtaining 2057 data points from 21 users. This involved developing and hosting a web application to investigate the perceivable impact of steganographically embedding data into video files.
+

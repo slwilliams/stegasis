@@ -212,19 +212,21 @@ static int decode_packet(AVFormatContext *fmt, AVPacket pkt, AVFrame *frame, AVC
 
       if (*got_frame) {
           int i;
-          printf("got frame\n");
-          AVFrameSideData *sd;
+          if (frame->coded_picture_number == 10) {
+            printf("got frame: %d\n", frame->coded_picture_number);
+            AVFrameSideData *sd;
 
-          sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-          if (sd) {
-              AVMotionVector *mvs = (AVMotionVector *)sd->data;
-              for (i = 0; i < sd->size / sizeof(*mvs); i++) {
-                  AVMotionVector *mv = &mvs[i];
-                  printf("%d,%2d,%2d,%2d,%4d,%4d,%4d,%4d,0x%" PRIx64"\n",
-                         0, mv->source,
-                         mv->w, mv->h, mv->src_x, mv->src_y,
-                         mv->dst_x, mv->dst_y, mv->flags);
-              }
+            sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+            if (sd) {
+                AVMotionVector *mvs = (AVMotionVector *)sd->data;
+                for (i = 0; i < sd->size / sizeof(*mvs); i++) {
+                    AVMotionVector *mv = &mvs[i];
+                    printf("%2d, w: %2d, h: %2d, src_x: %4d, src_y: %4d, dx: %4d, dy: %4d\n",
+                           mv->source,
+                           mv->w, mv->h, mv->src_x, mv->src_y,
+                           mv->dst_x, mv->dst_y);
+                }
+            }
           }
       }
   }
