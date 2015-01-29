@@ -16,7 +16,7 @@
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
 
-struct tripleT {
+struct FileChunk {
   uint32_t frame;
   uint32_t offset;
   uint32_t bytes;
@@ -29,7 +29,7 @@ class SteganographicFileSystem {
     bool performance;
     Logger *log;
     std::unordered_map<std::string, int> fileSizes; 
-    std::unordered_map<std::string, std::vector<struct tripleT> > fileIndex; 
+    std::unordered_map<std::string, std::vector<struct FileChunk> > fileIndex; 
     std::unordered_map<std::string, bool> dirs;
     std::mutex mux;
     

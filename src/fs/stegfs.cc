@@ -91,10 +91,10 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     }
     int j = 0;
     int fileSize = 0;
-    this->fileIndex[fileName.c_str()] = std::vector<tripleT>();
+    this->fileIndex[fileName.c_str()] = std::vector<FileChunk>();
     for (j = 0; j < triples; j ++) {
-      struct tripleT triple;
-      memcpy(&triple, headerBytes + offset + i + j*sizeof(tripleT) + 4, sizeof(tripleT)); 
+      struct FileChunk triple;
+      memcpy(&triple, headerBytes + offset + i + j*sizeof(FileChunk) + 4, sizeof(FileChunk)); 
       printf("Triple: frame: %d, offset: %d, bytes: %d\n", triple.frame, triple.offset, triple.bytes);
       this->fileIndex[fileName.c_str()].push_back(triple);
       // Work out where we should start writing i.e. largest frame + offset
@@ -121,7 +121,7 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
      
     printf("Final filesize: %d\n", fileSize);
     this->fileSizes[fileName.c_str()] = fileSize;        
-    offset += i + j*sizeof(tripleT) + 4;
+    offset += i + j*sizeof(FileChunk) + 4;
   }
 
   this->decoder->setNextFrameOffset(nextFrame, nextOffset);
@@ -219,7 +219,7 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
   //printf("create called: %s\n", path);
   this->fileSizes[path] = 0;
-  this->fileIndex[path] = std::vector<struct tripleT>();
+  this->fileIndex[path] = std::vector<struct FileChunk>();
   return 0;
 };
 
@@ -237,14 +237,14 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   }
 
   this->mux.lock();
-  std::vector<tripleT> triples = this->fileIndex[path];
+  std::vector<FileChunk> triples = this->fileIndex[path];
   int bytesWritten = 0;
   int readBytes = 0;
   int i = 0;
-  for (struct tripleT t : triples) {
+  for (struct FileChunk t : triples) {
     if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
-        struct tripleT t1 = triples.at(i);
+        struct FileChunk t1 = triples.at(i);
         int frameSizeBytes = this->decoder->getFrameSize() / 8;
         bool spansMultipleFrames = ((int)t1.bytes + (int)t1.offset) > frameSizeBytes;
         if (spansMultipleFrames) {
@@ -356,7 +356,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
   // This now doesn't work due to the single chunk per file thing...
   // if offset > framesize div it with framesize and add this on to the frame number i think
-  for (struct tripleT t : this->fileIndex[path]) {
+  for (struct FileChunk t : this->fileIndex[path]) {
     if (byteCount + t.bytes > offset) {
       int chunkOffset = offset - byteCount;
       int bytesLeftInChunk = t.bytes - chunkOffset;
@@ -396,7 +396,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
       int nextOffset = 0;
       this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
       
-      struct tripleT triple;
+      struct FileChunk triple;
       int bytesLeftInFrame = this->decoder->getFrameSize() - nextOffset * 8;  
       // *8 since it takes 8 bytes to embed one byte
       if ((size - bytesWritten) * 8 < bytesLeftInFrame) {
@@ -462,17 +462,17 @@ void SteganographicFileSystem::writeHeader() {
     
     // Embed all the triples
     int embedded = 0;
-    for (struct tripleT t : f.second) {
+    for (struct FileChunk t : f.second) {
       if (offset > (this->decoder->getFrameSize() / 8) - 50) break;
-      memcpy(header + offset, (char *)&t, sizeof(tripleT));
-      offset += sizeof(tripleT);
+      memcpy(header + offset, (char *)&t, sizeof(FileChunk));
+      offset += sizeof(FileChunk);
       embedded ++;
     }
     memcpy(tripleOffset, (char *)&embedded, 4);
 
     headerBytes += f.first.length() + 1;
     headerBytes += 4;
-    headerBytes += sizeof(tripleT)*embedded;
+    headerBytes += sizeof(FileChunk)*embedded;
     if (offset > (this->decoder->getFrameSize() / 8) - 50) break;
   }
   // Embed dirs
@@ -511,8 +511,8 @@ void SteganographicFileSystem::compactHeader() {
     std::unordered_map<int, std::vector<int> > chunkOffsets = std::unordered_map<int, std::vector<int> >();
     int size = f.second.size();
     while (i < size - 1) {
-      struct tripleT current = f.second.at(i);
-      struct tripleT next = f.second.at(i+1);
+      struct FileChunk current = f.second.at(i);
+      struct FileChunk next = f.second.at(i+1);
       if (current.frame == next.frame && current.offset + current.bytes == next.offset) {
         chunkOffsets[i].push_back(next.offset);
         current.bytes += next.bytes;
@@ -527,7 +527,7 @@ void SteganographicFileSystem::compactHeader() {
     for (i = 0; i < f.second.size(); i ++) {
       loadBar(i+1, f.second.size(), 50);
       if (chunkOffsets[i].size() != 0) {
-        struct tripleT t = f.second[i];
+        struct FileChunk t = f.second[i];
         int bytesRead = 0;
         Chunk *c = this->decoder->getFrame(t.frame);
         for (int j : chunkOffsets[i]) {
@@ -546,8 +546,8 @@ void SteganographicFileSystem::compactHeader() {
     int framesAhead = 1;
     size = f.second.size();
     while (i < size - 1) {
-      struct tripleT current = f.second.at(i);
-      struct tripleT next = f.second.at(i+1);
+      struct FileChunk current = f.second.at(i);
+      struct FileChunk next = f.second.at(i+1);
       // TODO: This wont' work for the case where 2 spanning chunks sandwich a normal chunk...
       if (next.offset == 0 && current.offset + current.bytes == (this->decoder->getFrameSize() / 8) * framesAhead) {
         current.bytes += next.bytes;
