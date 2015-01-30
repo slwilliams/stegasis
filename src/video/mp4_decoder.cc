@@ -18,18 +18,18 @@ extern "C" {
 
 using namespace std;
 
-struct MP4Chunk {
+struct MP4Frame {
   bool dirty;
   int frame;
 };
 
-class MP4ChunkWrapper : public Chunk {
+class MP4FrameWrapper : public Frame {
   private:
-    MP4Chunk *c;
+    MP4Frame *c;
   public:
-    MP4ChunkWrapper(MP4Chunk *c): c(c) {};
+    MP4FrameWrapper(MP4Frame *c): c(c) {};
     virtual long getChunkSize() {
-      return this->chunkSize;
+      return this->frameSize;
     };
     virtual char *getFrameData(int n, int c) {
       return NULL;
@@ -42,8 +42,7 @@ class MP4ChunkWrapper : public Chunk {
     };
 };
 
-static int open_output_file(AVFormatContext *ifmt_ctx, AVFormatContext *ofmt_ctx, const char *filename)
-{
+static int open_output_file(AVFormatContext *ifmt_ctx, AVFormatContext *ofmt_ctx, const char *filename) {
     AVStream *out_stream;
     AVStream *in_stream;
     AVCodecContext *dec_ctx, *enc_ctx;
@@ -338,11 +337,11 @@ class MP4Decoder : public VideoDecoder {
       mtx.lock();
       mtx.unlock();
     };
-    virtual Chunk *getFrame(int frame) {
+    virtual Frame *getFrame(int frame) {
       mtx.lock();
       mtx.unlock();
     };                                     
-    virtual Chunk *getHeaderFrame() {
+    virtual Frame *getHeaderFrame() {
       if (this->hidden) {
         return this->getFrame(this->getNumberOfFrames() / 2);
       } else {

@@ -7,8 +7,11 @@
 #include <crypto/randpool.h>
 #include <crypto/whrlpool.h>
 
+#include "video/video_decoder.h"
 #include "steganographic_algorithm.h"
 #include "lcg.h"
+
+using namespace std;
 
 class DCTPAlgorithm : public SteganographicAlgorithm {
   private:
@@ -16,7 +19,7 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
     LCG lcg;
 
   public:
-    DCTPAlgorithm(std::string password, VideoDecoder *dec) {
+    DCTPAlgorithm(string password, VideoDecoder *dec) {
       this->password = password;
       this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
@@ -25,10 +28,10 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
       int frameSize = this->dec->getFrameSize();
       int width = this->dec->getFrameWidth();
       int height = this->dec->getFrameHeight();
-      memcpy(salt, &height, 4);
-      memcpy(salt + 4, &numFrames, 4);
-      memcpy(salt + 8, &frameSize, 4);
-      memcpy(salt + 12, &width, 4);
+      memcpy(salt, &numFrames, 4);
+      memcpy(salt + 4, &frameSize, 4);
+      memcpy(salt + 8, &width, 4);
+      memcpy(salt + 12, &height, 4);
       CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
       keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
           (const unsigned char *)this->password.c_str(), this->password.length(),
@@ -38,14 +41,12 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
       this->lcg = LCG(frameSize+(dec->getFrameWidth() * dec->getFrameHeight()), lcgKey, true);
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
-      //height is num of rows, width is the 
-      //width is blocks per row
       *row = frameByte / (DCTSIZE2 * this->dec->getFrameWidth());
       *block = (frameByte - *row * this->dec->getFrameWidth() * DCTSIZE2) / DCTSIZE2;
       if (*block < 0) *block = 0;
       *co = frameByte % DCTSIZE2;
     };
-    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+    virtual void embed(Frame *c, char *data, int dataBytes, int offset) {
       int frameByte = lcg.map[offset++];
       int row, block, co, comp;
       JBLOCKARRAY frame;
@@ -63,7 +64,7 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
         }
       }
     };
-    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+    virtual void extract(Frame *c, char *output, int dataBytes, int offset) {
       int frameByte = lcg.map[offset++];
       int row, block, co, comp;
       JBLOCKARRAY frame;

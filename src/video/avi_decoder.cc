@@ -15,29 +15,29 @@ struct RIFFHeader {
   char fileType[4];
 };
 
-struct AviChunk {
+struct AviFrame {
   char fourCC[4];
   int32_t chunkSize;
   char *frameData;
   bool dirty;
 };
 
-class AviChunkWrapper : public Chunk {
+class AviFrameWrapper : public Frame {
   private:
-    AviChunk *c;
+    AviFrame *f;
   public:
-    AviChunkWrapper(AviChunk *c): c(c) {};
-    virtual long getChunkSize() {
-      return c->chunkSize;
+    AviFrameWrapper(AviFrame *f): f(f) {};
+    virtual long getFrameSize() {
+      return f->chunkSize;
     };
     virtual char *getFrameData(int n=0, int com=0) {
-      return c->frameData;
+      return f->frameData;
     };
     virtual bool isDirty() {
-      return c->dirty;
+      return f->dirty;
     };
     virtual void setDirty() {
-      c->dirty = 1;
+      f->dirty = 1;
     };
 };
 
@@ -129,7 +129,7 @@ class AVIDecoder : public VideoDecoder {
     struct RIFFHeader riffHeader;
     struct AviHeader aviHeader;
     struct BitmapInfoHeader bitmapInfoHeader;
-    struct AviChunk *frameChunks;
+    struct AviFrame *frameChunks;
 
     long chunksOffset;
     int nextFrame = 1;
@@ -195,11 +195,11 @@ class AVIDecoder : public VideoDecoder {
       printf("chunkOffset: %lu\n", ftell(f));
       this->chunksOffset = ftell(f);
 
-      this->frameChunks = (AviChunk *)malloc(sizeof(AviChunk) * this->aviHeader.totalFrames);
+      this->frameChunks = (AviFrame *)malloc(sizeof(AviFrame) * this->aviHeader.totalFrames);
      
       // Now we can start reading chunks
       int i = 0;
-      struct AviChunk tempChunk;
+      struct AviFrame tempChunk;
       printf("Reading AVI chunks...\n");
       while (i < this->aviHeader.totalFrames) {
         loadBar(i, this->aviHeader.totalFrames - 1, 50);
@@ -270,14 +270,14 @@ class AVIDecoder : public VideoDecoder {
       }
       mtx.unlock();
     };
-    virtual Chunk *getFrame(int frame) {
-      return new AviChunkWrapper(&this->frameChunks[frame]); 
+    virtual Frame *getFrame(int frame) {
+      return new AviFrameWrapper(&this->frameChunks[frame]); 
     };                                     
-    virtual Chunk *getHeaderFrame() {
+    virtual Frame *getHeaderFrame() {
       if (this->hidden) {
-        return new AviChunkWrapper(&this->frameChunks[this->getNumberOfFrames()/2]);
+        return new AviFrameWrapper(&this->frameChunks[this->getNumberOfFrames()/2]);
       } else {
-        return new AviChunkWrapper(&this->frameChunks[0]);
+        return new AviFrameWrapper(&this->frameChunks[0]);
       }
     };
     virtual int getFileSize() {

@@ -9,9 +9,11 @@
 #include <crypto/aes.h>
 #include <crypto/modes.h>
 
-
+#include "video/video_decoder.h"
 #include "steganographic_algorithm.h"
 #include "lcg.h"
+
+using namespace std;
 
 class LSBAAlgorithm : public SteganographicAlgorithm {
   private:
@@ -19,19 +21,19 @@ class LSBAAlgorithm : public SteganographicAlgorithm {
     LCG lcg;
 
   public:
-    LSBAAlgorithm(std::string password, VideoDecoder *dec) {
+    LSBAAlgorithm(string password, VideoDecoder *dec) {
       this->password = password;
       this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
-      int fileSize = this->dec->getFileSize();
       int numFrames = this->dec->getNumberOfFrames();
-      int height = this->dec->getFrameHeight();
+      int frameSize = this->dec->getFrameSize();
       int width = this->dec->getFrameWidth();
-      memcpy(salt, &fileSize, 4); 
-      memcpy(salt + 4, &numFrames, 4); 
-      memcpy(salt + 8, &height, 4); 
-      memcpy(salt + 12, &width, 4); 
+      int height = this->dec->getFrameHeight();
+      memcpy(salt, &numFrames, 4);
+      memcpy(salt + 4, &frameSize, 4);
+      memcpy(salt + 8, &width, 4);
+      memcpy(salt + 12, &height, 4);
       CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
       keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
           (const unsigned char *)this->password.c_str(), this->password.length(),
@@ -40,7 +42,7 @@ class LSBAAlgorithm : public SteganographicAlgorithm {
       if (lcgKey < 0) lcgKey *= -1;
       this->lcg = LCG(this->dec->getFrameSize(), lcgKey);
     };
-    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+    virtual void embed(Frame *c, char *data, int dataBytes, int offset) {
       char *frame = c->getFrameData(0);
 
       CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption((unsigned char *)key, 
@@ -59,7 +61,7 @@ class LSBAAlgorithm : public SteganographicAlgorithm {
         }
       }
     };
-    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+    virtual void extract(Frame *c, char *output, int dataBytes, int offset) {
       char *frame = c->getFrameData(0);
 
       int frameByte = lcg.map[offset++];

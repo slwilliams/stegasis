@@ -139,9 +139,11 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
     }
   }
 
-  Chunk *headerFrame = dec->getFrame(0);
+  Frame *headerFrame = dec->getFrame(0);
   char header[4] = {'S', 'T', 'E', 'G'};
+  printf("one\n");
   alg->embed(headerFrame, header, 4, 0);
+  printf("one1\n");
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
@@ -161,7 +163,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
   if (pass2 != "") {
     // Hidden volume requested
-    Chunk *headerFrame2 = dec->getFrame(dec->getNumberOfFrames() / 2);
+    Frame *headerFrame2 = dec->getFrame(dec->getNumberOfFrames() / 2);
     SteganographicAlgorithm *alg2 = getAlg(algorithm, pass2, dec);
 
     char header2[4] = {'S', 'T', 'E', 'G'};

@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 #include "lcg.h"
@@ -32,18 +33,17 @@ int LCG::gcd(int u, int v) {
 LCG::LCG(int targetM, int key, bool zero) {
   this->zero = zero;
   this->trueM = targetM;
-  int n = 2;
-  while (true) {
-    n *= 2;
-    if (n >=targetM) {
-      break;
-    }
+
+  // Find the next largest power of 2 >= targetM
+  if ((targetM & (targetM - 1)) == 0) {
+    this->m = targetM;
+  } else {
+    this->m = pow(2, ceil(log(targetM)/log(2)));
   }
-  this->m = n;
 
   // To sasify Hull-Dobell Theorem
-  int tmpC = this->m-2;
-  while(true) {
+  int tmpC = this->m - 2;
+  while (true) { 
     if (gcd(tmpC, this->m) == 1)
       break;
     tmpC --;
@@ -66,8 +66,6 @@ LCG::LCG(int targetM, int key, bool zero) {
   }
 };
 
-LCG::LCG(int m, int c, int a, int trueM): m(m), c(c), a(a), trueM(trueM) {};
-
 void LCG::setSeed(int seed) {
   this->seed = (long long)seed;
 };
@@ -83,12 +81,4 @@ int LCG::iterate() {
     } while(this->seed >= this->trueM);
   }
   return (int)this->seed;
-};
-
-LCG LCG::getLCG() {
-  return LCG(this->m, this->c, this->a, this->trueM);
-};
-
-void LCG::debug() {
-  printf("m: %lld, c: %lld, a: %lld, trueM: %d\n", m, c, a, trueM);
 };

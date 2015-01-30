@@ -5,7 +5,7 @@
 
 class LSBAlgorithm : public SteganographicAlgorithm {
   public:
-    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+    virtual void embed(Frame *c, char *data, int dataBytes, int offset) {
       char *frame = c->getFrameData();
       for (int i = 0; i < dataBytes; i ++) {
         for (int j = 7; j >= 0; j --) {
@@ -17,7 +17,7 @@ class LSBAlgorithm : public SteganographicAlgorithm {
         }
       }
     };
-    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+    virtual void extract(Frame *c, char *output, int dataBytes, int offset) {
       char *frame = c->getFrameData();
       for (int i = 0; i < dataBytes; i ++) {
         output[i] = 0;

@@ -17,7 +17,7 @@ extern "C" {
 
 using namespace std;
 
-struct JPEGChunk {
+struct JPEGFrame {
   struct jpeg_decompress_struct srcinfo;
   struct jpeg_compress_struct dstinfo;
   jvirt_barray_ptr *src_coef_arrays;
@@ -27,17 +27,13 @@ struct JPEGChunk {
   int frame;
 };
 
-class JPEGChunkWrapper : public Chunk {
+class JPEGFrameWrapper : public Frame {
   private:
-    JPEGChunk *c;
+    JPEGFrame *c;
   public:
-    JPEGChunkWrapper(JPEGChunk *c): c(c) {};
-    virtual void *getAdditionalData() {
-      jpeg_component_info *ci_ptr = &this->c->srcinfo.comp_info[1];
-      return (void *)ci_ptr->quant_table;
-    };
-    virtual long getChunkSize() {
-      return this->chunkSize;
+    JPEGFrameWrapper(JPEGFrame *c): c(c) {};
+    virtual long getFrameSize() {
+      return this->frameSize;
     };
     virtual char *getFrameData(int n, int c) {
       return (char *)this->c->dstinfo.mem->access_virt_barray((j_common_ptr)&this->c->dstinfo,
@@ -64,14 +60,14 @@ string exec(char *cmd) {
     return result;
 }
 
-static jpeg_transform_info transformoption;
 
+    static jpeg_transform_info transformoption;
 class JPEGDecoder : public VideoDecoder {
   private:
     string filePath;
     mutex mtx; 
 
-    list<struct JPEGChunk> frameChunks;
+    list<struct JPEGFrame> frames;
     int *jpegSizes;
     unsigned char **jpegs;
     bool format;
@@ -124,7 +120,7 @@ class JPEGDecoder : public VideoDecoder {
       int read = 0;
       for (int i = 0; i < this->totalFrames; i ++) {
         loadBar(i, this->totalFrames - 1, 50);
-        string fileName = "/tmp/output/image-" + std::to_string(i+1) + ".jpeg";
+        string fileName = "/tmp/output/image-" + to_string(i+1) + ".jpeg";
         FILE *fp = fopen(fileName.c_str(), "rb");
         struct stat file_info;
         stat(fileName.c_str(), &file_info);
@@ -134,12 +130,11 @@ class JPEGDecoder : public VideoDecoder {
         fclose(fp);
       }
 
-      struct JPEGChunk c;
-      // Cause frameChunks to get an element
+      // Cause frames to get an element
       this->getFrame(0);
-      c = this->frameChunks.front();
-      this->width = c.srcinfo.comp_info[1].width_in_blocks;
-      this->height = c.srcinfo.comp_info[1].height_in_blocks;
+      struct JPEGFrame f = this->frames.front();
+      this->width = f.srcinfo.comp_info[1].width_in_blocks;
+      this->height = f.srcinfo.comp_info[1].height_in_blocks;
     };
     virtual ~JPEGDecoder() {
       this->writeBack();
@@ -151,7 +146,7 @@ class JPEGDecoder : public VideoDecoder {
       printf("Writing back to disk...\n");
       for (int i = 0; i < this->totalFrames; i ++) {
         loadBar(i, this->totalFrames - 1, 50);
-        string fileName = "/tmp/output/image-" + std::to_string(i+1) + ".jpeg";
+        string fileName = "/tmp/output/image-" + to_string(i+1) + ".jpeg";
         fp = fopen(fileName.c_str(), "wb");
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
@@ -163,55 +158,54 @@ class JPEGDecoder : public VideoDecoder {
     virtual void writeBack() {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
-      for (struct JPEGChunk c : this->frameChunks) {
-        unsigned long size = (unsigned long)this->jpegSizes[c.frame];
-        jpeg_mem_dest(&c.dstinfo, &this->jpegs[c.frame], &size);
+      for (struct JPEGFrame f : this->frames) {
+        unsigned long size = (unsigned long)this->jpegSizes[f.frame];
+        jpeg_mem_dest(&f.dstinfo, &this->jpegs[f.frame], &size);
 
-        jpeg_write_coefficients(&c.dstinfo, c.dst_coef_arrays);
-
-        jcopy_markers_execute(&c.srcinfo, &c.dstinfo, JCOPYOPT_ALL);
+        jpeg_write_coefficients(&f.dstinfo, f.dst_coef_arrays);
+        jcopy_markers_execute(&f.srcinfo, &f.dstinfo, JCOPYOPT_ALL);
         
-        jpeg_finish_compress(&c.dstinfo);
-        jpeg_destroy_compress(&c.dstinfo);
-        jpeg_finish_decompress(&c.srcinfo);
-        jpeg_destroy_decompress(&c.srcinfo);
+        jpeg_finish_compress(&f.dstinfo);
+        jpeg_destroy_compress(&f.dstinfo);
+        jpeg_finish_decompress(&f.srcinfo);
+        jpeg_destroy_decompress(&f.srcinfo);
 
-        this->jpegSizes[c.frame] = (int)size;
+        this->jpegSizes[f.frame] = (int)size;
       }
-      this->frameChunks.clear();
+      this->frames.clear();
       mtx.unlock();
     };
-    virtual Chunk *getFrame(int frame) {
+    virtual Frame *getFrame(int frame) {
       this->writeBack();
 
       mtx.lock();
-      struct JPEGChunk c;
-      c.frame = frame;
-      this->frameChunks.push_back(c);
+      struct JPEGFrame f;
+      f.frame = frame;
+      this->frames.push_back(f);
 
-      this->frameChunks.back().srcinfo.err = jpeg_std_error(&this->frameChunks.back().jsrcerr);
-      jpeg_create_decompress(&this->frameChunks.back().srcinfo);
+      this->frames.back().srcinfo.err = jpeg_std_error(&this->frames.back().jsrcerr);
+      jpeg_create_decompress(&this->frames.back().srcinfo);
 
-      this->frameChunks.back().dstinfo.err = jpeg_std_error(&this->frameChunks.back().jdsterr);
-      jpeg_create_compress(&this->frameChunks.back().dstinfo);
+      this->frames.back().dstinfo.err = jpeg_std_error(&this->frames.back().jdsterr);
+      jpeg_create_compress(&this->frames.back().dstinfo);
 
-      jpeg_mem_src(&this->frameChunks.back().srcinfo, this->jpegs[frame], this->jpegSizes[frame]);
-      jpeg_set_quality(&this->frameChunks.back().dstinfo, 100, FALSE);
+      jpeg_mem_src(&this->frames.back().srcinfo, this->jpegs[frame], this->jpegSizes[frame]);
+      jpeg_set_quality(&this->frames.back().dstinfo, 100, FALSE);
 
-      jcopy_markers_setup(&this->frameChunks.back().srcinfo, JCOPYOPT_ALL);
-      jpeg_read_header(&this->frameChunks.back().srcinfo, TRUE);
+      jcopy_markers_setup(&this->frames.back().srcinfo, JCOPYOPT_ALL);
+      jpeg_read_header(&this->frames.back().srcinfo, TRUE);
 
-      jtransform_request_workspace(&this->frameChunks.back().srcinfo, &transformoption);
-      this->frameChunks.back().src_coef_arrays = jpeg_read_coefficients(&this->frameChunks.back().srcinfo);
-      jpeg_copy_critical_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo);
+      jtransform_request_workspace(&this->frames.back().srcinfo, &transformoption);
+      this->frames.back().src_coef_arrays = jpeg_read_coefficients(&this->frames.back().srcinfo);
+      jpeg_copy_critical_parameters(&this->frames.back().srcinfo, &this->frames.back().dstinfo);
 
-      jtransform_request_workspace(&this->frameChunks.back().srcinfo, &transformoption);
-      this->frameChunks.back().dst_coef_arrays = jtransform_adjust_parameters(&this->frameChunks.back().srcinfo, &this->frameChunks.back().dstinfo, this->frameChunks.back().src_coef_arrays, &transformoption);
+      jtransform_request_workspace(&this->frames.back().srcinfo, &transformoption);
+      this->frames.back().dst_coef_arrays = jtransform_adjust_parameters(&this->frames.back().srcinfo, &this->frames.back().dstinfo, this->frames.back().src_coef_arrays, &transformoption);
 
       mtx.unlock();
-      return new JPEGChunkWrapper(&this->frameChunks.back()); 
+      return new JPEGFrameWrapper(&this->frames.back()); 
     };                                     
-    virtual Chunk *getHeaderFrame() {
+    virtual Frame *getHeaderFrame() {
       if (this->hidden) {
         return this->getFrame(this->getNumberOfFrames() / 2);
       } else {
@@ -219,7 +213,6 @@ class JPEGDecoder : public VideoDecoder {
       }
     };
     virtual int getFileSize() {
-      return 100;
       return this->jpegSizes[0]; 
     };                                                 
     virtual int getNumberOfFrames() {

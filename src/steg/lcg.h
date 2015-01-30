@@ -3,6 +3,8 @@
 
 #include <unordered_map>
 
+using namespace std;
+
 class LCG {
   private:
     long long m, c;
@@ -14,11 +16,8 @@ class LCG {
   public:
     LCG() {};
     LCG(int m, int key, bool zero=false);
-    LCG(int m, int c, int a, int trueM);
     void setSeed(int seed);
     int iterate();
-    LCG getLCG();
-    std::unordered_map<int, int> map;
-    void debug();
+    unordered_map<int, int> map;
 };
 #endif

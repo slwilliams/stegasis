@@ -7,8 +7,11 @@
 #include <crypto/randpool.h>
 #include <crypto/whrlpool.h>
 
+#include "video/video_decoder.h"
 #include "steganographic_algorithm.h"
 #include "lcg.h"
+
+using namespace std;
 
 class LSB2Algorithm : public SteganographicAlgorithm {
   private:
@@ -16,19 +19,19 @@ class LSB2Algorithm : public SteganographicAlgorithm {
     LCG lcg;
 
   public:
-    LSB2Algorithm(std::string password, VideoDecoder *dec) {
+    LSB2Algorithm(string password, VideoDecoder *dec) {
       this->password = password;
       this->dec = dec;
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
-      int fileSize = this->dec->getFileSize();
       int numFrames = this->dec->getNumberOfFrames();
-      int height = this->dec->getFrameHeight();
+      int frameSize = this->dec->getFrameSize();
       int width = this->dec->getFrameWidth();
-      memcpy(salt, &fileSize, 4); 
-      memcpy(salt + 4, &numFrames, 4); 
-      memcpy(salt + 8, &height, 4); 
-      memcpy(salt + 12, &width, 4); 
+      int height = this->dec->getFrameHeight();
+      memcpy(salt, &numFrames, 4);
+      memcpy(salt + 4, &frameSize, 4);
+      memcpy(salt + 8, &width, 4);
+      memcpy(salt + 12, &height, 4);
       CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
       keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
           (const unsigned char *)this->password.c_str(), this->password.length(),
@@ -37,17 +40,14 @@ class LSB2Algorithm : public SteganographicAlgorithm {
       if (lcgKey < 0) lcgKey *= -1;
       this->lcg = LCG(this->dec->getFrameSize(), lcgKey);
     };
-    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+    virtual void embed(Frame *c, char *data, int dataBytes, int offset) {
       char *frame = c->getFrameData(0);
-      LCG myLCG = this->lcg.getLCG();
-      // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);
 
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)this->key, 128);
       pool.IncorporateEntropy((const unsigned char *)&offset, 4);
 
-      int frameByte = myLCG.iterate();
+      int frameByte = lcg.map[offset++];
       for (int i = 0; i < dataBytes; i ++) {
         char xord = data[i] ^ pool.GenerateByte();
         for (int j = 7; j >= 0; j --) {
@@ -56,26 +56,23 @@ class LSB2Algorithm : public SteganographicAlgorithm {
           } else {
             frame[frameByte] &= ~1;
           }
-          frameByte = myLCG.iterate();
+          frameByte = lcg.map[offset++];
         }
       }
     };
-    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+    virtual void extract(Frame *c, char *output, int dataBytes, int offset) {
       char *frame = c->getFrameData(0);
-      LCG myLCG = this->lcg.getLCG();
-      // Set the seed using the 'global' lcg map
-      myLCG.setSeed(lcg.map[offset]);
 
       CryptoPP::RandomPool pool;
       pool.IncorporateEntropy((const unsigned char *)this->key, 128);
       pool.IncorporateEntropy((const unsigned char *)&offset, 4);
 
-      int frameByte = myLCG.iterate();
+      int frameByte = lcg.map[offset++];
       for (int i = 0; i < dataBytes; i ++) {
         output[i] = 0;
         for (int j = 7; j >= 0; j --) {
           output[i] |= ((frame[frameByte] & 1) << j);
-          frameByte = myLCG.iterate();
+          frameByte = lcg.map[offset++];
         }
         output[i] ^= pool.GenerateByte();
       }

@@ -15,7 +15,7 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
       if (*block < 0) *block = 0;
       *co = frameByte % DCTSIZE2;
     };
-    virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
+    virtual void embed(Frame *c, char *data, int dataBytes, int offset) {
       if (dataBytes == 0) return;
       offset /= 2;
       int frameByte = offset;
@@ -41,7 +41,7 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
         }
       }
     };
-    virtual void extract(Chunk *c, char *output, int dataBytes, int offset) {
+    virtual void extract(Frame *c, char *output, int dataBytes, int offset) {
       if (dataBytes == 0) return;
       offset /= 2;
       int frameByte = offset;
