@@ -48,25 +48,24 @@ class JPEGFrameWrapper : public Frame {
 };
 
 string exec(char *cmd) {
-    FILE *pipe = popen(cmd, "r");
-    if (!pipe) return "ERROR";
-    char buffer[128];
-    string result = "";
-    while (!feof(pipe)) {
-      if (fgets(buffer, 128, pipe) != NULL)
-        result += buffer;
-    }
-    pclose(pipe);
-    return result;
+  FILE *pipe = popen(cmd, "r");
+  if (!pipe) return "ERROR";
+  char buffer[128];
+  string result = "";
+  while (!feof(pipe)) {
+    if (fgets(buffer, 128, pipe) != NULL)
+      result += buffer;
+  }
+  pclose(pipe);
+  return result;
 }
 
-
-    static jpeg_transform_info transformoption;
 class JPEGDecoder : public VideoDecoder {
   private:
     string filePath;
     mutex mtx; 
 
+    jpeg_transform_info transformoption;
     list<struct JPEGFrame> frames;
     int *jpegSizes;
     unsigned char **jpegs;
@@ -86,28 +85,30 @@ class JPEGDecoder : public VideoDecoder {
     JPEGDecoder(string filePath, bool format): filePath(filePath), format(format) {
       string fpsCommand = "ffmpeg -i " + filePath + " 2>&1 | sed -n \"s/.*, \\(.*\\) fp.*/\\1/p\"";
       this->fps = (int)floor(atof(exec((char *)fpsCommand.c_str()).c_str()));
-      printf("fps: %d\n", this->fps);
 
-      string mkdir = "mkdir /tmp/output";
+      string mkdir = "mkdir /tmp/output 2>&1";
       exec((char *)mkdir.c_str());
       string rm = "rm -rf /tmp/output/*";
       exec((char *)rm.c_str());
 
       string extractCommand;
       if (this->format) {
-        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
+        extractCommand = "ffmpeg -v quiet -stats -r " + to_string(this->fps) + " -i " + filePath + " -qscale:v 2 -f image2 /tmp/output/image-%d.jpeg";
       } else {
-        extractCommand = "ffmpeg -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
+        extractCommand = "ffmpeg -v quiet -stats -r " + to_string(this->fps) + " -i " + filePath + " -vcodec copy /tmp/output/image-%d.jpeg";
       }
+      printf("Extracting JPEG frames...\n");
       exec((char *)extractCommand.c_str());
+      printf("\n");
 
       string totalFramesCommand = "ls /tmp/output | wc -l";
       this->totalFrames = atoi(exec((char *)totalFramesCommand.c_str()).c_str());
-      printf("totalframes: %d\n", this->totalFrames);
 
+      printf("Extracting audio...\n");
       // TODO: Change this to .mp3
-      string getAudioCommand = "ffmpeg -i " + filePath + " /tmp/output/audio.mp3";
+      string getAudioCommand = "ffmpeg -v quiet -stats -i " + filePath + " /tmp/output/audio.mp3";
       exec((char *)getAudioCommand.c_str());
+      printf("\n");
 
       transformoption.transform = JXFORM_NONE;
       transformoption.trim = FALSE;
@@ -129,6 +130,7 @@ class JPEGDecoder : public VideoDecoder {
         read = fread(this->jpegs[i], file_info.st_size, 1, fp);
         fclose(fp);
       }
+      printf("\n");
 
       // Cause frames to get an element
       this->getFrame(0);
@@ -151,9 +153,12 @@ class JPEGDecoder : public VideoDecoder {
         read = fwrite(this->jpegs[i], 1, this->jpegSizes[i], fp);
         fclose(fp);
       }
+      printf("\n");
       string newFilePath = this->filePath.substr(0, this->filePath.find_last_of(".") + 1) + "mkv";
-      string muxCommand = "ffmpeg -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.mp3 -codec copy -shortest " + newFilePath;
+      string muxCommand = "ffmpeg -v quiet -stats -y -framerate " + to_string(this->fps) + " -i /tmp/output/image-%d.jpeg -i /tmp/output/audio.mp3 -codec copy -shortest " + newFilePath;
+      printf("Muxing video to %s...\n", newFilePath.c_str());
       exec((char *)muxCommand.c_str());
+      printf("\n");
     };
     virtual void writeBack() {
       // Lock needed for the case in which flush is called twice in quick sucsession
@@ -239,6 +244,6 @@ class JPEGDecoder : public VideoDecoder {
       this->hidden = true;
     };
     virtual int getFrameSize() {
-      return (int)floor(this->width * this->height * 63 * (capacity / 100.0) * 2);
+      return (int)floor(this->width * this->height * 63 * (capacity / 100.0));
     };
 };

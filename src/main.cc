@@ -95,19 +95,19 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   if (FLAGS_f) {
     dec = (VideoDecoder *)new JPEGDecoder(videoPath, false);
   } else {
-    dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
+    dec = extension == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
   }
   SteganographicAlgorithm *lsb = getAlg(alg, pass, dec); 
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
-  printf("Mounting...\n");
+  printf("\nMounting at %s...\n", mountPoint.c_str());
   wrap_mount(mountPoint);
-  printf("Unmounting...\n");
+  printf("\nUnmounting...\n");
 
   SteganographicFileSystem::Instance()->writeHeader();
   delete dec;
 
-  printf("Sucsessfully unmounted\n");
+  printf("Sucsessfully unmounted!\n");
 }
 
 void doFormat(string algorithm, string pass, string pass2, int capacity, string videoPath) {
@@ -141,9 +141,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
   Frame *headerFrame = dec->getFrame(0);
   char header[4] = {'S', 'T', 'E', 'G'};
-  printf("one\n");
   alg->embed(headerFrame, header, 4, 0);
-  printf("one1\n");
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
@@ -158,8 +156,8 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   headerFrame->setDirty();
 
   int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
-  printf("Volume capacity: %.2fMB\n", totalCapacity/1000.0); 
-  printf("Frame size: %dB\n", dec->getFrameSize());
+  printf("\x1B[1;32mVolume capacity: %.2fMB\033[0m\n\n", totalCapacity/1000.0); 
+  //printf("Frame size: %dB\n", dec->getFrameSize());
 
   if (pass2 != "") {
     // Hidden volume requested
@@ -181,7 +179,6 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
     // Make sure the hidden header is written back
     headerFrame2->setDirty();
   }
-
 
   delete dec;
   printf("Format successful!\n");
@@ -227,8 +224,8 @@ void printName() {
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");
   printf("  ____) | ||  __/ (_| | (_| \\__ \\ \\__ \\ \n");
   printf(" |_____/ \\__\\___|\\__, |\\__,_|___/_|___/ \n");
-  printf("                  __/ | v3.1a               \n");
-  printf("                 |___/                      \n");
+  printf("                  __/ | v3.5a               \n");
+  printf("                 |___/                      \n\n");
 }
 
 void printUsage() {

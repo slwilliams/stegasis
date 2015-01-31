@@ -2376,9 +2376,6 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         }
     }
 
-    motion_x += 10;
-    motion_y -= 10;
-    printf("encoding...------------\n");
     /* huffman encode */
     switch(s->codec_id){ //FIXME funct ptr could be slightly faster
     case AV_CODEC_ID_MPEG1VIDEO:

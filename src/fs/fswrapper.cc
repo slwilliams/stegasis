@@ -1,6 +1,8 @@
 #include "fs/fswrapper.h"
 #include "fs/stegfs.h"
 
+using namespace std;
+
 int wrap_getattr(const char *path, struct stat *stbuf) {
   return SteganographicFileSystem::Instance()->getattr(path, stbuf);
 }
@@ -49,9 +51,15 @@ int wrap_mkdir(const char *path, mode_t mode) {
   return SteganographicFileSystem::Instance()->mkdir(path, mode);
 }
 
+// This cannot be stack allocated...
 struct fuse_operations fs_oper;
 
-void wrap_mount(std::string mountPoint) {
+void wrap_mount(string mountPoint) {
+  // Create the directory if it doesn't exist
+  string mkdirCommand = "mkdir " + mountPoint + " 2>&1";
+  FILE *pipe = popen(mkdirCommand.c_str(), "r");
+  pclose(pipe);
+
   char **argv = (char **)malloc(6 * sizeof(char*));
   argv[0] = (char *)malloc(sizeof(char)*6);
   argv[1] = (char *)malloc(sizeof(char)*mountPoint.length() + 1);
@@ -65,7 +73,7 @@ void wrap_mount(std::string mountPoint) {
   argv[2][1] = 'f'; 
   argv[2][2] = '\0'; 
 
-  std::string writes = "-obig_writes";
+  string writes = "-obig_writes";
   argv[3] = (char *)malloc(sizeof(char)*writes.length() + 1);
   for(int i = 0; i < writes.length(); i ++) {
     argv[3][i] = writes.c_str()[i];
@@ -77,7 +85,7 @@ void wrap_mount(std::string mountPoint) {
   argv[4][1] = 'o'; 
   argv[4][2] = '\0'; 
 
-  std::string r = "max_write=345600";
+  string r = "max_write=345600";
   argv[5] = (char *)malloc(sizeof(char)*r.length() + 1);
   for(int i = 0; i < r.length(); i ++) {
     argv[5][i] = r.c_str()[i];

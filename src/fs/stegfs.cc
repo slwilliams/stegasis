@@ -10,10 +10,11 @@
 #include <algorithm>
 
 #include "fs/stegfs.h"
-#include "common/logging.h"
 #include "common/progress_bar.h"
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
+
+using namespace std;
 
 SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 
@@ -76,7 +77,7 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     char *name = (char *)malloc(sizeof(char) * i);
     memcpy(name, headerBytes + offset, i);
     printf("File name: %s\n", name);
-    std::string fileName((const char *)name);
+    string fileName((const char *)name);
     free(name);
     int32_t triples = 0;
     memcpy(&triples, headerBytes + offset + i, 4);
@@ -91,7 +92,7 @@ void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
     }
     int j = 0;
     int fileSize = 0;
-    this->fileIndex[fileName.c_str()] = std::vector<FileChunk>();
+    this->fileIndex[fileName.c_str()] = vector<FileChunk>();
     for (j = 0; j < triples; j ++) {
       struct FileChunk triple;
       memcpy(&triple, headerBytes + offset + i + j*sizeof(FileChunk) + 4, sizeof(FileChunk)); 
@@ -184,27 +185,27 @@ int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
 
-  std::string prefix = path;
-  int prefixSlash = std::count(prefix.begin(), prefix.end(), '/');
+  string prefix = path;
+  int prefixSlash = count(prefix.begin(), prefix.end(), '/');
   for (auto kv : this->fileSizes) {
-    int nameSlash = std::count(kv.first.begin(), kv.first.end(), '/');
+    int nameSlash = count(kv.first.begin(), kv.first.end(), '/');
     if (prefix == "/") {
       if (nameSlash == 1) {
         filler(buf, kv.first.c_str() + 1, NULL, 0);
       } 
     } else if (kv.first.substr(0, prefix.size()) == prefix && prefixSlash == nameSlash - 1) {
-      std::string name = kv.first.substr(kv.first.find_last_of("/") + 1);
+      string name = kv.first.substr(kv.first.find_last_of("/") + 1);
       filler(buf, name.c_str(), NULL, 0);
     }
   }
   for (auto kv : this->dirs) {
-    int nameSlash = std::count(kv.first.begin(), kv.first.end(), '/');
+    int nameSlash = count(kv.first.begin(), kv.first.end(), '/');
     if (prefix == "/") {
       if (nameSlash == 1) {
         filler(buf, kv.first.c_str() + 1, NULL, 0); 
       }
     } else if (kv.first.substr(0, prefix.size()) == prefix && prefixSlash == nameSlash - 1) {
-      std::string name = kv.first.substr(kv.first.find_last_of("/") + 1);
+      string name = kv.first.substr(kv.first.find_last_of("/") + 1);
       filler(buf, name.c_str(), NULL, 0);
     }
   }
@@ -219,14 +220,14 @@ int SteganographicFileSystem::open(const char *path, struct fuse_file_info *fi) 
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
   //printf("create called: %s\n", path);
   this->fileSizes[path] = 0;
-  this->fileIndex[path] = std::vector<struct FileChunk>();
+  this->fileIndex[path] = vector<struct FileChunk>();
   return 0;
 };
 
 int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
-  printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
-  std::unordered_map<std::string, int>::const_iterator file = this->fileSizes.find(path);
+  //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+  //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
+  unordered_map<string, int>::const_iterator file = this->fileSizes.find(path);
 
   if (file == this->fileSizes.end() || offset > file->second) {
     return -ENOENT;
@@ -237,7 +238,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   }
 
   this->mux.lock();
-  std::vector<FileChunk> triples = this->fileIndex[path];
+  vector<FileChunk> triples = this->fileIndex[path];
   int bytesWritten = 0;
   int readBytes = 0;
   int i = 0;
@@ -508,7 +509,7 @@ void SteganographicFileSystem::compactHeader() {
   printf("Compacting header...\n");
   for (auto f : this->fileIndex) {
     int i = 0;
-    std::unordered_map<int, std::vector<int> > chunkOffsets = std::unordered_map<int, std::vector<int> >();
+    unordered_map<int, vector<int> > chunkOffsets = unordered_map<int, vector<int> >();
     int size = f.second.size();
     while (i < size - 1) {
       struct FileChunk current = f.second.at(i);
@@ -566,7 +567,7 @@ void SteganographicFileSystem::compactHeader() {
 };
 
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
-  printf("Flush called: %s\n", path);
+  //printf("Flush called: %s\n", path);
   if (!this->performance) {
     this->writeHeader();
     this->decoder->writeBack();
