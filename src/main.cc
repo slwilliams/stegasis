@@ -17,7 +17,7 @@
 
 #include "steg/steganographic_algorithm.h"
 #include "steg/lsb_algorithm.cc"
-#include "steg/lsbk_algorithm.cc"
+/*#include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
 #include "steg/lsb2_algorithm.cc"
 #include "steg/lsba_algorithm.cc"
@@ -25,7 +25,8 @@
 #include "steg/dctp_algorithm.cc"
 #include "steg/dct2_algorithm.cc"
 #include "steg/dctp_aes_algorithm.cc"
-#include "steg/dctp_aes_tfish_serpent_algorithm.cc"
+#include "steg/dctp_aes_tfish_serpent_algorithm.cc"*/
+#include "steg/f4_algorithm.cc"
 
 using namespace std;
 
@@ -140,17 +141,25 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   }
 
   Frame *headerFrame = dec->getFrame(0);
+  int currentFrame, currentOffset;
   char header[4] = {'S', 'T', 'E', 'G'};
-  alg->embed(headerFrame, header, 4, 0);
+  dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  alg->embed(headerFrame, header, 4, currentOffset);
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
-  alg->embed(headerFrame, algCode, 4, 4 * 8);
+  dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  printf("offset after headersig: %d\n", currentOffset);
+  alg->embed(headerFrame, algCode, 4, currentOffset);
 
-  alg->embed(headerFrame, &capacityB, 1, 8 * 8);
+  dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  printf("offset after capacity: %d\n", currentOffset);
+  alg->embed(headerFrame, &capacityB, 1, currentOffset);
 
   int headerBytes = 0;
-  alg->embed(headerFrame, (char *)&headerBytes, 4, 9 * 8);
+  dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  printf("offset before header bytes: %d\n", currentOffset);
+  alg->embed(headerFrame, (char *)&headerBytes, 4, currentOffset);
   
   // Make sure the header is written back
   headerFrame->setDirty();
@@ -186,8 +195,8 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   if (alg == "lsb") {
-    return new LSBAlgorithm;
-  } else if (alg == "lsbk") {
+    return new LSBAlgorithm(dec);
+  } /*else if (alg == "lsbk") {
     return new LSBKAlgorithm(pass, dec);
   } else if (alg == "lsbp") {
     return new LSBPAlgorithm(pass, dec);
@@ -205,6 +214,8 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
     return new DCT3Algorithm(pass, dec);
   } else if (alg == "dcta") {
     return new DCTAAlgorithm(pass, dec);
+  } */ else if (alg == "f4") {
+    return new F4Algorithm(pass, dec);
   } else {
     printf("Unknown algorithm\n");
     printUsage();

@@ -12,8 +12,8 @@ class SteganographicAlgorithm {
     string password;
     VideoDecoder *dec;
   public:                                                                       
-    virtual void embed(Frame *c, char *data, int dataBytes, int offset) = 0;
-    virtual void extract(Frame *c, char *output, int dataBytes, int offset) = 0;
+    virtual int embed(Frame *c, char *data, int reqByteCount, int offset) = 0;
+    virtual int extract(Frame *c, char *output, int reqByteCount, int offset) = 0;
     virtual void getAlgorithmCode(char out[4]) = 0;
 };
 #endif
