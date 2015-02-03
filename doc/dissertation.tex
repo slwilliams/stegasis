@@ -15,8 +15,8 @@
 \usepackage{float}
 \usepackage{listings}
 
-%\usepackage[draft]{graphicx}
-\usepackage{graphicx}
+\usepackage[draft]{graphicx}
+%\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{ragged2e}
@@ -138,7 +138,7 @@
 % ------------------------------------------------------------------------------
 \setcounter{page}{1}        
 \pagenumbering{roman}
-\section*{Performa}
+\section*{Proforma}
 \NumTabs{3}
 \textsc{Name}: \tab{Scott Williams}\\
 \textsc{College}: \tab{Christ's}\\
@@ -150,10 +150,10 @@
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
 \subsection*{Original Aims of the Project}
-To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality.
+To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality. If time permits, multiple video formats should be supported along with encryption and plausible deniability functionality.
 
 \subsection*{Work Completed}
-A complete software package has been developed enabling the embedding of arbitrary files within many video formats via a file system interface. A total of 10 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Most common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Embedding capacities in excess of 100\% of the video size are available (for example allowing a 100 MB video file to contain 150 MB of embedded data) and performance of the system is adequate for general use providing read and write speeds on par with USB 3.0 devices.
+A complete software package has been developed enabling the embedding of arbitrary files within multiple video formats via a file system interface. A total of 12 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Embedding capacities in excess of 100\% of the video size (for example allowing a 100 MB video file to contain 150 MB of embedded data) can be achieved by exploiting lossless compression of \texttt{JPEG} images and the performance of the file system is adequate for general use providing read and write speeds on par with USB 3.0 devices.
 
 \subsection*{Special Difficulties}
 None.
@@ -179,18 +179,20 @@ area of the Laboratory's website.\\[20pt]
 \pagebreak
 \pagenumbering{arabic} 
 \section{Introduction}
-Steganography is the art of hiding information in apparently innocuous objects. Whereas cryptography seeks to protect the content of information, steganography attempts to conceal the fact that the information exists\textsuperscript{\cite{digmedia}}. This allows steganographic methods to be utilised in countries where encryption is illegal for example, or within the UK where keys for identified encrypted data can be forced to be handed over\textsuperscript{\cite{uklaw}}.
+Steganography is the art of hiding information in apparently innocuous objects. Whereas cryptography seeks to protect the content of information, steganography attempts to conceal the fact that the information exists\textsuperscript{\cite{digmedia}}. This allows steganographic methods to be utilised in countries where encryption is illegal for example, or within the UK where keys for identified encrypted data can be forced to be disclosed\textsuperscript{\cite{uklaw}}.
 
-In this project I design and implement a practical steganographic software application - \texttt{Stegasis} - which enables users to embed arbitrary files within video via a file system interface. \texttt{Stegasis} can operate with no perceivable impact on video quality and can achieve embedding capacities in excess of 200\% of the video size. A wide range of video formats are supported\footnote{Including many modern video formats such as \texttt{MP4}, \texttt{MKV}, \texttt{FLV} and \texttt{AVI}.} along with several steganographic embedding algorithms. Standard encryption algorithms can be used to further protect embedded data and plausible deniability functionality keeps sensitive information safe even when the presence of embedded data has been confirmed.
+In this project I design and implement a practical steganographic software application - \texttt{Stegasis} - which enables users to embed arbitrary files within video via a file system interface. \texttt{Stegasis} can operate with no perceivable impact on video quality and can achieve embedding capacities in excess of 100\% of the video size. A wide range of video formats are supported along with several steganographic embedding algorithms. Standard encryption algorithms can be used to further protect embedded data and plausible deniability functionality keeps sensitive information safe even when the presence of embedded data has been confirmed.
 
 Steganogaphic methods operating on video have had comparatively little attention compared to other medium such as images and audio\textsuperscript{\cite{digmedia2}}. As such, there are few programs currently available which allow data to be steganographically hidden within video\textsuperscript{\cite{survey}}. \texttt{Stegasis} is the first application to enable the embedding of arbitrary files within videos via a file system interface.   
 
-
-
 \subsection{Motivation}
-Digital media is ubiquitous on the Internet and high definition video content is now common place on video sharing and social networking websites. Video files of multiple gigabytes in size can reside on users devices without arousing suspicion, providing an ideal hiding place for large collections of sensitive files. Few programs are capitalising on this fact, and those that are, allow the user to embed only a singe chosen file into a small range of video formats with very low embedding capacities. As with \texttt{TrueCrypt}\footnote{A successful cryptographic program providing on-the-fly encryption and full disc encryption\textsuperscript{\cite{truecrypt}}.}, I believe that a practical system for protecting sensitive files should present the user with a mounted logical volume allowing the use of standard file system operations to create, access and organise embedded data. Furthermore, there exist many commonly used video formats along with many more currently in development. As such, a steganographic program operating on a small number of video formats not only greatly restricts usability, it will require constant development as new video formats inevitably become more popular. Instead, a generic solution applicable to a variety of video formats is preferred.
+Digital media is ubiquitous on the Internet and high definition video content is now common place on video sharing and social networking websites. Video files of multiple gigabytes in size can reside on users devices without arousing suspicion, providing an ideal hiding place for large collections of sensitive files. Few programs are capitalising on this fact, and those that are, allow the user to embed only a singe chosen file into a small range of video formats with very low embedding capacities. As with \texttt{TrueCrypt}\footnote{A successful widely used cryptographic program providing on-the-fly and full disc encryption\textsuperscript{\cite{truecrypt}}. \texttt{TrueCrypt} is not longer being maintained.}, I believe that a practical system for protecting sensitive files should present the user with a mounted logical volume allowing the use of standard file system operations to create, access and organise embedded data. Furthermore, there exist many commonly used video formats along with many more currently in development. As such, a steganographic program operating on a small number of video formats not only greatly restricts usability, it will require constant development as new video formats inevitably become more popular. Instead, a generic solution applicable to a variety of video formats is preferred.
 
 The many recent global surveillance disclosures show that using certain technologies related to privacy can get you ``flagged" by authorities such as the \texttt{NSA}\textsuperscript{\cite{nsa}} - it is no longer the case that simply encrypting data is enough to keep the owner safe.
+
+\subsection{Context?}
+
+Stegasis combines file systems and stuff.
 
 \section{Preparation}
 \subsection{Background}
