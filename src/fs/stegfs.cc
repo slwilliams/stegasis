@@ -429,8 +429,8 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     struct FileChunk triple;
     triple.frame = nextFrame;
     triple.offset = nextOffset;
-   // printf("\e[1A"); 
-   // printf("\e[0K\rEmbeding1, nextFrame: %d, nextOffset: %d\n", nextFrame, nextOffset * 8);
+    printf("\e[1A"); 
+    printf("\e[0K\rEmbeding1, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
     Frame *f = this->decoder->getFrame(nextFrame);
     triple.bytes = this->alg->embed(f, (char *)(buf + bytesWritten), size-bytesWritten, nextOffset * 8);
     bytesWritten += triple.bytes;
