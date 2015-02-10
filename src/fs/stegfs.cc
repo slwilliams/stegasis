@@ -24,9 +24,11 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 
   Frame *headerFrame = this->decoder->getHeaderFrame();
   int offset = 0;
+  int i = 0;
 
   char headerSig[4] = {0,0,0,0};
-  offset = this->alg->extract(headerFrame, headerSig, 4, offset);
+  for (; (offset = this->alg->extract(this->decoder->getFrame(i), headerSig, 4, offset)) == 0; i ++);
+  //offset = this->alg->extract(headerFrame, headerSig, 4, offset);
   printf("offsetr after heardersig: %d\n", offset);
   if (strncmp(headerSig, "STEG", 4) != 0) {
     this->decoder->setHiddenVolume(); 
@@ -41,23 +43,26 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   printf("Header: %.4s\n", headerSig);
 
   char algE[4] = {0,0,0,0};
-  offset = this->alg->extract(headerFrame, algE, 4, offset);
+  for (; (offset = this->alg->extract(this->decoder->getFrame(i), algE, 4, offset)) == 0; i ++);
+  //offset = this->alg->extract(headerFrame, algE, 4, offset);
   printf("alg: %.4s\n", algE);
   printf("offset after alg: %d\n", offset);
 
   char capacity = 0;
-  offset = this->alg->extract(headerFrame, &capacity, 1, offset);
-  this->decoder->setCapacity(capacity);
+  for (; (offset = this->alg->extract(this->decoder->getFrame(i), &capacity, 1, offset)) == 0; i ++);
+  //offset = this->alg->extract(headerFrame, &capacity, 1, offset);
   printf("cap: %d\n", capacity);
 
   int headerBytes = 0;
   printf("offset before headberyets: %d\n", offset); 
-  offset = this->alg->extract(headerFrame, (char *)&headerBytes, 4, offset);
+  for (; (offset = this->alg->extract(this->decoder->getFrame(i), (char *)&headerBytes, 4, offset)) == 0; i ++);
+  //offset = this->alg->extract(headerFrame, (char *)&headerBytes, 4, offset);
   printf("Total headerbytes: %d\n", headerBytes);
 
   char *headerData = (char *)malloc(sizeof(char) * headerBytes);
-  offset = this->alg->extract(headerFrame, headerData, headerBytes, offset);
+  this->alg->extract(headerFrame, headerData, headerBytes, offset);
   this->readHeader(headerData, headerBytes); 
+  this->decoder->setCapacity(capacity);
 
   if (hiddenVolume) {
     int currentFrameOffset, currentFrame;

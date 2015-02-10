@@ -47,7 +47,7 @@ class F4Algorithm : public SteganographicAlgorithm {
       *co = frameByte % DCTSIZE2;
     };
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
-      //printf("called with offset: %d\n", offset);
+      printf("called with offset: %d\n", offset);
       int bytesLeftInFrame = this->dec->getFrameSize() - offset;
       int bytesEmbedded = 0;
       int bitEmbedded = 0;
@@ -57,7 +57,6 @@ class F4Algorithm : public SteganographicAlgorithm {
       
       while (bytesEmbedded * 8 < bytesLeftInFrame - 8 && bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
         for (int j = 7; j >= 0; j --) {
-          // TODO issue when offset > frameSize
           if (offset == this->dec->getFrameSize()) break;
           frameByte = lcg.map[offset++];
           this->getCoef(frameByte, &row, &block, &co);
@@ -100,6 +99,7 @@ class F4Algorithm : public SteganographicAlgorithm {
 
       if (bytesEmbedded * 8 >= bytesLeftInFrame - 8 || offset == this->dec->getFrameSize()) {
         // Finished this frame
+        printf("advancing frame\n");
         this->dec->setNextFrameOffset(currentFrame + 1, 0);
       } else {
         // Still stuff left in this frame
@@ -118,11 +118,12 @@ class F4Algorithm : public SteganographicAlgorithm {
           this->getCoef(frameByte, &row, &block, &co);
           frame = (JBLOCKARRAY)c->getFrameData(row, 1);
 
-          printf("co before: %d, offset: %d\n", frame[0][block][co], offset);
+          //printf("co before: %d, offset: %d\n", frame[0][block][co], offset);
           
           // Skip zeros
           if (frame[0][block][co] == 0) {
             j ++;
+            if (offset == this->dec->getFrameSize()) return 0;
             frameByte = lcg.map[offset++];
             continue;  
           }
@@ -136,6 +137,7 @@ class F4Algorithm : public SteganographicAlgorithm {
               output[i] |= 1 << j;
             }
           }
+          if (offset == this->dec->getFrameSize()) return 0;
           frameByte = lcg.map[offset++];
         }
       }

@@ -142,24 +142,29 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
   Frame *headerFrame = dec->getFrame(0);
   int currentFrame, currentOffset;
+  dec->setNextFrameOffset(0, 0);
   char header[4] = {'S', 'T', 'E', 'G'};
-  dec->getNextFrameOffset(&currentFrame, &currentOffset);
-  alg->embed(headerFrame, header, 4, currentOffset);
+  do {
+    dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  } while (alg->embed(dec->getFrame(currentFrame), header, 4, currentOffset) != 4);
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
-  dec->getNextFrameOffset(&currentFrame, &currentOffset);
   printf("offset after headersig: %d\n", currentOffset);
-  alg->embed(headerFrame, algCode, 4, currentOffset);
+  do {
+    dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  } while (alg->embed(dec->getFrame(currentFrame), algCode, 4, currentOffset) != 4);
 
-  dec->getNextFrameOffset(&currentFrame, &currentOffset);
   printf("offset after capacity: %d\n", currentOffset);
-  alg->embed(headerFrame, &capacityB, 1, currentOffset);
+  do {
+    dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  } while (alg->embed(dec->getFrame(currentFrame), &capacityB, 1, currentOffset) != 1);
 
   int headerBytes = 0;
-  dec->getNextFrameOffset(&currentFrame, &currentOffset);
   printf("offset before header bytes: %d\n", currentOffset);
-  alg->embed(headerFrame, (char *)&headerBytes, 4, currentOffset);
+  do {
+    dec->getNextFrameOffset(&currentFrame, &currentOffset);
+  } while (alg->embed(dec->getFrame(currentFrame), (char *)&headerBytes, 4, currentOffset) != 4);
   
   // Make sure the header is written back
   headerFrame->setDirty();
