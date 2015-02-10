@@ -55,6 +55,8 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 
   int headerBytes = 0;
   printf("offset before headberyets: %d\n", offset); 
+  this->headerBytesFrame = i;
+  this->headerBytesOffset = offset;
   for (; (offset = this->alg->extract(this->decoder->getFrame(i), (char *)&headerBytes, 4, offset)) == 0; i ++);
   //offset = this->alg->extract(headerFrame, (char *)&headerBytes, 4, offset);
   printf("Total headerbytes: %d\n", headerBytes);
@@ -557,7 +559,7 @@ int SteganographicFileSystem::truncate(const char *path, off_t newsize) {
 };
 
 void SteganographicFileSystem::writeHeader() {
-  this->compactHeader();
+  //this->compactHeader();
   char *header = (char *)malloc(this->decoder->getFrameSize() * sizeof(char));
   int headerBytes = 0;
   int offset = 0;
@@ -596,8 +598,19 @@ void SteganographicFileSystem::writeHeader() {
     headerBytes += 4;
   }
   int tmp = headerBytes;
-  this->alg->embed(headerFrame, (char *)&headerBytes, 4, (4+4+1) * 8); 
-  this->alg->embed(headerFrame, header, tmp, (4+4+4+1) * 8); 
+  int currentFrame, currentOffset;
+  this->decoder->setNextFrameOffset(this->headerBytesFrame, this->headerBytesOffset);
+  printf("headerbytes: %d\n", headerBytes);
+  do {
+    this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
+  } while (alg->embed(this->decoder->getFrame(currentFrame), (char *)&headerBytes, 4, currentOffset) != 4);
+
+  //int offset = this->alg->embed(this->decoder->getFrame(this->headerBytesFrame), (char *)&headerBytes, 4, this->headerBytesOffset); 
+  do {
+    this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
+  // Minus written from tmp!!!
+  } while (alg->embed(this->decoder->getFrame(currentFrame), header, tmp, currentOffset) != tmp);
+  //this->alg->embed(headerFrame, header, tmp, offset); 
   headerFrame->setDirty();
   free(header);
   delete headerFrame;

@@ -27,6 +27,8 @@ class SteganographicFileSystem {
     VideoDecoder *decoder;
     SteganographicAlgorithm *alg;
     bool performance;
+    int headerBytesFrame;
+    int headerBytesOffset;
     Logger *log;
     std::unordered_map<std::string, int> fileSizes; 
     std::unordered_map<std::string, std::vector<struct FileChunk> > fileIndex; 
