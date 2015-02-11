@@ -105,8 +105,12 @@ class JPEGDecoder : public VideoDecoder {
       this->totalFrames = atoi(exec((char *)totalFramesCommand.c_str()).c_str());
 
       printf("Extracting audio...\n");
-      // TODO: Change this to .mp3
-      string getAudioCommand = "ffmpeg -v quiet -stats -i " + filePath + " /tmp/output/audio.mp3";
+      string getAudioCommand;
+      if (this->format) {
+        getAudioCommand = "ffmpeg -v quiet -stats -i " + filePath + " /tmp/output/audio.mp3";
+      } else {
+        getAudioCommand = "ffmpeg -v quiet -stats -i " + filePath + "-vn -acodec copy /tmp/output/audio.mp3";
+      }
       exec((char *)getAudioCommand.c_str());
       printf("\n");
 

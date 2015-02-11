@@ -444,7 +444,8 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
     f->setDirty(); 
     delete f;
-    this->fileIndex[path].push_back(triple);
+    if (triple.bytes != 0)
+      this->fileIndex[path].push_back(triple);
   }
 
   if (offset == 0) {
