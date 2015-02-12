@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
+#include <utility>
 
 #include "fs/stegfs.h"
 #include "common/progress_bar.h"
@@ -18,18 +19,36 @@ using namespace std;
 
 SteganographicFileSystem *SteganographicFileSystem::_instance = NULL;
 
+void SteganographicFileSystem::extract(int *frame, int *offset, int bytes, char *out) {
+  int bytesWritten = 0;
+  pair<int, int> extractedWritten = make_pair(0, *offset);
+  do {
+    printf("reading from frame: %d, offset: %d\n", *frame, extractedWritten.second);
+    extractedWritten = this->alg->extract(this->decoder->getFrame(*frame), out+bytesWritten, bytes-bytesWritten, extractedWritten.second); 
+    printf("got: %d\n", extractedWritten.first);
+    bytesWritten += extractedWritten.first;
+
+    if(extractedWritten.second == 0) {
+      (*frame) ++;
+    }
+  } while (bytesWritten != bytes); 
+  (*offset) = extractedWritten.second;
+};
+
+//// <bytesWritten, offset>
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg,
     bool performance): decoder(decoder), alg(alg), performance(performance) {
   bool hiddenVolume = false;
 
   Frame *headerFrame = this->decoder->getHeaderFrame();
-  int offset = 0;
+  pair<int, int> offset = make_pair(0,0);
   int i = 0;
 
   char headerSig[4] = {0,0,0,0};
-  for (; (offset = this->alg->extract(this->decoder->getFrame(i), headerSig, 4, offset)) == 0; i ++);
+  this->extract(&i, &offset.second, 4, headerSig);
+  //for (; (offset = this->alg->extract(this->decoder->getFrame(i), headerSig, 4, offset.second)).second == 0; i ++);
   //offset = this->alg->extract(headerFrame, headerSig, 4, offset);
-  printf("offsetr after heardersig: %d\n", offset);
+  printf("offsetr after heardersig: %d\n", offset.second);
   if (strncmp(headerSig, "STEG", 4) != 0) {
     this->decoder->setHiddenVolume(); 
     headerFrame = this->decoder->getHeaderFrame();
@@ -43,26 +62,30 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   printf("Header: %.4s\n", headerSig);
 
   char algE[4] = {0,0,0,0};
-  for (; (offset = this->alg->extract(this->decoder->getFrame(i), algE, 4, offset)) == 0; i ++);
+  this->extract(&i, &offset.second, 4, algE);
+  //for (; (offset = this->alg->extract(this->decoder->getFrame(i), algE, 4, offset.second)).second == 0; i ++);
   //offset = this->alg->extract(headerFrame, algE, 4, offset);
   printf("alg: %.4s\n", algE);
-  printf("offset after alg: %d\n", offset);
+  printf("offset after alg: %d\n", offset.second);
 
   char capacity = 0;
-  for (; (offset = this->alg->extract(this->decoder->getFrame(i), &capacity, 1, offset)) == 0; i ++);
+  this->extract(&i, &offset.second, 1, &capacity);
+  //for (; (offset = this->alg->extract(this->decoder->getFrame(i), &capacity, 1, offset.second)).second == 0; i ++);
   //offset = this->alg->extract(headerFrame, &capacity, 1, offset);
   printf("cap: %d\n", capacity);
 
   int headerBytes = 0;
-  printf("offset before headberyets: %d\n", offset); 
+  printf("offset before headberyets: %d, frame: %d\n", offset.second, i); 
   this->headerBytesFrame = i;
-  this->headerBytesOffset = offset;
-  for (; (offset = this->alg->extract(this->decoder->getFrame(i), (char *)&headerBytes, 4, offset)) == 0; i ++);
+  this->headerBytesOffset = offset.second;
+  this->extract(&i, &offset.second, 4, (char *)&headerBytes);
+  //for (; (offset = this->alg->extract(this->decoder->getFrame(i), (char *)&headerBytes, 4, offset.first)).first == 0; i ++);
   //offset = this->alg->extract(headerFrame, (char *)&headerBytes, 4, offset);
   printf("Total headerbytes: %d\n", headerBytes);
 
   char *headerData = (char *)malloc(sizeof(char) * headerBytes);
-  this->alg->extract(headerFrame, headerData, headerBytes, offset);
+  this->extract(&i, &offset.second, headerBytes, headerData);
+  //this->alg->extract(headerFrame, headerData, headerBytes, offset.first);
   this->readHeader(headerData, headerBytes); 
   this->decoder->setCapacity(capacity);
 
@@ -600,17 +623,30 @@ void SteganographicFileSystem::writeHeader() {
   }
   int tmp = headerBytes;
   int currentFrame, currentOffset;
+  printf("headerBytesFrame: %d, off: %d\n", this->headerBytesFrame, this->headerBytesOffset);
   this->decoder->setNextFrameOffset(this->headerBytesFrame, this->headerBytesOffset);
   printf("headerbytes: %d\n", headerBytes);
+  int bytesWritten = 0;
+  int bytesToWrite = 4;
   do {
     this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
-  } while (alg->embed(this->decoder->getFrame(currentFrame), (char *)&headerBytes, 4, currentOffset) != 4);
+    bytesToWrite -= bytesWritten;
+    Frame *f = this->decoder->getFrame(currentFrame);
+    printf("embedding headerbytes in frame: %d, offset: %d\n", currentFrame, currentOffset);
+    bytesWritten = alg->embed(f, ((char *)&headerBytes)+bytesWritten, bytesToWrite, currentOffset);
+    printf("embedded: %d\n", bytesWritten);
+    f->setDirty();
+    delete f;
+  } while (bytesWritten != bytesToWrite);
 
   //int offset = this->alg->embed(this->decoder->getFrame(this->headerBytesFrame), (char *)&headerBytes, 4, this->headerBytesOffset); 
+  bytesWritten = 0;
+  bytesToWrite = tmp;
   do {
     this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
-  // Minus written from tmp!!!
-  } while (alg->embed(this->decoder->getFrame(currentFrame), header, tmp, currentOffset) != tmp);
+    bytesToWrite -= bytesWritten;
+    bytesWritten = alg->embed(this->decoder->getFrame(currentFrame), header+bytesWritten, bytesToWrite, currentOffset);
+  } while (bytesWritten != bytesToWrite);
   //this->alg->embed(headerFrame, header, tmp, offset); 
   headerFrame->setDirty();
   free(header);

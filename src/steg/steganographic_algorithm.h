@@ -2,6 +2,7 @@
 #define stegalg_h 
 
 #include <string>
+#include <utility>
 
 #include "video/video_decoder.h"
 
@@ -13,7 +14,7 @@ class SteganographicAlgorithm {
     VideoDecoder *dec;
   public:                                                                       
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) = 0;
-    virtual int extract(Frame *c, char *output, int reqByteCount, int offset) = 0;
+    virtual pair<int,int> extract(Frame *c, char *output, int reqByteCount, int offset) = 0;
     virtual void getAlgorithmCode(char out[4]) = 0;
 };
 #endif

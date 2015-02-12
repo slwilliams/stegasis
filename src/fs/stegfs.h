@@ -16,6 +16,8 @@
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
 
+using namespace std;
+
 struct FileChunk {
   uint32_t frame;
   uint32_t offset;
@@ -26,14 +28,17 @@ class SteganographicFileSystem {
   private:
     VideoDecoder *decoder;
     SteganographicAlgorithm *alg;
+
+    mutex mux;
     bool performance;
     int headerBytesFrame;
     int headerBytesOffset;
-    Logger *log;
-    std::unordered_map<std::string, int> fileSizes; 
-    std::unordered_map<std::string, std::vector<struct FileChunk> > fileIndex; 
-    std::unordered_map<std::string, bool> dirs;
-    std::mutex mux;
+
+    unordered_map<string, int> fileSizes; 
+    unordered_map<string, vector<struct FileChunk> > fileIndex; 
+    unordered_map<string, bool> dirs;
+
+    void extract(int *initialFrame, int *initialOffset, int bytes, char *out);
     
   public:
     static SteganographicFileSystem *_instance;

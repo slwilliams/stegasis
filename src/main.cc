@@ -16,7 +16,7 @@
 #include "video/other_decoder.cc"
 
 #include "steg/steganographic_algorithm.h"
-#include "steg/lsb_algorithm.cc"
+//#include "steg/lsb_algorithm.cc"
 /*#include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
 #include "steg/lsb2_algorithm.cc"
@@ -142,29 +142,39 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
   Frame *headerFrame = dec->getFrame(0);
   int currentFrame, currentOffset;
+  int bytesWritten = 0;
   dec->setNextFrameOffset(0, 0);
   char header[4] = {'S', 'T', 'E', 'G'};
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-  } while (alg->embed(dec->getFrame(currentFrame), header, 4, currentOffset) != 4);
+    printf("embedding in frame: %d\n", currentFrame);
+    bytesWritten += alg->embed(dec->getFrame(currentFrame), header+bytesWritten, 4-bytesWritten, currentOffset); 
+    printf("embedded: %d\n", bytesWritten);
+  } while (bytesWritten != 4);
+  bytesWritten = 0;
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
-  printf("offset after headersig: %d\n", currentOffset);
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-  } while (alg->embed(dec->getFrame(currentFrame), algCode, 4, currentOffset) != 4);
+    printf("offset after headersig: %d, frame: %d\n", currentOffset, currentFrame);
+    bytesWritten += alg->embed(dec->getFrame(currentFrame), algCode+bytesWritten, 4-bytesWritten, currentOffset); 
+    printf("byteswritten: %d\n", bytesWritten);
+  } while (bytesWritten != 4);
+  bytesWritten = 0;
 
-  printf("offset after capacity: %d\n", currentOffset);
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-  } while (alg->embed(dec->getFrame(currentFrame), &capacityB, 1, currentOffset) != 1);
+    bytesWritten += alg->embed(dec->getFrame(currentFrame), &capacityB+bytesWritten, 1-bytesWritten, currentOffset); 
+  } while (bytesWritten != 1);
+  bytesWritten = 0;
 
   int headerBytes = 0;
   printf("offset before header bytes: %d\n", currentOffset);
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-  } while (alg->embed(dec->getFrame(currentFrame), (char *)&headerBytes, 4, currentOffset) != 4);
+    bytesWritten += alg->embed(dec->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, 4-bytesWritten, currentOffset); 
+  } while (bytesWritten != 4);
   
   // Make sure the header is written back
   headerFrame->setDirty();
@@ -200,7 +210,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   if (alg == "lsb") {
-    return new LSBAlgorithm(dec);
+  //  return new LSBAlgorithm(dec);
   } /*else if (alg == "lsbk") {
     return new LSBKAlgorithm(pass, dec);
   } else if (alg == "lsbp") {

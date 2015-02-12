@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <utility>
 #include <string.h>
 #include <string>
 
@@ -97,23 +98,25 @@ class F4Algorithm : public SteganographicAlgorithm {
       int currentFrame, currentFrameOffset;
       this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
 
-      if (bytesEmbedded * 8 >= bytesLeftInFrame - 8 || offset == this->dec->getFrameSize()) {
+      if (offset == this->dec->getFrameSize()) {
         // Finished this frame
    //     printf("advancing frame\n");
         this->dec->setNextFrameOffset(currentFrame + 1, 0);
       } else {
         // Still stuff left in this frame
+        printf("yo currentOff: %d, offset: %d, orig: %d\n", currentFrameOffset, offset, originalOffset);
         this->dec->setNextFrameOffset(currentFrame, currentFrameOffset + (offset - originalOffset));
       }
       return bytesEmbedded;
     }; 
-    virtual int extract(Frame *c, char *output, int dataBytes, int offset) {
+    // <bytesWritten, offset>
+    virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
       //printf("extract, offset: %d\n", offset);
       int frameByte = lcg.map[offset++];
       int row, block, co, comp;
       JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
-        output[i] = 0;
+        int tmp = 0;
         for (int j = 7; j >= 0; j --) {
           this->getCoef(frameByte, &row, &block, &co);
           frame = (JBLOCKARRAY)c->getFrameData(row, 1);
@@ -123,25 +126,28 @@ class F4Algorithm : public SteganographicAlgorithm {
           // Skip zeros
           if (frame[0][block][co] == 0) {
             j ++;
-            if (offset == this->dec->getFrameSize()) return 0;
+            if (offset == this->dec->getFrameSize()) return make_pair(i,0);
             frameByte = lcg.map[offset++];
             continue;  
           }
 
           if (frame[0][block][co] < 0) {
             if ((frame[0][block][co] & 1) << j == 0) {
-              output[i] |= 1 << j;
+              //output[i] |= 1 << j;
+              tmp |= 1 << j;
             }
           } else {
             if ((frame[0][block][co] & 1) << j != 0) {
-              output[i] |= 1 << j;
+              tmp |= 1 << j;
+              //output[i] |= 1 << j;
             }
           }
-          if (offset == this->dec->getFrameSize()) return 0;
+          if (offset == this->dec->getFrameSize()) return make_pair(i,0);
           frameByte = lcg.map[offset++];
         }
+        output[i] = tmp;
       }
-      return offset - 1;
+      return make_pair(dataBytes, offset - 1);
     };
     virtual void getAlgorithmCode(char out[4]) {
       char tmp[4] = {'F', '4', ' ', ' '};
