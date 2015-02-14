@@ -100,7 +100,7 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 };
 
 void SteganographicFileSystem::readHeader(char *headerBytes, int byteC) {
-  int nextFrame = 1;
+  int nextFrame = 50;
   int nextOffset = 0;
   int offset = 0;
   int i = 0;
@@ -467,8 +467,10 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
     f->setDirty(); 
     delete f;
-    if (triple.bytes != 0)
+    if (triple.bytes != 0) {
       this->fileIndex[path].push_back(triple);
+      printf("adding triple frame: %d, bytes:%d\n", triple.frame, triple.bytes);
+    }
   }
 
   if (offset == 0) {
@@ -599,6 +601,7 @@ void SteganographicFileSystem::writeHeader() {
     // Embed all the triples
     int embedded = 0;
     for (struct FileChunk t : f.second) {
+      printf("embedding triple with frame: %d, bytes: %d, off: %d\n", t.frame, t.bytes, t.offset);
       if (offset > (this->decoder->getFrameSize() / 8) - 50) break;
       memcpy(header + offset, (char *)&t, sizeof(FileChunk));
       offset += sizeof(FileChunk);

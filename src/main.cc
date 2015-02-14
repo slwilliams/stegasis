@@ -170,10 +170,12 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   bytesWritten = 0;
 
   int headerBytes = 0;
-  printf("offset before header bytes: %d\n", currentOffset);
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    bytesWritten += alg->embed(dec->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, 4-bytesWritten, currentOffset); 
+    printf("embedding header bytes: %d, frame: %d\n", currentOffset, currentFrame);
+    int tmp = alg->embed(dec->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, 4-bytesWritten, currentOffset); 
+    bytesWritten += tmp;
+    printf("wrote %d bytes to frame\n", tmp);
   } while (bytesWritten != 4);
   
   // Make sure the header is written back
