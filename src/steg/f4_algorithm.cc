@@ -48,16 +48,14 @@ class F4Algorithm : public SteganographicAlgorithm {
       *co = frameByte % DCTSIZE2;
     };
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
-      printf("------\n");
       //printf("called with offset: %d\n", offset);
-      int bytesLeftInFrame = this->dec->getFrameSize() - offset;
       int bytesEmbedded = 0;
       int bitEmbedded = 0;
       int originalOffset = offset;
       int frameByte, row, block, co, comp;
       JBLOCKARRAY frame;
       
-      while (bytesEmbedded * 8 < bytesLeftInFrame && bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
+      while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
         for (int j = 7; j >= 0; j --) {
           if (offset == this->dec->getFrameSize()) break;
           frameByte = lcg.map[offset++];
@@ -71,7 +69,7 @@ class F4Algorithm : public SteganographicAlgorithm {
             j ++;
             continue;  
           }
-          printf("co: %d, offset: %d\n", frame[0][block][co], offset);
+//          printf("co: %d, offset: %d\n", frame[0][block][co], offset);
 
           if (frame[0][block][co] > 0) {
             if ((frame[0][block][co] & 1) != ((1 << j) & data[bytesEmbedded]) >> j) {
@@ -93,10 +91,9 @@ class F4Algorithm : public SteganographicAlgorithm {
             } 
           }
 
-          printf("co after: %d\n", frame[0][block][co]);
+ //         printf("co after: %d\n", frame[0][block][co]);
         }
       }
-      printf("-----===---\n");
       //printf("bytesEmbedded: %d, bytesLeftInFrame: %d, reqByteCount: %d, offset: %d, this->dec->getFrameSize(): %d\n", bytesEmbedded*8, bytesLeftInFrame, reqByteCount, offset, this->dec->getFrameSize());
       int currentFrame, currentFrameOffset;
       this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
@@ -108,6 +105,7 @@ class F4Algorithm : public SteganographicAlgorithm {
       } else {
         // Still stuff left in this frame
         printf("yo currentOff: %d, offset: %d, orig: %d\n", currentFrameOffset, offset, originalOffset);
+        printf("offset: %d, frameSize: %d\n", offset, dec->getFrameSize());
         this->dec->setNextFrameOffset(currentFrame, currentFrameOffset + (offset - originalOffset));
       }
       return bytesEmbedded;
@@ -118,7 +116,7 @@ class F4Algorithm : public SteganographicAlgorithm {
       int frameByte = lcg.map[offset++];
       int row, block, co, comp;
       JBLOCKARRAY frame;
-      printf("______________\n");
+     // printf("______________\n");
       for (int i = 0; i < dataBytes; i ++) {
         int tmp = 0;
         for (int j = 7; j >= 0; j --) {
@@ -134,7 +132,7 @@ class F4Algorithm : public SteganographicAlgorithm {
             frameByte = lcg.map[offset++];
             continue;  
           }
-          printf("co: %d, offset: %d\n", frame[0][block][co], offset);
+      //    printf("co: %d, offset: %d\n", frame[0][block][co], offset);
 
           if (frame[0][block][co] < 0) {
             if ((frame[0][block][co] & 1) << j == 0) {

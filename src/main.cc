@@ -177,9 +177,10 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
     bytesWritten += tmp;
     printf("wrote %d bytes to frame\n", tmp);
   } while (bytesWritten != 4);
+  //dec->writeBack();
   
   // Make sure the header is written back
-  headerFrame->setDirty();
+  //headerFrame->setDirty();
 
   int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
   printf("\x1B[1;32mVolume capacity: %.2fMB\033[0m\n\n", totalCapacity/1000.0); 

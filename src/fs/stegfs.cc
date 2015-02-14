@@ -259,7 +259,8 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
   return 0;
 };
 
-/*int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+  this->mux.lock();
   unordered_map<string, int>::const_iterator file = this->fileSizes.find(path);
   
   if (file == this->fileSizes.end() || offset > file->second) {
@@ -279,33 +280,35 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
   for (struct FileChunk c : fileChunks) {
     if (bytesRead + c.bytes > offset) {
       while (bytesWritten < size) {
+        printf("chunk: frame: %d, bytes: %d, offset :%d\n\n", c.frame, c.bytes, c.offset);
         struct FileChunk chunk = fileChunks.at(chunkNum);
         int chunkOffset = offset - bytesRead;
         int bytesLeftInChunk = chunk.bytes - chunkOffset;
 
-        Frame *f = this->decoder->getFrame(c.frame);
+        Frame *f = this->decoder->getFrame(chunk.frame);
 
         if (size - bytesWritten <= bytesLeftInChunk) {
-          printf("\e[1A"); 
-          printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, chunk.offset + chunkOffset);
+   //       printf("\e[1A"); 
+      //    printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, chunk.offset);
           if (chunkOffset == 0) {
-            this->alg->extract(f, buf + bytesWritten, size - bytesWritten, chunk.offset * 8);
+            this->alg->extract(f, buf + bytesWritten, size - bytesWritten, chunk.offset);
           } else {
             char *temp = (char *)malloc(chunk.bytes * sizeof(char));
-            this->alg->extract(f, temp, chunk.bytes, chunk.offset * 8);
+            this->alg->extract(f, temp, chunk.bytes, chunk.offset);
             memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
             free(temp);
           }
           delete f;
+          this->mux.unlock();
           return size;
         }
-        printf("\e[1A"); 
-        printf("\e[0K\rExtracting bytes: %d, offset: %d\n", bytesLeftInChunk, chunk.offset + chunkOffset);
+  //      printf("\e[1A"); 
+      //  printf("\e[0K\rExtracting bytes: %d, offset: %d\n", bytesLeftInChunk, chunk.offset);
         if (chunkOffset == 0) {
-          this->alg->extract(f, buf + bytesWritten, bytesLeftInChunk, chunk.offset * 8);
+          this->alg->extract(f, buf + bytesWritten, bytesLeftInChunk, chunk.offset);
         } else {
           char *temp = (char *)malloc(chunk.bytes * sizeof(char));
-          this->alg->extract(f, temp, chunk.bytes, chunk.offset * 8);
+          this->alg->extract(f, temp, chunk.bytes, chunk.offset);
           memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
           free(temp);
         }
@@ -319,10 +322,11 @@ int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_
       chunkNum ++;
     }
   }
+  this->mux.unlock();
   return -ENOENT;
-};*/
+};
 
-int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+/*int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
   //printf("Read called: size: %lu, offset: %jd\n", size, (intmax_t)offset);
   unordered_map<string, int>::const_iterator file = this->fileSizes.find(path);
@@ -343,10 +347,12 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   for (struct FileChunk t : triples) {
     if (readBytes + t.bytes > offset) {
       while (bytesWritten < size) {
+        printf("looping!!\n\n");
         struct FileChunk t1 = triples.at(i);
         int frameSizeBytes = this->decoder->getFrameSize() / 8;
         bool spansMultipleFrames = ((int)t1.bytes + (int)t1.offset) > frameSizeBytes;
         if (spansMultipleFrames) {
+          printf("some how in here??\n\n");
           // This chunk spans multiple frames, deal with it seperatly
           // chunkOffset is frame relative to either the top of the frame, or top of the chunk
           int chunkOffset, actualFrame, chunkBytesInThisFrame;
@@ -404,28 +410,33 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
           if (size - bytesWritten <= bytesLeftInChunk) {
             printf("\e[1A"); 
             printf("\e[0K\rExtracting: bytes: %lu, offset: %d\n", size-bytesWritten, t1.offset + chunkOffset);
+            printf("going in...\n\n");
             if (chunkOffset == 0) {
-              this->alg->extract(f, buf + bytesWritten, size - bytesWritten, t1.offset * 8);
+              this->alg->extract(f, buf + bytesWritten, size - bytesWritten, t1.offset);
             } else {
               char *temp = (char *)malloc(t1.bytes * sizeof(char));
-              this->alg->extract(f, temp, t1.bytes, t1.offset * 8);
+              this->alg->extract(f, temp, t1.bytes, t1.offset);
               memcpy(buf + bytesWritten, temp + chunkOffset, size - bytesWritten);
               free(temp);
             }
+            printf("out...\n\n");
             delete f;
             this->mux.unlock();
             return size;
           }
+          printf("out...\n\n");
           printf("\e[1A"); 
           printf("\e[0K\rExtracting bytes: %d, offset: %d\n", bytesLeftInChunk, t1.offset + chunkOffset);
+          printf("going in again...\n\n");
           if (chunkOffset == 0) {
-            this->alg->extract(f, buf + bytesWritten, bytesLeftInChunk, t1.offset * 8);
+            this->alg->extract(f, buf + bytesWritten, bytesLeftInChunk, t1.offset);
           } else {
             char *temp = (char *)malloc(t1.bytes * sizeof(char));
-            this->alg->extract(f, temp, t1.bytes, t1.offset * 8);
+            this->alg->extract(f, temp, t1.bytes, t1.offset);
             memcpy(buf + bytesWritten, temp + chunkOffset, bytesLeftInChunk);
             free(temp);
           }
+          printf("out again\n\n");
           delete f;
           bytesWritten += bytesLeftInChunk;
           // Just to 0 chunkOffset from here on
@@ -442,7 +453,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
   }
   this->mux.unlock();
   return -ENOENT;
-};
+};*/
 
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   this->mux.lock();
@@ -459,17 +470,17 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     struct FileChunk triple;
     triple.frame = nextFrame;
     triple.offset = nextOffset;
-    printf("\e[1A"); 
+    //printf("\e[1A"); 
     printf("\e[0K\rEmbeding1, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
     Frame *f = this->decoder->getFrame(nextFrame);
-    triple.bytes = this->alg->embed(f, (char *)(buf + bytesWritten), size-bytesWritten, nextOffset * 8);
+    triple.bytes = this->alg->embed(f, (char *)(buf + bytesWritten), size-bytesWritten, nextOffset);
     bytesWritten += triple.bytes;
 
     f->setDirty(); 
     delete f;
     if (triple.bytes != 0) {
       this->fileIndex[path].push_back(triple);
-      printf("adding triple frame: %d, bytes:%d\n", triple.frame, triple.bytes);
+      printf("adding triple frame: %d, bytes:%d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
     }
   }
 
@@ -647,8 +658,7 @@ void SteganographicFileSystem::writeHeader() {
   bytesToWrite = tmp;
   do {
     this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
-    bytesToWrite -= bytesWritten;
-    bytesWritten = alg->embed(this->decoder->getFrame(currentFrame), header+bytesWritten, bytesToWrite, currentOffset);
+    bytesWritten += alg->embed(this->decoder->getFrame(currentFrame), header+bytesWritten, bytesToWrite-bytesWritten, currentOffset);
   } while (bytesWritten != bytesToWrite);
   //this->alg->embed(headerFrame, header, tmp, offset); 
   headerFrame->setDirty();
