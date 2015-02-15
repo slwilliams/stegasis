@@ -28,16 +28,22 @@
 #include "steg/dctp_aes_tfish_serpent_algorithm.cc"*/
 #include "steg/f4_algorithm.cc"
 
+#include "crypt/cryptographic_algorithm.h"
+#include "crypt/aes_algorithm.cc"
+#include "crypt/id_algorithm.cc"
+
 using namespace std;
 
 void printName();
 void printUsage();
 void incorrectArgNumber(string command);
-void doFormat(string algorithm, string pass, string pass2, int capacity, string videoPath);
-void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance);
-SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec);
+void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int capacity, string videoPath);
+void doMount(string videoPath, string mountPoint, string stegAlg, string cryptAlg, string pass, bool performance);
+SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, CryptographicAlgorithm *crpyt);
+CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec);
 
 DEFINE_string(alg, "dctl", "Embedding algorithm to use");
+DEFINE_string(crypt, "", "Encrypting algorithm to use");
 DEFINE_string(pass, "", "Passphrase to encrypt and permute data with");
 DEFINE_string(pass2, "", "Passphrase to encrypt and permute the hidden volume");
 DEFINE_int32(cap, 20, "Percentage of frame to embed within");
@@ -63,7 +69,7 @@ int main(int argc, char *argv[]) {
       return 1;
     }
     string videoPath = argv[2];
-    doFormat(FLAGS_alg, FLAGS_pass, FLAGS_pass2, FLAGS_cap, videoPath);
+    doFormat(FLAGS_alg, FLAGS_crypt, FLAGS_pass, FLAGS_pass2, FLAGS_cap, videoPath);
   } else if (command == "mount") {
     // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
     if (argc != 4) {
@@ -72,7 +78,7 @@ int main(int argc, char *argv[]) {
     }
     string videoPath = argv[2];
     string mountPoint = argv[3];
-    doMount(videoPath, mountPoint, FLAGS_alg, FLAGS_pass, FLAGS_p); 
+    doMount(videoPath, mountPoint, FLAGS_alg, FLAGS_crypt, FLAGS_pass, FLAGS_p); 
   } else if (command == "unmount") {
     if (argc != 3) {
       incorrectArgNumber(command);
@@ -90,7 +96,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void doMount(string videoPath, string mountPoint, string alg, string pass, bool performance) {
+void doMount(string videoPath, string mountPoint, string stegAlg, string cryptAlg, string pass, bool performance) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
   VideoDecoder *dec = NULL;
   if (FLAGS_f) {
@@ -98,7 +104,8 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   } else {
     dec = extension == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
   }
-  SteganographicAlgorithm *lsb = getAlg(alg, pass, dec); 
+  CryptographicAlgorithm *crypt = getCrypt(cryptAlg, pass, dec);
+  SteganographicAlgorithm *lsb = getSteg(stegAlg, pass, dec, crypt); 
   SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
 
   printf("\nMounting at %s...\n", mountPoint.c_str());
@@ -111,7 +118,7 @@ void doMount(string videoPath, string mountPoint, string alg, string pass, bool 
   printf("Sucsessfully unmounted!\n");
 }
 
-void doFormat(string algorithm, string pass, string pass2, int capacity, string videoPath) {
+void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int capacity, string videoPath) {
   string extension = videoPath.substr(videoPath.find_last_of(".") + 1);
   VideoDecoder *dec = NULL; 
   //VideoDecoder *dec = (VideoDecoder *)new MP4Decoder(videoPath);
@@ -121,7 +128,8 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
     dec = extension  == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, true);
   }
   //exit(0);
-  SteganographicAlgorithm *alg = getAlg(algorithm, pass, dec);
+  CryptographicAlgorithm *crypt = getCrypt(cryptAlg, pass, dec);
+  SteganographicAlgorithm *alg = getSteg(stegAlg, pass, dec, crypt);
 
   if (capacity < 0) capacity = 0;
   if (capacity > 100) capacity = 100;
@@ -178,7 +186,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   if (pass2 != "") {
     // Hidden volume requested
     Frame *headerFrame2 = dec->getFrame(dec->getNumberOfFrames() / 2);
-    SteganographicAlgorithm *alg2 = getAlg(algorithm, pass2, dec);
+    SteganographicAlgorithm *alg2 = getSteg(stegAlg, pass2, dec, crypt);
 
     char header2[4] = {'S', 'T', 'E', 'G'};
     alg2->embed(headerFrame2, header2, 4, 0);
@@ -200,9 +208,9 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   printf("Format successful!\n");
 }
 
-SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
+SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, CryptographicAlgorithm *crypt) {
   if (alg == "lsb") {
-    return new LSBAlgorithm(pass, dec);
+    return new LSBAlgorithm(pass, dec, crypt);
   } /*else if (alg == "lsbk") {
     return new LSBKAlgorithm(pass, dec);
   } else if (alg == "lsbp") {
@@ -222,9 +230,21 @@ SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   } else if (alg == "dcta") {
     return new DCTAAlgorithm(pass, dec);
   } */ else if (alg == "f4") {
-    return new F4Algorithm(pass, dec);
+    return new F4Algorithm(pass, dec, crypt);
   } else {
     printf("Unknown algorithm\n");
+    printUsage();
+    exit(0);
+  }
+}
+
+CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec) {
+  if (alg == "") {
+    return new IDAlgorithm(pass, dec);
+  } else if (alg == "aes") {
+    return new AESAlgorithm(pass, dec);
+  } else {
+    printf("Unknown CryptographicAlgorithm: %s\n", alg.c_str());
     printUsage();
     exit(0);
   }

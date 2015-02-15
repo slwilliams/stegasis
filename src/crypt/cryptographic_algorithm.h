@@ -1,5 +1,5 @@
-#ifndef stegalg_h
-#define stegalg_h 
+#ifndef cryptalg_h
+#define cryptalg_h 
 
 #include <string>
 #include <utility>
@@ -8,22 +8,17 @@
 #include <crypto/pwdbased.h>
 #include <crypto/whrlpool.h>
 
-#include "steg/lcg.h"
-#include "crypt/cryptographic_algorithm.h"
 #include "video/video_decoder.h"
 
 using namespace std;
 
-class SteganographicAlgorithm {                                                 
+class CryptographicAlgorithm {                                                 
   protected:
     VideoDecoder *dec;
-    CryptographicAlgorithm *crypt;
-    char *key;
-    LCG lcg;
     string password;
-
-  public:                                                                       
-    SteganographicAlgorithm(string password, VideoDecoder *dec, CryptographicAlgorithm *crypt): password(password), dec(dec), crypt(crypt) {
+    char *key;
+  public:                            
+    CryptographicAlgorithm(string password, VideoDecoder *dec): password(password), dec(dec) {
       this->key = (char *)malloc(128 * sizeof(char));
       char salt[16];
       int numFrames = this->dec->getNumberOfFrames();
@@ -39,8 +34,7 @@ class SteganographicAlgorithm {
           (const unsigned char *)this->password.c_str(), this->password.length(),
           (const unsigned char *)salt, 16, 32, 0);
     };
-    virtual int embed(Frame *c, char *data, int reqByteCount, int offset) = 0;
-    virtual pair<int,int> extract(Frame *c, char *output, int reqByteCount, int offset) = 0;
-    virtual void getAlgorithmCode(char out[4]) = 0;
+    virtual void encrypt(char *data, int byteCount) = 0;
+    virtual void decrypt(char *data, int byteCount) = 0;
 };
 #endif

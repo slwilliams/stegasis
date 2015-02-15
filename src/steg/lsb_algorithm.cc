@@ -4,13 +4,16 @@
 #include <string>
 
 #include "steganographic_algorithm.h"
+#include "crypt/cryptographic_algorithm.h"
 
 using namespace std;
 
 class LSBAlgorithm : public SteganographicAlgorithm {
   public:
-    LSBAlgorithm(string password, VideoDecoder *dec): SteganographicAlgorithm(password, dec) {};
+    LSBAlgorithm(string password, VideoDecoder *dec, CryptographicAlgorithm *crypt): SteganographicAlgorithm(password, dec, crypt) {};
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+      this->crypt->encrypt(data, reqByteCount);
+
       char *frame = c->getFrameData();
       int bytesEmbedded = 0, originalOFfset = offset;
       while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
@@ -40,17 +43,21 @@ class LSBAlgorithm : public SteganographicAlgorithm {
       }
       return bytesEmbedded;
     };
-    virtual pair<int, int> extract(Frame *c, char *output, int reqBytesCount, int offset) {
+    virtual pair<int, int> extract(Frame *c, char *output, int reqByteCount, int offset) {
       char *frame = c->getFrameData();
-      for (int i = 0; i < reqBytesCount; i ++) {
+      for (int i = 0; i < reqByteCount; i ++) {
         int tmp = 0;
         for (int j = 7; j >= 0; j --) {
-          if (offset == this->dec->getFrameSize()) return make_pair(i, 0);
+          if (offset == this->dec->getFrameSize()) {
+            this->crypt->decrypt(output, i);
+            return make_pair(i, 0);
+          }
           tmp |= ((frame[offset++] & 1) << j);
         }
         output[i] = tmp;
       }
-      return make_pair(reqBytesCount, offset);
+      this->crypt->decrypt(output, reqByteCount);
+      return make_pair(reqByteCount, offset);
     };
     virtual void getAlgorithmCode(char out[4]) {
       char tmp[4] = {'L', 'S', 'B', ' '};

@@ -10,13 +10,14 @@
 
 #include "video/video_decoder.h"
 #include "steganographic_algorithm.h"
+#include "crypt/cryptographic_algorithm.h"
 #include "lcg.h"
 
 using namespace std;
 
 class F4Algorithm : public SteganographicAlgorithm {
   public:
-    F4Algorithm(string password, VideoDecoder *dec): SteganographicAlgorithm(password, dec) {
+    F4Algorithm(string password, VideoDecoder *dec, CryptographicAlgorithm *crypt): SteganographicAlgorithm(password, dec, crypt) {
       int lcgKey = this->key[0] | this->key[1] << 8 | this->key[2] << 16 | this->key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
       this->lcg = LCG(dec->getFrameSize(), lcgKey);
@@ -28,8 +29,9 @@ class F4Algorithm : public SteganographicAlgorithm {
       *co = frameByte % DCTSIZE2;
     };
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+      this->crypt->encrypt(data, reqByteCount);
+
       int bytesEmbedded = 0;
-      int bitEmbedded = 0;
       int originalOffset = offset;
       int frameByte, row, block, co, comp;
       JBLOCKARRAY frame;
@@ -102,7 +104,10 @@ class F4Algorithm : public SteganographicAlgorithm {
           // Skip zeros and DC coefficients
           if (co == 0 || frame[0][block][co] == 0) {
             j ++;
-            if (offset == this->dec->getFrameSize()) return make_pair(i,0);
+            if (offset == this->dec->getFrameSize()) {
+              this->crypt->decrypt(output, i);
+              return make_pair(i,0);
+            }
             frameByte = lcg.map[offset++];
             continue;  
           }
@@ -117,12 +122,16 @@ class F4Algorithm : public SteganographicAlgorithm {
               tmp |= 1 << j;
             }
           }
-          if (offset == this->dec->getFrameSize()) return make_pair(i,0);
+          if (offset == this->dec->getFrameSize()) {
+            this->crypt->decrypt(output, i);   
+            return make_pair(i,0);
+          }
           frameByte = lcg.map[offset++];
         }
         // Only modify output if an entire byte was extracted
         output[i] = tmp;
       }
+      this->crypt->decrypt(output, dataBytes);
       return make_pair(dataBytes, offset - 1);
     };
     virtual void getAlgorithmCode(char out[4]) {
