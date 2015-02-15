@@ -15,31 +15,11 @@
 using namespace std;
 
 class F4Algorithm : public SteganographicAlgorithm {
-  private:
-    char *key;
-    LCG lcg;
-
   public:
-    F4Algorithm(string password, VideoDecoder *dec) {
-      this->password = password;
-      this->dec = dec;
-      this->key = (char *)malloc(128 * sizeof(char));
-      char salt[16];
-      int numFrames = this->dec->getNumberOfFrames();
-      int frameSize = this->dec->getFrameSize();
-      int width = this->dec->getFrameWidth();
-      int height = this->dec->getFrameHeight();
-      memcpy(salt, &numFrames, 4);
-      memcpy(salt + 4, &frameSize, 4);
-      memcpy(salt + 8, &width, 4);
-      memcpy(salt + 12, &height, 4);
-      CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::Whirlpool> keyDeriver;
-      keyDeriver.DeriveKey((unsigned char *)this->key, 128, 0,
-          (const unsigned char *)this->password.c_str(), this->password.length(),
-          (const unsigned char *)salt, 16, 32, 0);
-      int lcgKey = key[0] | key[1] << 8 | key[2] << 16 | key[3] << 24;
+    F4Algorithm(string password, VideoDecoder *dec): SteganographicAlgorithm(password, dec) {
+      int lcgKey = this->key[0] | this->key[1] << 8 | this->key[2] << 16 | this->key[3] << 24;
       if (lcgKey < 0) lcgKey *= -1;
-      this->lcg = LCG(frameSize+(dec->getFrameWidth() * dec->getFrameHeight()), lcgKey, true);
+      this->lcg = LCG(dec->getFrameSize(), lcgKey);
     };
     void getCoef(int frameByte, int *row, int *block, int *co) {
       *row = frameByte / (DCTSIZE2 * this->dec->getFrameWidth());
@@ -48,7 +28,6 @@ class F4Algorithm : public SteganographicAlgorithm {
       *co = frameByte % DCTSIZE2;
     };
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
-      //printf("called with offset: %d\n", offset);
       int bytesEmbedded = 0;
       int bitEmbedded = 0;
       int originalOffset = offset;
@@ -61,15 +40,12 @@ class F4Algorithm : public SteganographicAlgorithm {
           frameByte = lcg.map[offset++];
           this->getCoef(frameByte, &row, &block, &co);
           frame = (JBLOCKARRAY)c->getFrameData(row, 1);
-
-          //printf("co before: %d, &1: %d, data: %d, offset: %d\n", frame[0][block][co], frame[0][block][co] & 1, ((1 << j) & data[bytesEmbedded]) >> j, offset);
           
-          // Skip 0 valued coefficients
-          if (frame[0][block][co] == 0) {
+          // Skip DC terms and 0 valued coefficients
+          if (co == 0 || frame[0][block][co] == 0) {
             j ++;
             continue;  
           }
-//          printf("co: %d, offset: %d\n", frame[0][block][co], offset);
 
           if (frame[0][block][co] > 0) {
             if ((frame[0][block][co] & 1) != ((1 << j) & data[bytesEmbedded]) >> j) {
@@ -126,7 +102,7 @@ class F4Algorithm : public SteganographicAlgorithm {
           //printf("co before: %d, offset: %d\n", frame[0][block][co], offset);
           
           // Skip zeros
-          if (frame[0][block][co] == 0) {
+          if (co == 0 || frame[0][block][co] == 0) {
             j ++;
             if (offset == this->dec->getFrameSize()) return make_pair(i,0);
             frameByte = lcg.map[offset++];

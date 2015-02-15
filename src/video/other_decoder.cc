@@ -249,6 +249,6 @@ class JPEGDecoder : public VideoDecoder {
       this->hidden = true;
     };
     virtual int getFrameSize() {
-      return (int)floor(this->width * this->height * 63 * (capacity / 100.0));
+      return (int)floor(this->width * this->height * 64 * (capacity / 100.0));
     };
 };
