@@ -16,7 +16,7 @@
 #include "video/other_decoder.cc"
 
 #include "steg/steganographic_algorithm.h"
-//#include "steg/lsb_algorithm.cc"
+#include "steg/lsb_algorithm.cc"
 /*#include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
 #include "steg/lsb2_algorithm.cc"
@@ -202,7 +202,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
 
 SteganographicAlgorithm *getAlg(string alg, string pass, VideoDecoder *dec) {
   if (alg == "lsb") {
-  //  return new LSBAlgorithm(dec);
+    return new LSBAlgorithm(pass, dec);
   } /*else if (alg == "lsbk") {
     return new LSBKAlgorithm(pass, dec);
   } else if (alg == "lsbp") {

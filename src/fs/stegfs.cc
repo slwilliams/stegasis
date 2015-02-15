@@ -457,6 +457,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
   int bytesWritten = 0, nextFrame = 0, nextOffset = 0; 
 
+  // problem is writeHRead modifiys this...
   this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
 
   struct FileChunk triple;
@@ -585,6 +586,10 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 void SteganographicFileSystem::writeHeader() {
   //this->compactHeader();
   // TODO: Calculate header bytes for this malloc call
+  this->mux.lock();
+  int oldFrameOffset, oldFrame;
+  this->decoder->getNextFrameOffset(&oldFrame, &oldFrameOffset);
+
   char *header = (char *)malloc(this->decoder->getFrameSize() * sizeof(char) * 50);
   int headerBytes = 0, offset = 0;
   for (auto f : this->fileIndex) {
@@ -643,6 +648,9 @@ void SteganographicFileSystem::writeHeader() {
     bytesWritten += alg->embed(this->decoder->getFrame(currentFrame), header+bytesWritten, bytesToWrite-bytesWritten, currentOffset);
   } while (bytesWritten != bytesToWrite);
   free(header);
+
+  this->decoder->setNextFrameOffset(oldFrame, oldFrameOffset);
+  this->mux.unlock();
 };
 
 /*void SteganographicFileSystem::compactHeader() {

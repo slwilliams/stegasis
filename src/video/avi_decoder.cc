@@ -271,7 +271,9 @@ class AVIDecoder : public VideoDecoder {
       mtx.unlock();
     };
     virtual Frame *getFrame(int frame) {
-      return new AviFrameWrapper(&this->frameChunks[frame]); 
+      AviFrameWrapper *f = new AviFrameWrapper(&this->frameChunks[frame]);
+      f->setDirty();
+      return f; 
     };                                     
     virtual Frame *getHeaderFrame() {
       if (this->hidden) {
