@@ -17,11 +17,8 @@
 
 #include "steg/steganographic_algorithm.h"
 #include "steg/lsb_algorithm.cc"
-/*#include "steg/lsbk_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
-#include "steg/lsb2_algorithm.cc"
-#include "steg/lsba_algorithm.cc"
-#include "steg/dctl_algorithm.cc"
+/*#include "steg/dctl_algorithm.cc"
 #include "steg/dctp_algorithm.cc"
 #include "steg/dct2_algorithm.cc"
 #include "steg/dctp_aes_algorithm.cc"
@@ -79,16 +76,6 @@ int main(int argc, char *argv[]) {
     string videoPath = argv[2];
     string mountPoint = argv[3];
     doMount(videoPath, mountPoint, FLAGS_alg, FLAGS_crypt, FLAGS_pass, FLAGS_p); 
-  } else if (command == "unmount") {
-    if (argc != 3) {
-      incorrectArgNumber(command);
-      return 1;
-    } 
-    string prefix("fusermount -u ");
-    string mountPoint(argv[2]);
-    string command = prefix + mountPoint;
-    printf("Unmounting %s\n", mountPoint.c_str());
-    return system(command.c_str());
   } else {
     printf("Unknown command\n");
     return 1;
@@ -131,8 +118,8 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
   CryptographicAlgorithm *crypt = getCrypt(cryptAlg, pass, dec);
   SteganographicAlgorithm *alg = getSteg(stegAlg, pass, dec, crypt);
 
-  if (capacity < 0) capacity = 0;
-  if (capacity > 100) capacity = 100;
+  capacity = min(0, capacity);
+  capacity = max(capacity, 100);
   char capacityB = (char)capacity;
   
   if (pass2 != "") {
@@ -148,7 +135,6 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
     }
   }
 
-  Frame *headerFrame = dec->getFrame(0);
   int currentFrame, currentOffset;
   int bytesWritten = 0;
   dec->setNextFrameOffset(0, 0);
@@ -211,11 +197,9 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
 SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, CryptographicAlgorithm *crypt) {
   if (alg == "lsb") {
     return new LSBAlgorithm(pass, dec, crypt);
-  } /*else if (alg == "lsbk") {
-    return new LSBKAlgorithm(pass, dec);
   } else if (alg == "lsbp") {
-    return new LSBPAlgorithm(pass, dec);
-  } else if (alg == "lsb2") {
+    return new LSBPAlgorithm(pass, dec, crypt);
+  } /*else if (alg == "lsb2") {
     return new LSB2Algorithm(pass, dec);
   } else if (alg == "lsba") {
     return new LSBAAlgorithm(pass, dec);
@@ -262,7 +246,7 @@ void printName() {
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");
   printf("  ____) | ||  __/ (_| | (_| \\__ \\ \\__ \\ \n");
   printf(" |_____/ \\__\\___|\\__, |\\__,_|___/_|___/ \n");
-  printf("                  __/ | v3.5a               \n");
+  printf("                  __/ | v3.6a               \n");
   printf("                 |___/                      \n\n");
 }
 
