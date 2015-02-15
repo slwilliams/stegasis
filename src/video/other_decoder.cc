@@ -168,7 +168,6 @@ class JPEGDecoder : public VideoDecoder {
       // Lock needed for the case in which flush is called twice in quick sucsession
       mtx.lock();
       for (struct JPEGFrame f : this->frames) {
-        printf("writing back frame: %d\n", f.frame);
         unsigned long size = (unsigned long)this->jpegSizes[f.frame];
         jpeg_mem_dest(&f.dstinfo, &this->jpegs[f.frame], &size);
 

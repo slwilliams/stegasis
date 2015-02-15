@@ -147,9 +147,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   char header[4] = {'S', 'T', 'E', 'G'};
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    printf("embedding in frame: %d\n", currentFrame);
     bytesWritten += alg->embed(dec->getFrame(currentFrame), header+bytesWritten, 4-bytesWritten, currentOffset); 
-    printf("embedded: %d\n", bytesWritten);
   } while (bytesWritten != 4);
   bytesWritten = 0;
 
@@ -157,9 +155,7 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   alg->getAlgorithmCode(algCode);
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    printf("offset after headersig: %d, frame: %d\n", currentOffset, currentFrame);
     bytesWritten += alg->embed(dec->getFrame(currentFrame), algCode+bytesWritten, 4-bytesWritten, currentOffset); 
-    printf("byteswritten: %d\n", bytesWritten);
   } while (bytesWritten != 4);
   bytesWritten = 0;
 
@@ -172,19 +168,12 @@ void doFormat(string algorithm, string pass, string pass2, int capacity, string 
   int headerBytes = 0;
   do {
     dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    printf("embedding header bytes: %d, frame: %d\n", currentOffset, currentFrame);
     int tmp = alg->embed(dec->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, 4-bytesWritten, currentOffset); 
     bytesWritten += tmp;
-    printf("wrote %d bytes to frame\n", tmp);
   } while (bytesWritten != 4);
-  //dec->writeBack();
   
-  // Make sure the header is written back
-  //headerFrame->setDirty();
-
   int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
   printf("\x1B[1;32mVolume capacity: %.2fMB\033[0m\n\n", totalCapacity/1000.0); 
-  //printf("Frame size: %dB\n", dec->getFrameSize());
 
   if (pass2 != "") {
     // Hidden volume requested
