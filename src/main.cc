@@ -27,6 +27,9 @@
 
 #include "crypt/cryptographic_algorithm.h"
 #include "crypt/aes_algorithm.cc"
+#include "crypt/twofish_algorithm.cc"
+#include "crypt/serpent_algorithm.cc"
+#include "crypt/aes_serpent_twofish_algorithm.cc"
 #include "crypt/id_algorithm.cc"
 
 using namespace std;
@@ -227,6 +230,12 @@ CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec) {
     return new IDAlgorithm(pass, dec);
   } else if (alg == "aes") {
     return new AESAlgorithm(pass, dec);
+  } else if (alg == "twofish") {
+    return new TwofishAlgorithm(pass, dec);
+  } else if (alg == "serpent") {
+    return new SerpentAlgorithm(pass, dec);
+  } else if (alg == "aes_serpent_twofish") {
+    return new AESSerpentTwofishAlgorithm(pass, dec);
   } else {
     printf("Unknown CryptographicAlgorithm: %s\n", alg.c_str());
     printUsage();
