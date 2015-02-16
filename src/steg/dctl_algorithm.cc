@@ -1,64 +1,69 @@
 #include <stdio.h>
 #include <string.h>
+#include <string>
+#include <utility>
 
-#include "steganographic_algorithm.h"
+#include "crypt/cryptographic_algorithm.h"
+#include "steg/steganographic_algorithm.h"
 #include "video/video_decoder.h"
+
+using namespace std;
 
 class DCTLAlgorithm : public SteganographicAlgorithm {
   public:
-    DCTLAlgorithm(VideoDecoder *dec) {
-      this->dec = dec;
-    };
-    void getCoef(int frameByte, int *row, int *block, int *co) {
-      *row = frameByte / (DCTSIZE2 * this->dec->getFrameWidth());
-      *block = (frameByte - *row * this->dec->getFrameWidth() * DCTSIZE2) / DCTSIZE2;
-      if (*block < 0) *block = 0;
-      *co = frameByte % DCTSIZE2;
-    };
-    virtual void embed(Frame *c, char *data, int dataBytes, int offset) {
-      if (dataBytes == 0) return;
-      offset /= 2;
-      int frameByte = offset;
+    DCTLAlgorithm(string password, VideoDecoder *dec, CryptographicAlgorithm *crypt): SteganographicAlgorithm(password, dec, crypt) {};
+    virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+      this->crypt->encrypt(data, reqByteCount);
+
+      int originalOffset = offset, bytesEmbedded = 0;
       int row, block, co;
-      JBLOCKARRAY frame1;
-      JBLOCKARRAY frame2;
-      for (int i = 0; i < dataBytes; i ++) {
+      JBLOCKARRAY frame;
+      while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
         for (int j = 7; j >= 0; j --) {
-          this->getCoef(frameByte++, &row, &block, &co);
-          frame1 = (JBLOCKARRAY)c->getFrameData(row, 1);
-          if ((((1 << j) & data[i]) >> j) == 1) {
-            frame1[0][block][co] |= 1;
-          } else {
-            frame1[0][block][co] &= ~1;
+          if (offset == this->dec->getFrameSize()) {
+            bytesEmbedded --;
+            break;
           }
-          j --;
-          frame2 = (JBLOCKARRAY)c->getFrameData(row, 2);
-          if ((((1 << j) & data[i]) >> j) == 1) {
-            frame2[0][block][co] |= 1;
+          this->getCoef(offset++, &row, &block, &co);
+          frame = (JBLOCKARRAY)c->getFrameData(row, 1);
+          if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
+            frame[0][block][co] |= 1;
           } else {
-            frame2[0][block][co] &= ~1;
+            frame[0][block][co] &= ~1;
           }
         }
+        bytesEmbedded ++;
       }
+      int currentFrame, currentFrameOffset;
+      this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
+
+      if (offset == this->dec->getFrameSize()) {
+        this->dec->setNextFrameOffset(currentFrame + 1, 0);
+      } else {
+        this->dec->setNextFrameOffset(currentFrame, currentFrameOffset + (offset - originalOffset));
+      }
+
+      this->crypt->decrypt(data, reqByteCount);
+      return bytesEmbedded;
     };
-    virtual void extract(Frame *c, char *output, int dataBytes, int offset) {
-      if (dataBytes == 0) return;
-      offset /= 2;
-      int frameByte = offset;
+    virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
       int row, block, co;
-      JBLOCKARRAY frame1;
-      JBLOCKARRAY frame2;
+      JBLOCKARRAY frame;
       for (int i = 0; i < dataBytes; i ++) {
-        output[i] = 0;
+        int tmp = 0;
         for (int j = 7; j >= 0; j --) {
-          this->getCoef(frameByte++, &row, &block, &co);
-          frame1 = (JBLOCKARRAY)c->getFrameData(row, 1);
-          output[i] |= ((frame1[0][block][co] & 1) << j);            
-          j --;
-          frame2 = (JBLOCKARRAY)c->getFrameData(row, 2);
-          output[i] |= ((frame2[0][block][co] & 1) << j);            
+          if (offset == this->dec->getFrameSize()) {
+            this->crypt->decrypt(output, i);
+            return make_pair(i, 0);
+          }
+          this->getCoef(offset++, &row, &block, &co);
+          frame = (JBLOCKARRAY)c->getFrameData(row, 1);
+          tmp |= ((frame[0][block][co] & 1) << j);            
         }
+        output[i] = tmp;
       }
+      this->crypt->decrypt(output, dataBytes);
+      return make_pair(dataBytes, offset);
     };
     virtual void getAlgorithmCode(char out[4]) {
       char tmp[4] = {'D', 'C', 'T', 'L'};

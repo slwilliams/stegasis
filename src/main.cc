@@ -18,11 +18,8 @@
 #include "steg/steganographic_algorithm.h"
 #include "steg/lsb_algorithm.cc"
 #include "steg/lsbp_algorithm.cc"
-/*#include "steg/dctl_algorithm.cc"
+#include "steg/dctl_algorithm.cc"
 #include "steg/dctp_algorithm.cc"
-#include "steg/dct2_algorithm.cc"
-#include "steg/dctp_aes_algorithm.cc"
-#include "steg/dctp_aes_tfish_serpent_algorithm.cc"*/
 #include "steg/f4_algorithm.cc"
 
 #include "crypt/cryptographic_algorithm.h"
@@ -202,21 +199,11 @@ SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, Cry
     return new LSBAlgorithm(pass, dec, crypt);
   } else if (alg == "lsbp") {
     return new LSBPAlgorithm(pass, dec, crypt);
-  } /*else if (alg == "lsb2") {
-    return new LSB2Algorithm(pass, dec);
-  } else if (alg == "lsba") {
-    return new LSBAAlgorithm(pass, dec);
   } else if (alg == "dctl") {
-    return new DCTLAlgorithm(dec);
+    return new DCTLAlgorithm(pass, dec, crypt);
   } else if (alg == "dctp") {
-    return new DCTPAlgorithm(pass, dec);
-  } else if (alg == "dct2") {
-    return new DCT2Algorithm(pass, dec);
-  } else if (alg == "dct3") {
-    return new DCT3Algorithm(pass, dec);
-  } else if (alg == "dcta") {
-    return new DCTAAlgorithm(pass, dec);
-  } */ else if (alg == "f4") {
+    return new DCTPAlgorithm(pass, dec, crypt);
+  } else if (alg == "f4") {
     return new F4Algorithm(pass, dec, crypt);
   } else {
     printf("Unknown algorithm\n");
@@ -255,7 +242,7 @@ void printName() {
   printf("  \\___ \\| __/ _ \\/ _` |/ _` / __| / __|  \n");
   printf("  ____) | ||  __/ (_| | (_| \\__ \\ \\__ \\ \n");
   printf(" |_____/ \\__\\___|\\__, |\\__,_|___/_|___/ \n");
-  printf("                  __/ | v3.6a               \n");
+  printf("                  __/ | v3.7a               \n");
   printf("                 |___/                      \n\n");
 }
 
