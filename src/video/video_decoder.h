@@ -21,6 +21,7 @@ class VideoDecoder {
     virtual int getFrameSize() = 0;
     virtual int getFrameHeight() = 0;
     virtual int getFrameWidth() = 0;
+    virtual int getCapacity() = 0;
     virtual void getNextFrameOffset(int *frame, int *offset) = 0;
 
     virtual void setNextFrameOffset(int frame, int offset) = 0;
