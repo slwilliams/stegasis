@@ -241,7 +241,7 @@ class JPEGDecoder : public VideoDecoder {
     virtual int getFrameWidth() {
       return this->width; 
     };
-    virtual int setCapacity() {
+    virtual int getCapacity() {
       return (int)this->capacity;
     }
     virtual void setCapacity(char capacity) { 

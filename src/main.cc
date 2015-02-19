@@ -21,6 +21,7 @@
 #include "steg/dctl_algorithm.cc"
 #include "steg/dctp_algorithm.cc"
 #include "steg/f4_algorithm.cc"
+#include "steg/f5_algorithm.cc"
 
 #include "crypt/cryptographic_algorithm.h"
 #include "crypt/aes_algorithm.cc"
@@ -205,8 +206,10 @@ SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, Cry
     return new DCTPAlgorithm(pass, dec, crypt);
   } else if (alg == "f4") {
     return new F4Algorithm(pass, dec, crypt);
+  } else if (alg == "f5") {
+    return new F5Algorithm(pass, dec, crypt);
   } else {
-    printf("Unknown algorithm\n");
+    printf("Unknown algorithm: %s\n", alg.c_str());
     printUsage();
     exit(0);
   }

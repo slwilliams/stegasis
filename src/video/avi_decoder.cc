@@ -302,6 +302,9 @@ class AVIDecoder : public VideoDecoder {
     virtual int getFrameWidth() {
       return this->aviHeader.width; 
     };
+    virtual int getCapacity() {
+      return (int)this->capacity;
+    };
     virtual void setCapacity(char capacity) { 
       this->capacity = capacity;
     };

@@ -44,6 +44,7 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
 
   char headerSig[4] = {0,0,0,0};
   this->extract(&frame, &offset.second, 4, headerSig);
+  printf("Header: %.4s\n", headerSig);
   //printf("offset after heardersig: %d\n", offset.second);
   if (strncmp(headerSig, "STEG", 4) != 0) {
     this->decoder->setHiddenVolume(); 

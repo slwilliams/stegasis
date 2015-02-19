@@ -368,6 +368,9 @@ class MP4Decoder : public VideoDecoder {
     virtual int getFrameWidth() {
       return this->width; 
     };
+    virtual int getCapacity() {
+      return (int)this->capacity;
+    };
     virtual void setCapacity(char capacity) { 
       this->capacity = capacity;
     };
