@@ -20,15 +20,15 @@ class F5Algorithm : public SteganographicAlgorithm {
       }
       return out;      
     };
-    int *getNextBlock(Frame *c, int offset, int blockSize) {
+    int *getNextBlock(Frame *c, int *offset, int blockSize) {
       int *nextBlock = (int *)malloc(sizeof(int) * blockSize);
       int row, block, co;
       for (int i = 0; i < blockSize; i ++) {
-        if (offset == this->dec->getFrameHeight() * this->dec->getFrameWidth() * 64) {
+        if (*offset == this->dec->getFrameHeight() * this->dec->getFrameWidth() * 64) {
           printf("offset == framesize\n");
           return NULL;
         }
-        this->getCoef(lcg.map[offset++], &row, &block, &co);
+        this->getCoef(lcg.map[(*offset)++], &row, &block, &co);
         JBLOCKARRAY frame = (JBLOCKARRAY)c->getFrameData(row, 1); 
         if (frame[0][block][co] == 0) {
           i --;
@@ -70,15 +70,17 @@ class F5Algorithm : public SteganographicAlgorithm {
     };
     int getNextDataBlock(char *data, int dataSize, int blockSizeInBits, int offsetInBits) {
       printf("datasize: %d, blocksizebits: %d, offsetbits: %d\n", dataSize, blockSizeInBits, offsetInBits);
-      printf("data[0]: %d\n", data[0]);
+      printf("off: %d, /8: %d, data[off/8]: %d\n", offsetInBits, offsetInBits/8, data[offsetInBits/8]);
       int output = 0;
       for (int i = 0; i < blockSizeInBits; i ++) {
         int byte = offsetInBits / 8;
         int bit = offsetInBits % 8;
         if (byte == dataSize) return output;
         char theByte = data[byte];
-        int theBit = theByte & (1 << (8*byte + 7-bit));
-        output |= theBit; 
+        printf("thebytes: %d\n", theByte);
+        int theBit = (theByte & (1 << (7-bit))) >> (7-bit);
+        printf("bit: %d, theBit: %d\n", bit, theBit);
+        output |= theBit << (blockSizeInBits-1 - i);
 
         offsetInBits ++;
       }
@@ -129,12 +131,13 @@ class F5Algorithm : public SteganographicAlgorithm {
 
       int bitsEmbedded = 0;
       while (bitsEmbedded < bitsToEmbed) {
-        int *coefficients = this->getNextBlock(c, offset, codeWordLength);
+        int oldOffset = offset;
+        int *coefficients = this->getNextBlock(c, &offset, codeWordLength);
         if (coefficients == NULL) break;
 
         int hashOfCoefficients = this->hash(coefficients, codeWordLength);
         printf("hash of co: %d\n", hashOfCoefficients);
-        int dataBlock = this->getNextDataBlock(data, reqByteCount-bitsEmbedded/8, k, bitsEmbedded);
+        int dataBlock = this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded);
 
         int index = hashOfCoefficients ^ dataBlock;
         printf("index: %d\n", index);
@@ -142,23 +145,23 @@ class F5Algorithm : public SteganographicAlgorithm {
           // Don't need to do anything
           bitsEmbedded += k;
         // NOT true could be larger than code word length...
-          offset += codeWordLength;
           continue;
         } else {
           // Need to decrement coefficent at index
           index --;
           // Won't work what if this is a zero co...
  
-          if (this->decCo(c, offset, codeWordLength, index) == 0) {
+          if (this->decCo(c, oldOffset, codeWordLength, index) == 0) {
             // Shrinkage...
             printf("Srinkage...\n");
+            offset = oldOffset;
             continue;
           } else {
             // ---------- tmp --------
-            int *tmp = this->getNextBlock(c, offset, codeWordLength);
+            int *tmp = this->getNextBlock(c, &oldOffset, codeWordLength);
             int tmph = this->hash(tmp, codeWordLength);
             printf("tmph: %d\n", tmph);
-            if ((tmph ^ this->getNextDataBlock(data, reqByteCount-bitsEmbedded/8, k, bitsEmbedded)) != 0) {
+            if ((tmph ^ this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded)) != 0) {
               printf("BAD!\n");
               abort();
             }
@@ -167,7 +170,6 @@ class F5Algorithm : public SteganographicAlgorithm {
 
             bitsEmbedded += k;
         // NOT true could be larger than code word length...
-            offset += codeWordLength;
             continue;
           }
         }
@@ -224,9 +226,8 @@ class F5Algorithm : public SteganographicAlgorithm {
       char temp = 0;
       char tempBit = 7;
       while (bitsExtracted < dataBytes * 8) {
-        int *coefficients = this->getNextBlock(c, offset, codeWordLength);
+        int *coefficients = this->getNextBlock(c, &offset, codeWordLength);
         // NOT true could be larger than code word length...
-        offset += codeWordLength;
         if (coefficients == NULL) {
           printf("here??\n");
           this->crypt->decrypt(output, bytesExtracted);   
@@ -236,6 +237,7 @@ class F5Algorithm : public SteganographicAlgorithm {
         int hashOfCoefficients = this->hash(coefficients, codeWordLength);
         printf("hasofco: %d\n", hashOfCoefficients);
         for (int i = k-1; i >= 0; i --) {
+          // this line doesn't work but the rest does
           temp |= ((hashOfCoefficients & (1 << i)) >> i) << tempBit;
           bitsExtracted ++;
           tempBit --;
