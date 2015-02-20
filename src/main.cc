@@ -119,8 +119,8 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
   CryptographicAlgorithm *crypt = getCrypt(cryptAlg, pass, dec);
   SteganographicAlgorithm *alg = getSteg(stegAlg, pass, dec, crypt);
 
-  capacity = min(0, capacity);
-  capacity = max(capacity, 100);
+  capacity = max(0, capacity);
+  capacity = min(capacity, 100);
   char capacityB = (char)capacity;
   
   if (pass2 != "") {

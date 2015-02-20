@@ -303,7 +303,7 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 
     bytesLeftInChunk = min((int)(size - bytesWritten), bytesLeftInChunk);
 
-    printf("\e[1A"); 
+    //printf("\e[1A"); 
     printf("\e[0K\rExtracting bytes: %d, offset: %d, frame: %d\n", bytesLeftInChunk, chunk.offset, chunk.frame);
     if (chunkOffset == 0) {
       this->extract((int *)&chunk.frame, (int *)&chunk.offset, bytesLeftInChunk, buf+bytesWritten);
@@ -458,25 +458,45 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   //printf("Write called: path: %s, size: %zu, offset: %jd\n", path, size, (intmax_t)offset);  
   int bytesWritten = 0, nextFrame = 0, nextOffset = 0; 
 
-  // problem is writeHRead modifiys this...
   this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
 
-  struct FileChunk triple;
+  /*struct FileChunk triple;
   triple.frame = nextFrame;
   triple.offset = nextOffset;
-  triple.bytes = 0;
+  triple.bytes = 0;*/
 
   while (bytesWritten < size) {
     this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
+
+    struct FileChunk triple;
+    triple.frame = nextFrame;
+    triple.offset = nextOffset;
+    triple.bytes = 0;
     
-    printf("\e[1A"); 
-    printf("\e[0K\rEmbeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
+    //printf("\e[1A"); 
+    printf(/*\e[0K\r*/"Embeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
     int tmp = this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten), size-bytesWritten, nextOffset); 
+    printf("got a tmp of: %d\n", tmp);
     triple.bytes += tmp;
+    //bytesWritten += tmp;
+
+    if (tmp != 0) {
+      this->fileIndex[path].push_back(triple);
+      // ------ tmp ------
+      char *tmpData = (char *)malloc(sizeof(int) * tmp);
+      this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, tmp, 0);
+      for (int i = 0; i < tmp; i ++) {
+        if (tmpData[i] != (buf + bytesWritten)[i]) {
+          printf("i: %d, input: %d, gotout: %d, tmp: %d\n", i, (buf + bytesWritten)[i], tmpData[i], tmp);
+          abort();
+        }
+      }
+    }
+    printf("finished here\n");
     bytesWritten += tmp;
   }
   //printf("adding triple frame: %d, bytes:%d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
-  this->fileIndex[path].push_back(triple);
+  //this->fileIndex[path].push_back(triple);
 
   if (offset == 0) {
     this->fileSizes[path] = size;

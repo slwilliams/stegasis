@@ -21,6 +21,7 @@ class F5Algorithm : public SteganographicAlgorithm {
       return out;      
     };
     int *getNextBlock(Frame *c, int *offset, int blockSize) {
+      // TODO: memory leak
       int *nextBlock = (int *)malloc(sizeof(int) * blockSize);
       int row, block, co;
       for (int i = 0; i < blockSize; i ++) {
@@ -53,11 +54,11 @@ class F5Algorithm : public SteganographicAlgorithm {
         }
         if (i == index) {
           if (frame[0][block][co] < 1) {
-            printf("adding\n");
+   //         printf("adding\n");
             frame[0][block][co] ++;
           }
           else {
-            printf("deccing: %d\n", frame[0][block][co]);
+    //        printf("deccing: %d\n", frame[0][block][co]);
             frame[0][block][co] --;
           }
 
@@ -69,25 +70,30 @@ class F5Algorithm : public SteganographicAlgorithm {
       abort();
     };
     int getNextDataBlock(char *data, int dataSize, int blockSizeInBits, int offsetInBits) {
-      printf("datasize: %d, blocksizebits: %d, offsetbits: %d\n", dataSize, blockSizeInBits, offsetInBits);
-      printf("off: %d, /8: %d, data[off/8]: %d\n", offsetInBits, offsetInBits/8, data[offsetInBits/8]);
+   //   printf("datasize: %d, blocksizebits: %d, offsetbits: %d\n", dataSize, blockSizeInBits, offsetInBits);
+    //  printf("off: %d, /8: %d, data[off/8]: %d\n", offsetInBits, offsetInBits/8, data[offsetInBits/8]);
       int output = 0;
       for (int i = 0; i < blockSizeInBits; i ++) {
         int byte = offsetInBits / 8;
         int bit = offsetInBits % 8;
         if (byte == dataSize) return output;
         char theByte = data[byte];
-        printf("thebytes: %d\n", theByte);
+     //   printf("thebytes: %d\n", theByte);
         int theBit = (theByte & (1 << (7-bit))) >> (7-bit);
-        printf("bit: %d, theBit: %d\n", bit, theBit);
+      //  printf("bit: %d, theBit: %d\n", bit, theBit);
         output |= theBit << (blockSizeInBits-1 - i);
 
         offsetInBits ++;
       }
-      printf("output: %d\n", output);
+    //  printf("output: %d\n", output);
       return output;
     };
     virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+      if (reqByteCount == 0) {
+        printf("reqbyte = 0\n");
+        return 0;
+      }
+
       this->crypt->encrypt(data, reqByteCount);
 
       if (offset != 0) {
@@ -107,18 +113,40 @@ class F5Algorithm : public SteganographicAlgorithm {
         if (frame[0][block][co] == 0) zeroCoefficients ++;
         if (frame[0][block][co] == 1 || frame[0][block][co] == -1) oneCoefficients ++;
       }
+      
+      // Embed value of 255 into the second component
+      for (int j = 7; j >= 0; j --) {
+        this->getCoef(lcg.map[j+5], &row, &block, &co); 
+        frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+        if ((255 & (1 << j)) != 0) {
+          frame[0][block][co] |= 1;
+        } else {
+          frame[0][block][co] &= (~1);
+        }
+      }
 
       // In bits
       int embeddingCapacity = totalCoefficients - totalCoefficients/64 - zeroCoefficients - oneCoefficients - 0.49*oneCoefficients;
-      printf("Embedding capacity: %d\n", embeddingCapacity);
+      // Force to be a multiple of 8
+      embeddingCapacity -= embeddingCapacity % 8;
+      printf("Embedding capacity: %d, total: %d, zero: %d, one: %d\n", embeddingCapacity, totalCoefficients, zeroCoefficients, oneCoefficients);
+      if (embeddingCapacity < 8) {
+        printf("embedding capcity < 8...\n");
+        int currentFrame, currentFrameOffset;
+        this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
+        this->dec->setNextFrameOffset(currentFrame + 1, 0);
+
+        this->crypt->decrypt(data, reqByteCount);
+        return 0;
+      }
 
       int bitsToEmbed = min(reqByteCount * 8, (int)(embeddingCapacity * (this->dec->getCapacity()/100.0)));
-      printf("bitsToEMbed: %d\n", bitsToEmbed);
+      printf("bitsToEmbed: %d, req: %d\n", bitsToEmbed, reqByteCount);
 
       double embeddingRate = (double)bitsToEmbed / (double)embeddingCapacity; 
       printf("EmbeddingRate: %f\n", embeddingRate);
 
-      int k = 1;
+      char k = 1;
       while (true) {
         double rate = (double)k / (pow(2, k) - 1);
         if (rate < embeddingRate) break;
@@ -126,6 +154,17 @@ class F5Algorithm : public SteganographicAlgorithm {
       }
       k --;
       printf("K: %d\n", k);
+
+      // Embed value of k into the second component
+      for (int j = 7; j >= 0; j --) {
+        this->getCoef(lcg.map[j+5], &row, &block, &co); 
+        frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+        if ((k & (1 << j)) != 0) {
+          frame[0][block][co] |= 1;
+        } else {
+          frame[0][block][co] &= (~1);
+        }
+      }
 
       int codeWordLength = pow(2, k) - 1;
 
@@ -136,36 +175,34 @@ class F5Algorithm : public SteganographicAlgorithm {
         if (coefficients == NULL) break;
 
         int hashOfCoefficients = this->hash(coefficients, codeWordLength);
-        printf("hash of co: %d\n", hashOfCoefficients);
+        //printf("hash of co: %d\n", hashOfCoefficients);
         int dataBlock = this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded);
 
         int index = hashOfCoefficients ^ dataBlock;
-        printf("index: %d\n", index);
+        //printf("index: %d\n", index);
         if (index == 0) {
           // Don't need to do anything
           bitsEmbedded += k;
-        // NOT true could be larger than code word length...
           continue;
         } else {
           // Need to decrement coefficent at index
           index --;
-          // Won't work what if this is a zero co...
  
           if (this->decCo(c, oldOffset, codeWordLength, index) == 0) {
             // Shrinkage...
-            printf("Srinkage...\n");
+  //       printf("Srinkage...\n");
             offset = oldOffset;
             continue;
           } else {
             // ---------- tmp --------
             int *tmp = this->getNextBlock(c, &oldOffset, codeWordLength);
             int tmph = this->hash(tmp, codeWordLength);
-            printf("tmph: %d\n", tmph);
+         //   printf("tmph: %d\n", tmph);
             if ((tmph ^ this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded)) != 0) {
-              printf("BAD!\n");
+      //    printf("BAD!\n");
               abort();
             }
-            printf("Worked ok!\n");
+    //     printf("Worked ok!\n");
             // ----------- end tmp -----------
 
             bitsEmbedded += k;
@@ -179,20 +216,19 @@ class F5Algorithm : public SteganographicAlgorithm {
       this->dec->setNextFrameOffset(currentFrame + 1, 0);
 
       this->crypt->decrypt(data, reqByteCount);
+      printf("managed to embed: %d bytes\n", bitsEmbedded/8);
       return bitsEmbedded / 8;
     }; 
     virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
-      if (dataBytes == 0) {
-        return make_pair(0,0);
-      }
+      if (dataBytes == 0) return make_pair(0, 0);
       if (offset != 0) {
-        printf("Offset != 0!!, probably not good...\n");
+        printf("Offset != 0...\n");
         abort();
       }
 
       JBLOCKARRAY frame;
       int row, block, co;
-
+    /* 
       // Estimate the embedding capacity
       int totalCoefficients = this->dec->getFrameHeight() * this->dec->getFrameWidth() * 64;
       int zeroCoefficients = 0, oneCoefficients = 0;
@@ -202,26 +238,27 @@ class F5Algorithm : public SteganographicAlgorithm {
         if (frame[0][block][co] == 0) zeroCoefficients ++;
         if (frame[0][block][co] == 1 || frame[0][block][co] == -1) oneCoefficients ++;
       }
-      printf("total: %d, one: %d, zero: %d\n", totalCoefficients, oneCoefficients, zeroCoefficients);
 
       // In bits
       int embeddingCapacity = totalCoefficients - totalCoefficients/64 - zeroCoefficients - oneCoefficients - 0.49*oneCoefficients;
-      printf("Embedding capacity: %d\n", embeddingCapacity);
+      // Force to be a multiple of 8
+      embeddingCapacity -= embeddingCapacity % 8;
+      printf("Embedding capacity: %d, total: %d, zero: %d, one: %d\n", embeddingCapacity, totalCoefficients, zeroCoefficients, oneCoefficients);
+      if (embeddingCapacity < 8) {
+        printf("embedding capcity < 8...\n");
+        return make_pair(0, 0);
+      }*/
 
-      int bitsToEmbed = min(dataBytes * 8, (int)(embeddingCapacity * (this->dec->getCapacity()/100.0)));
-      printf("bitsToEmbed: %d\n", bitsToEmbed);
-
-      double embeddingRate = (double)bitsToEmbed / (double)embeddingCapacity; 
-      printf("EmbeddingRate: %f\n", embeddingRate);
-
-      int k = 1;
-      while (true) {
-        double rate = (double)k / (pow(2, k) - 1);
-        if (rate < embeddingRate) break;
-        k ++;
+      char k = 0;
+      for (int j = 7; j >= 0; j --) {
+        this->getCoef(lcg.map[j+5], &row, &block, &co); 
+        frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+        k |= (frame[0][block][co] & 1) << j;
       }
-      k --;
       printf("K: %d\n", k);
+      if (k == -1) {
+        return make_pair(0, 0);
+      }
 
       int codeWordLength = pow(2, k) - 1;
 
@@ -230,7 +267,6 @@ class F5Algorithm : public SteganographicAlgorithm {
       char tempBit = 7;
       while (bitsExtracted < dataBytes * 8) {
         int *coefficients = this->getNextBlock(c, &offset, codeWordLength);
-        // NOT true could be larger than code word length...
         if (coefficients == NULL) {
           printf("here??\n");
           this->crypt->decrypt(output, bytesExtracted);   
@@ -238,14 +274,14 @@ class F5Algorithm : public SteganographicAlgorithm {
         } 
 
         int hashOfCoefficients = this->hash(coefficients, codeWordLength);
-        printf("hasofco: %d\n", hashOfCoefficients);
+       // printf("hasofco: %d\n", hashOfCoefficients);
         for (int i = k-1; i >= 0; i --) {
           temp |= (((hashOfCoefficients & (1 << i)) >> i) << tempBit);
           bitsExtracted ++;
 
           if (tempBit == 0) {
             tempBit = 7;
-            printf("about to assign temp: %d\n", temp);
+        //    printf("about to assign temp: %d\n", temp);
             output[bytesExtracted++] = temp;
             temp = 0;
           } else {

@@ -39,6 +39,10 @@ class SteganographicAlgorithm {
       int frameSize = this->dec->getFrameSize();
       int width = this->dec->getFrameWidth();
       int height = this->dec->getFrameHeight();
+      printf("numFrames: %d\n", numFrames);
+      printf("frameSize: %d\n", frameSize);
+      printf("width: %d\n", width);
+      printf("height: %d\n", height);
       memcpy(salt, &numFrames, 4);
       memcpy(salt + 4, &frameSize, 4);
       memcpy(salt + 8, &width, 4);
