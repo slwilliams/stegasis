@@ -182,6 +182,9 @@ class F5Algorithm : public SteganographicAlgorithm {
       return bitsEmbedded / 8;
     }; 
     virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
+      if (dataBytes == 0) {
+        return make_pair(0,0);
+      }
       if (offset != 0) {
         printf("Offset != 0!!, probably not good...\n");
         abort();
@@ -237,10 +240,8 @@ class F5Algorithm : public SteganographicAlgorithm {
         int hashOfCoefficients = this->hash(coefficients, codeWordLength);
         printf("hasofco: %d\n", hashOfCoefficients);
         for (int i = k-1; i >= 0; i --) {
-          // this line doesn't work but the rest does
-          temp |= ((hashOfCoefficients & (1 << i)) >> i) << tempBit;
+          temp |= (((hashOfCoefficients & (1 << i)) >> i) << tempBit);
           bitsExtracted ++;
-          tempBit --;
 
           if (tempBit == 0) {
             tempBit = 7;
@@ -258,10 +259,10 @@ class F5Algorithm : public SteganographicAlgorithm {
       }
       printf("retting: %d\n", dataBytes);
       this->crypt->decrypt(output, dataBytes);
-      return make_pair(dataBytes, offset - 1);
+      return make_pair(dataBytes, 0);
     };
     virtual void getAlgorithmCode(char out[4]) {
-      char tmp[4] = {'F', '4', ' ', ' '};
+      char tmp[4] = {'F', '5', ' ', ' '};
       memcpy(out, tmp, 4);
     };
 };
