@@ -23,9 +23,9 @@ void SteganographicFileSystem::extract(int *frame, int *offset, int bytes, char 
   int bytesWritten = 0;
   pair<int, int> extractedWritten = make_pair(0, *offset);
   do {
-    //printf("reading from frame: %d, offset: %d\n", *frame, extractedWritten.second);
+    printf("reading from frame: %d, offset: %d\n", *frame, extractedWritten.second);
     extractedWritten = this->alg->extract(this->decoder->getFrame(*frame), out+bytesWritten, bytes-bytesWritten, extractedWritten.second); 
-    //printf("got: %d\n", extractedWritten.first);
+    printf("got: %d\n", extractedWritten.first);
     bytesWritten += extractedWritten.first;
 
     if(extractedWritten.second == 0) (*frame) ++;
@@ -460,18 +460,18 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
   this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
 
-  /*struct FileChunk triple;
+  struct FileChunk triple;
   triple.frame = nextFrame;
   triple.offset = nextOffset;
-  triple.bytes = 0;*/
+  triple.bytes = 0;
 
   while (bytesWritten < size) {
     this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
 
-    struct FileChunk triple;
+    /*struct FileChunk triple;
     triple.frame = nextFrame;
     triple.offset = nextOffset;
-    triple.bytes = 0;
+    triple.bytes = 0;*/
     
     //printf("\e[1A"); 
     printf(/*\e[0K\r*/"Embeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
@@ -481,7 +481,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     //bytesWritten += tmp;
 
     if (tmp != 0) {
-      this->fileIndex[path].push_back(triple);
+      //this->fileIndex[path].push_back(triple);
       // ------ tmp ------
       char *tmpData = (char *)malloc(sizeof(int) * tmp);
       this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, tmp, 0);
@@ -496,7 +496,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     bytesWritten += tmp;
   }
   //printf("adding triple frame: %d, bytes:%d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
-  //this->fileIndex[path].push_back(triple);
+  this->fileIndex[path].push_back(triple);
 
   if (offset == 0) {
     this->fileSizes[path] = size;

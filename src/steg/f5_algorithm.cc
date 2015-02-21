@@ -217,6 +217,20 @@ class F5Algorithm : public SteganographicAlgorithm {
 
       this->crypt->decrypt(data, reqByteCount);
       printf("managed to embed: %d bytes\n", bitsEmbedded/8);
+
+      // Embed the amount of bytes into the second comp
+      short toEmbed = (short)(bitsEmbedded / 8);
+      for (int j = 15; j >= 0; j --) {
+        this->getCoef(lcg.map[j+15], &row, &block, &co); 
+        frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+        if ((toEmbed & (1 << j)) != 0) {
+          frame[0][block][co] |= 1;
+        } else {
+          frame[0][block][co] &= (~1);
+        }
+      }
+      printf("embdding bytes in vrame: %hd\n", toEmbed);
+
       return bitsEmbedded / 8;
     }; 
     virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
@@ -260,15 +274,24 @@ class F5Algorithm : public SteganographicAlgorithm {
         return make_pair(0, 0);
       }
 
+      // Extract the number of bytes in this frame
+      short bytesInFrame = 0;
+      for (int j = 15; j >= 0; j --) {
+        this->getCoef(lcg.map[j+15], &row, &block, &co); 
+        frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+        bytesInFrame |= (frame[0][block][co] & 1) << j;
+      }
+      printf("bytesInframe: %hd\n", bytesInFrame);
+
       int codeWordLength = pow(2, k) - 1;
 
       int bitsExtracted = 0, bytesExtracted = 0;
       char temp = 0;
       char tempBit = 7;
-      while (bitsExtracted < dataBytes * 8) {
+      while (bitsExtracted < bytesInFrame * 8) {
         int *coefficients = this->getNextBlock(c, &offset, codeWordLength);
         if (coefficients == NULL) {
-          printf("here??\n");
+          printf("here managed to extract: %d bytes\n", bytesExtracted);
           this->crypt->decrypt(output, bytesExtracted);   
           return make_pair(bytesExtracted, 0);
         } 
@@ -293,9 +316,9 @@ class F5Algorithm : public SteganographicAlgorithm {
         printf("Temp should be 0...\n\n");
         abort();
       }
-      printf("retting: %d\n", dataBytes);
-      this->crypt->decrypt(output, dataBytes);
-      return make_pair(dataBytes, 0);
+      printf("retting: %d\n", bytesInFrame);
+      this->crypt->decrypt(output, bytesInFrame);
+      return make_pair(bytesInFrame, 0);
     };
     virtual void getAlgorithmCode(char out[4]) {
       char tmp[4] = {'F', '5', ' ', ' '};
