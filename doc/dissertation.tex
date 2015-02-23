@@ -624,7 +624,8 @@ virtual int frameSize() {
 
 This expression arises from the fact that uncompressed \texttt{AVI} uses 24 bits per pixel value. Since there are $height \cdot width$ pixels within a single frame, multiplying this by 3 will give the total number of bytes. \textit{Capacity} is a user provided percentage ranging in value from 1 - 100. It specifies the percentage of the frame to embed within. \texttt{frameSize} must therefore reduce the returned frame size value by ``capacity percent''.
 
-The effect of the capacity parameter is illustrated within Figure \ref{cap50}. 
+The effect of the capacity parameter is illustrated within Figure \ref{cap50}. The top left image is the original video frame and the top right image is the LSB plane (red channel) of the frame with no data embedded. The bottom two images have data sequentially embedded within them using capacity settings of 50\% and 15\% respectively.
+
 
 \begin{figure}[!h]
 \centerline{\includegraphics[width=\textwidth]{images/cap_ill.png}}
@@ -633,8 +634,7 @@ The effect of the capacity parameter is illustrated within Figure \ref{cap50}.
 \end{figure}
 
 \noindent
-The top left image is the original video frame and the top right image is the LSB plane (red channel) of the frame with no data embedded. The bottom two images have data sequentially embedded within them using capacity settings of 50\% and 15\% respectively.
-
+The image used throughout this chapter for illustration purposes has been specifically chosen to emphasise the effect of the embedding process. Due to post processing applied to the video, the LSB plane closely resembles that of the original frame. This would not be the case for a video recorded on a phone for example.
 
 The \texttt{AVI} decoder as described now provides all necessary functionality to allow the modification of pixel data to achieve the steganogrphic embedding of information within video frames. 
 
@@ -649,14 +649,14 @@ class SteganographicAlgorithm {
     string password;
     VideoDecoder *dec;
   public:
-    virtual int embed(Frame *f,char *data,int reqByteCount,int offset) = 0;
-    virtual pair<int, int> extract(Frame *f, char *output, int reqByteCount, int offset) = 0;
+    virtual pair<int, int> embed(Frame *f, char *data, int reqByteCount, int offset) = 0;
+    virtual pair<int,int> extract(Frame *f, char *output, int reqByteCount, int offset) = 0;
     virtual void getAlgorithmCode(char out[4]) = 0;
 };
 \end{lstlisting}
 
 \noindent
-The \texttt{embed} function should be read as ``attempt to embed \texttt{reqByteCount} bytes from \texttt{data} into frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame'' and returns the number of bytes successfully embedded. Similarly, the \texttt{extract} function should be read as ``attempt to extract \texttt{reqByteCount} bytes from frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output}'' and returns the number of bytes successfully extracted and the current frame offset.
+The \texttt{embed} function should be read as ``attempt to embed \texttt{reqByteCount} bytes from \texttt{data} into frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame'' and returns the number of bytes successfully embedded along with the reached frame offset. Similarly, the \texttt{extract} function should be read as ``attempt to extract \texttt{reqByteCount} bytes from frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output}'' and returns the number of bytes successfully extracted along with the reached frame offset.
 
 \texttt{getAlgorithmCode} simply returns a (unique) 4 character algorithm identifier which is used when users specify which algorithm they want to use.\\
 
@@ -666,7 +666,6 @@ Implementations of the \texttt{Steganographic Algorithm} interface are now prese
 \subsubsection{LSB Sequential Embedding}
 
 Sequential LSB embedding is arguably the simplest steganographic algorithm. It works by replacing the LSBs of the cover object with the bits comprising the message, producing the stego image. Algorithm \ref{lsbalg} shows pseudocode for the LSB embedding algorithm. The matching extraction algorithm is shown in algorithm \ref{lsbext}.
-
 
 \begin{algorithm}[!h]
 \caption{LSB embedding algorithm}
@@ -697,19 +696,29 @@ Sequential LSB embedding is arguably the simplest steganographic algorithm. It w
 \end{algorithm}
 
 \noindent
-The actual implementation is relatively short and so is included below in Listing \ref{lsbimp} along with Figure \ref{lsbill} which illustrates the algorithms operation.
+The actual implementation is included below in Listing \ref{lsbimp} along with Figure \ref{lsbill} which illustrates the algorithms operation.
 
 \begin{lstlisting}[language=C++, caption={LSB embedding implementation (\texttt{steg/lsb\_algorithm.cc:8})}, frame=single, label=lsbimp]
-virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-  char *frame = c->getFrameData();
-  for (int i = 0; i < dataBytes; i ++) {
+virtual pair<int,int> embed(Frame *f, char *data, int reqByteCount, int offset) {
+  this->crypt->encrypt(data, reqByteCount);
+  char *frame = f->getFrameData();
+  int bytesEmbedded = 0;
+  while (bytesEmbedded < reqByteCount) {
+    if (offset > this->dec->getFrameSize() - 8) break;
     for (int j = 7; j >= 0; j --) {
-      if ((((1 << j) & data[i]) >> j) == 1) {
+      if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
         frame[offset++] |= 1;
       } else {
         frame[offset++] &= ~1;
       }
     }
+    bytesEmbedded ++;
+  }  
+  this->crypt->decrypt(data, reqByteCount);
+  if (offset == this->dec->getFrameSize()) {
+    return make_pair(bytesEmbedded, 0);    
+  } else {
+    return make_pair(bytesEmbedded, offset);  
   }
 };
 \end{lstlisting}
@@ -730,7 +739,7 @@ Using the algorithm as shown above, \SI{43.2}{\kilo\byte} of data is is embedded
 \end{figure}
 
 \noindent
-The visual impact on the video frame is very small and almost certainly not noticeable having been reproduced within this document at a smaller resolution. However, if we take a closer look at a specific portion of the video frame, we can see some small discrepancies between the cover and stego objects - see Figure \ref{lsbcloseup}. I am unsure how well these images will be reproduced when printed, but the difference is definitely noticeable within the \texttt{PDF}. Note that without the original cover object for comparison, it would be very hard (if not impossible) to identify these details visually and deduce the presence of embedded data. However, if the LSB plane of the frame is visually inspected, as in Figure \ref{lsbemb}, one can immediately detect the presence of the hidden data - the LSB plane of the stego object looks ``too random''. This is an example of a \textit{visual steganalysis attack}.
+The visual impact on the video frame is very small and almost certainly not noticeable having been reproduced within this document at a smaller resolution. However, if we take a closer look at a specific portion of the video frame, we can see some small discrepancies between the cover and stego objects - see Figure \ref{lsbcloseup}. I am unsure how well these images will be reproduced when printed, but the difference is definitely noticeable within the \texttt{PDF}. Note that without the original cover object for comparison, it would be very hard to identify these details visually and deduce the presence of embedded data. However, if the LSB plane of the frame is visually inspected, as in Figure \ref{lsbemb}, one can immediately detect the presence of the hidden data - the LSB plane of the stego object looks ``too random''. This is an example of a \textit{visual steganalysis attack}.
 
 
 \begin{figure}
@@ -748,7 +757,7 @@ The visual impact on the video frame is very small and almost certainly not noti
 
 Formalising the looking ``too random'' idea leads to another steganalysis attack known as the \textit{Chi-Squared attack} developed by Westfeld and Pfitzmann\textsuperscript{\cite{chi}}. To implement the Chi-Squared attack, the concept of \textit{Pair of Values} (PoVs) is first introduced.
 
-One of the results of an embedding algorithm like sequential LSB embedding is the creation of POVs, pixel values that embed into one another. For example, a pixel value of 100 in the cover image will either stay 100 or change to 101. Similarly, a pixel value of 101 will either stay 101 or change to 100. Thus (100, 101) is a POV. 
+One of the effects of an embedding algorithm like sequential LSB embedding is the creation of POVs, pixel values that embed into one another. For example, a pixel value of 100 in the cover image will either stay 100 or change to 101. Similarly, a pixel value of 101 will either stay 101 or change to 100. Thus (100, 101) is a POV. 
 
 \begin{ddef}
 \textsc{Pairs of Values}\\[5pt]
@@ -812,7 +821,7 @@ One can produce deceptively simple pseudocode for the permuted LSB embedding alg
 \noindent
 Lines 1 and 2 hide a large amount of complexity involved in actually implementing the permuted LSB algorithm.
 
-Assuming the cover object consists of $n$ bytes, a pseudorandom permutation of the cover object can be thought of as a pseudorandom permutation of the numbers 0 - $n$. The obvious way to produce a pseudorandom permutation of a list of numbers is to shuffle an array containing them. This approach has the drawback that you need to hold the numbers in memory (\SI{11}{\mega\byte} for a single 720p HD video frame). Instead, a different approach using a \textit{Linear Congruential Generator}\textsuperscript{\cite{lcg}} (LCG) was taken.
+Assuming the cover object consists of $n$ bytes, a pseudorandom permutation of the cover object can be thought of as a pseudorandom permutation of the numbers 0 - $n$. One way to produce a pseudorandom permutation of a list of numbers is to shuffle an array containing them. This approach has the drawback that you need to hold the numbers in memory (\SI{11}{\mega\byte} for a single 720p HD video frame). Instead, a different approach using a \textit{Linear Congruential Generator}\textsuperscript{\cite{lcg}} (LCG) was taken.
 
 \begin{ddef}
 \textsc{Linear Congruential Generator}\\[5pt]
@@ -831,7 +840,7 @@ are integer constants that specify the generator.
 \end{ddef}
 
 \noindent
-The Hull-Dobell Theorem\textsuperscript{\cite{hull}} states that a LCG will have a full period if and only if the following 3 requirements are satisfied:
+The pseudorandom permutation is only needed to uniformly distribute embedding throughout the image and therefore it is not a problem that a Linear Congruential Generator may not produce cryptographically secure random numbers. The Hull-Dobell Theorem\textsuperscript{\cite{hull}} states that a LCG will have a full period if and only if the following 3 requirements are satisfied:
 \begin{enumerate}
 	\item $gcd(c, m) = 1$ ($c$ and $m$ are relatively prime),
 	\item $a-1$ is divisible by all prime factors of $m$,
@@ -847,15 +856,11 @@ Therefore, if the above requirements can be satisfied, a LCG can be used as a ps
 \end{enumerate}
 
 \noindent
-As such, $m$ is set equal to the next power of 2 larger or equal to $n$. Any produced values larger or equal to $n$ are just thrown away, therefore producing a full period of size $n$ as required.
+As such, $m$ is set equal to the next power of 2 larger or equal to $n$. Any produced values larger or equal to $n$ are just discarded, therefore producing a full period of size $n$ as required.
 
-The pseudorandom permutation should be dependant on a user provided passphrase. Therefore, the values of $a$ and $c$ are determined using a key derived from the users password. The popular key derivation function \texttt{PBKDF2}\textsuperscript{\cite{keyd}} is used along with the \texttt{Whirlpool}\textsuperscript{\cite{pool}} hash function to generate a 128 byte key and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these well known algorithms myself, I used the popular C++ cryptographic library, \texttt{Crypto++}.\\
+The pseudorandom permutation should be dependant on a user provided passphrase. Therefore, the values of $a$ and $c$ are determined using a key derived from the users password. The popular key derivation function \texttt{PBKDF2}\textsuperscript{\cite{keyd}} is used along with the \texttt{Whirlpool}\textsuperscript{\cite{pool}} hash function to generate a 128 byte key pool and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these well known algorithms myself, I used a popular C++ cryptographic library, \texttt{Crypto++}.\\
 
 \noindent
-This successfully describes an implementation for line 1 of algorithm \ref{lsbp}. Line 2 unfortunately causes some problems for the LCG due to precisely the reason that it was chosen to be used.
-
-Since the full array of the pseudorandom permutation is not being stored, the LCG does not facilitate direct random access. For example, if the 50th element of the permutation is requested, the 49 elements before it must first be calculated starting from $X_{0}$. This had a huge impact on the performance of the algorithm to the point of the file system becoming unusable. Therefore, it was decided to pre-compute a hashmap mapping from frame offsets to the corresponding pseudorandom permutation element, therefore eliminating the need to calculate all elements prior to the requested one. This fixes the performance problems, but now means the entire permutation is being stored in memory - exactly why the original method was rejected! It was decided to remain using the LCG method with only a single global permutation used across all video frames.
-
 The result of the permuted embedding algorithm is illustrated in Figure \ref{lsbp_ill}. The left image has data embedded using the sequential embedding algorithm whereas the right image has the same data embedded using the permuted embedding algorithm. Both images were using a capacity setting of 15\%.
 
 \begin{figure}[here]
@@ -877,40 +882,14 @@ The above example embedded data within an uncompressed \texttt{AVI} video file w
 
 \subsubsection{Permuted and Encrypted LSB Embedding}
 
-To further strengthen the security of \texttt{Stegasis}, it was decided to encrypt the data before embedding it within the video. This way, even if the stegosystem is broken, that is the hidden data has been identified and extracted, the information itself will not be compromised. The same user provided passphrase used to permute the data throughout the video frame is used within the encryption process, addressing another concern of some of the investigated programs in section \ref{tools}.\\
+To further strengthen the security of \texttt{Stegasis}, I decided to encrypt the data before embedding it within the video. This way, even if the stegosystem is broken, the information itself will not be compromised. The available cryptographic algorithms are decoupled from the steganogrphic systems allowing the user to mix and match between them. In addition, the same user provided passphrase used to permute the data throughout the video frame is used within the encryption process\footnote{A different section of the 128 bytes key pool is used.}, addressing another concern of some of the investigated programs in section \ref{tools}.\\
 
 \noindent
-The initial approach to encrypting the embedded data was to simply \texttt{XOR} it with a pseudorandom number stream. The \texttt{Crypto++} library provided a variety of suitable pseudorandom number generators which could be seeded. It was chosen to use the \texttt{RandomPool} algorithm and to seed it using both the entire 128 byte derived key, and the requested embed offset into the video frame. This way, if the same file is written twice to the volume, it will be encrypted to 2 different byte streams\footnote{Unless the file is embedded within 2 different frames at the same offset.}. Unfortunately, this will cause some problems when the file system is developed in section \ref{fsi}.
+The initial approach to encrypt the embedded data was to simply \texttt{XOR} it with a pseudorandom number stream. The \texttt{Crypto++} library provides a variety of suitable pseudorandom number generators which can be seeded. However, questions about the cryptographic strength of these number generators lead to the implementation of more standard encryption algorithms and the eventual removal of the pseudorandom number stream option. \texttt{AES} (256 bit), \texttt{TwoFish} and \texttt{Serpent} are all available within the \texttt{Crypto++} library which made incorporating them in \texttt{Stegasis} easy. Counter mode (\texttt{CTR}) is used as the block cipher mode so that data is not required to be padded to the block size. A hybrid chained encryption scheme \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent} is also supported. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also offered by \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption and decryption processes.\\
 
-Listing \ref{lsb2} shows the implementation of the permuted and encrypted LSB embedding algorithm.
-
-\begin{lstlisting}[language=C++, caption={Encrypted and permuted embedding (\texttt{steg/lsb2\_algorithm.cc:41})}, frame=single, label=lsb2]
-virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-  char *frame = c->getFrameData();
-  CryptoPP::RandomPool pool;
-  pool.IncorporateEntropy((const unsigned char *)this->key, 128);
-  pool.IncorporateEntropy((const unsigned char *)&offset, 4);
-  
-  int frameByte = lcg.map[offset++];
-  for (int i = 0; i < dataBytes; i ++) {
-    char xord = data[i] ^ pool.GenerateByte();
-    for (int j = 7; j >= 0; j --) {
-      if ((((1 << j) & xord) >> j) == 1) {
-        frame[frameByte] |= 1;
-      } else {
-        frame[frameByte] &= ~1;
-      }
-      frameByte = lcg.map[offset++];
-    }
-  }
-};
-\end{lstlisting}
 
 \noindent
-More standard encryption algorithms were then added, such as \texttt{AES} (256 bit), \texttt{TwoFish} and \texttt{Serpent}. All of these algorithms are available within the \texttt{Crypto++} library which made incorporating them easy. \texttt{Stegasis} currently supports standard \texttt{AES}, and also \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent}. That is, the data is first encrypted using \texttt{AES}, the result of this is then encrypted with \texttt{TwoFish} and then \texttt{Serpent}. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also offered by \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption. This is discussed in detail within the evaluation section \ref{perf}.\\
-
-\noindent
-This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break the implemented stego systems. However, steganogrphic security was not the sole focus of this project and the framework \texttt{Stegasis} provides would allow easy incorporation of new, more secure embedding algorithms.
+This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break the implemented stego systems. However, more secure steganogrphic systems are investigated within the extension and the framework \texttt{Stegasis} provides would allow easy incorporation of new, more secure embedding algorithms.
 
 
 \subsection{The File system}
