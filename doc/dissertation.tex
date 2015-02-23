@@ -499,46 +499,46 @@ The extension task ``\texttt{Stegasis} should be evaluated for perceivable video
 
 The development of \texttt{Stegasis} consisted of the five main stages detailed within this chapter. Firstly, a parser for the \texttt{AVI} file format as discussed in section \ref{avi} was developed allowing direct access to video pixel data. Next, steganographic embedding algorithms were implemented along with corresponding steganalysis tools to test the security of the proposed techniques. The file system was then developed utilising the \texttt{AVI} decoder and steganogrphic algorithms to embed and extract data directly into and out of video files. Finally, the extension tasks were individually addressed providing support for multiple video formats, directory structures and plausible deniability\footnote{The evaluation site extension task is discussed within the evaluation chapter.}. The testing section provides an overview of the testing processes applied throughout development. 
 
-The actual software development process taken differs from that laid out below; each section was not wholly completed before moving onto the next. Instead, an iterative process was taken across all sections, embracing the modern ``Launch early, iterate often'' methodology\textsuperscript{\cite{iterate}}. For example, as specified in the project proposal timetable, a simplified version of \texttt{Stegasis} was initially produced only offering one simple embedding algorithm and basic file system functionality. This allowed integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features. For the sake of readability, I have structured the sections below to group together implementation details for each separate component.
+The software development process embraced the modern ``Launch early, iterate often'' methodology\textsuperscript{\cite{iterate}}. A simplified version of \texttt{Stegasis} was initially produced allowing integration issues to be identified early on, when the code was still very malleable. Once this basic version was working, an iterative approach was then taken to add more functionality and features.
 
 \subsection{AVI Decoder}
 \label{avidec}
 
-The concept of an \texttt{AVI} decoder is first abstracted to that of a generic \texttt{Video Decoder} interface\footnote{The term ``interface'' is used as shorthand for an abstract C++ base class. That is, a class with pure virtual member functions and no function implementations.} The core requirements state that the \texttt{AVI} decoder should allow access to individual pixel data. The pixel data within an \texttt{AVI} file is grouped into chunks, one per video frame. It was therefore decided to define the \texttt{Video Decoder} to allow access to the video pixel data at a granularity of a single video frame. It would also be useful for the \texttt{Video Decoder} interface to expose metadata about the video, for example, the total number of video frames in the video, the height and width of the video frames and the total size (in bytes) of each video frame.
+The concept of an \texttt{AVI} decoder is first abstracted to that of a generic \texttt{Video Decoder} interface\footnote{The term ``interface'' is used as shorthand for an abstract C++ base class. That is, a class with pure virtual member functions and no function implementations.} The core requirements state that the \texttt{AVI} decoder should allow access to individual pixel data. The pixel data within an \texttt{AVI} file is grouped into chunks, one per video frame. This lead to the decision to define the \texttt{Video Decoder} to allow access to the video pixel data at a granularity of a single video frame. It will also be useful for the \texttt{Video Decoder} interface to expose metadata about the video, for example, the total number of video frames in the video, the height and width of the video frames and the total size (in bytes) of each video frame.
 
-This gives the definition for the \texttt{Video Decoder} interface as described in Listing \ref{viddec} (\texttt{NextFrameOffset} will be discussed in section \ref{fsi}):
+This gives the definition for the \texttt{Video Decoder} interface as described in Listing \ref{viddec} (\texttt{NextFrameOffset} will be discussed in section \ref{fsi}).
 
 \begin{lstlisting}[language=C++, caption={\texttt{Video Decoder} interface (\texttt{video/video\_decoder.h:15})},frame=single, float,floatplacement=H,label=viddec]
 class VideoDecoder {
   public:
-    virtual Chunk *getFrame(int frame) = 0;
+    virtual Frame *getFrame(int frame) = 0;
     virtual int getFileSize() = 0;
     virtual int getNumberOfFrames() = 0;
     virtual int getFrameSize() = 0;
     virtual int getFrameHeight() = 0;
     virtual int getFrameWidth() = 0;
-	
+
+    virtual void getCapacity(char capacity) = 0;
+    virtual void setCapacity(char capacity) = 0;        
+    
     virtual void getNextFrameOffset(int *frame, int *offset) = 0;
     virtual void setNextFrameOffset(int frame, int offset) = 0;
    	   
-    virtual void setCapacity(char capacity) = 0;
     virtual void writeBack() = 0;
     virtual ~VideoDecoder() {};
 };
 \end{lstlisting}
 
-Note that \texttt{getFrame} returns a \texttt{Chunk} wrapper object, rather than a raw \texttt{char} pointer to the frame pixel data, adhering to the \textit{Dependency Inversion} principle\textsuperscript{\cite{inver}}. This will be useful when dealing with different video formats that don't necessarily group all of a frames video data to be accessible by a single \texttt{char} pointer.
+Note that \texttt{getFrame} returns a \texttt{Frame} wrapper object, rather than a raw \texttt{char} pointer to the frame pixel data, adhering to the \textit{Dependency Inversion} principle\textsuperscript{\cite{inver}}. This will be useful when dealing with different video formats that don't necessarily group all of a frames video data to be accessible by a single \texttt{char} pointer.
 
-A \texttt{Chunk} abstracts the concept of a single frames video data. In the case of uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes. A boolean value is also associated with each chunk, signifying if the chunk data has been modified, that is, it is dirty.
+A \texttt{Frame} abstracts the concept of a single frames video data. In the case of uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes. A boolean value is also associated with each chunk, signifying if the chunk data has been modified, that is, it is dirty. The \texttt{Frame} interface is defined in Listing \ref{frame}.
 
-The \texttt{Chunk} interface is therefore defined as follows:
-
-\begin{lstlisting}[language=C++, caption={Chunk interface (\texttt{video/video\_decoder.h:4})}, frame=single]
-class Chunk {
+\begin{lstlisting}[language=C++, caption={Frame interface (\texttt{video/video\_decoder.h:4})}, frame=single, label=frame]
+class Frame {
   protected:
-    long chunkSize;
+    long frameSize;
   public:
-    virtual long getChunkSize() = 0;
+    virtual long getFrameSize() = 0;
     virtual char *getFrameData(int n=0, int c=0) = 0;
    
     virtual bool isDirty() = 0;
@@ -549,7 +549,7 @@ class Chunk {
 \noindent
 Note that the parameters for \texttt{getFrameData} are optional. For the \texttt{AVI} decoder, these will not be used.
 
-The \texttt{AVI} parsing process can be thought of consisting of two main parts; parsing the video headers and parsing the video chunk data. The pseudocode in algorithm \ref{parseavi} illustrates this with the headers being parsed lines 1-12 and the chunks being parsed lines 15-22.
+The \texttt{AVI} parsing process can be thought of consisting of two main parts; parsing the video headers and parsing the video chunk data. The pseudocode in algorithm \ref{parseavi} illustrates this with the headers being parsed lines 1-12 and the chunks being parsed lines 15-22. See the appendix section \ref{app:code} for some longer code samples.
 
 \begin{algorithm}[!h]
 \caption{\texttt{AVI} parsing process}
@@ -558,15 +558,12 @@ The \texttt{AVI} parsing process can be thought of consisting of two main parts;
 \State f $\gets$ open(file\_path)
 \State riff\_header $\gets$ readRiffHeader(f)
 \If{riff\_header.fourCC != RIFF}
-	\State print ``File is not an AVI file"
-	\State Exit
+	\State Error ``File is not an AVI file"
 \EndIf
 \State avi\_header $\gets$ readAviHeader(f)
 \State bitmap\_info\_header $\gets$ readBitmapInfoHeader(f)
 \If{bitmap\_info\_header.compression != 0}
-	\State print ``Stegasis does not natively support compressed AVI files''
-	\State print ``Rerun using the -f flag''
-	\State Exit
+	\State Error ``Stegasis does not natively support compressed AVI files''
 \EndIf
 \State audio\_info\_header $\gets$ readAudioInfoHeader(f)
 \State frame\_chunks $\gets$ [ ]
@@ -587,9 +584,9 @@ The \texttt{AVI} parsing process can be thought of consisting of two main parts;
 \end{algorithmic}
 \end{algorithm}
 
-See the appendix section B for some longer code samples. The actual implementation is slightly more complex than presented above due to the existence of \texttt{JUNK} chunks. The \texttt{AVI} file format specifies that any number of chunks with a \texttt{FourCC} code of \texttt{JUNK} and of arbitrary length can be inserted between any \texttt{AVI} list structures. The parser must therefore be able to cope with this.
+The actual implementation is slightly more complex than presented above due to the existence of \texttt{JUNK} chunks. The \texttt{AVI} file format specifies that any number of chunks with a \texttt{FourCC} code of \texttt{JUNK} and of arbitrary length can be inserted between any \texttt{AVI} list structures. The parser must therefore be able to cope with this.
 
-The \texttt{WriteBack} function of the \texttt{AVI} decoder will write back any modified \texttt{Chunk} data into the original \texttt{AVI} file. This operation is described in algorithm \ref{writeback} below.
+The \texttt{WriteBack} function of the \texttt{AVI} decoder will write back any modified \texttt{Frame} data into the original \texttt{AVI} file. This operation is described in algorithm \ref{writeback} below.
 
 \begin{algorithm}[!h]
 \caption{\texttt{AVI} write back process}
@@ -617,11 +614,11 @@ The \texttt{WriteBack} function of the \texttt{AVI} decoder will write back any 
 \end{algorithmic}
 \end{algorithm}
 
-The remaining functionality of the parser is mostly trivially returning data from the \texttt{aviHeader} structure (for example \texttt{aviHeader.height}, \texttt{aviHeader.totalFrames} etc.) The only other function of interest is \texttt{getFrameSize}, which returns the number of bytes within each frame that can be embedded within. This (incorrectly) assumes that each frame can always have the same number of bytes embedded within it. This assumption is however true for the steganographic algorithms presented in the next section\footnote{It is also true for the simple \texttt{JPEG} embedding algorithms used within the extension tasks.}, and is implemented as in Listing \ref{framesize}.
+\texttt{getFrameSize} returns the number of bytes within each frame that should be embedded within and is shown in Listing \ref{framesize}.
 
 \begin{lstlisting}[language=C++, caption={\texttt{AVI} decoder \texttt{frameSize} function (\texttt{video/avi\_decoder.cc:298})}, frame=single, label=framesize]
 virtual int frameSize() {
-  return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (capacity / 100.0));
+  return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (this->capacity / 100.0));
 };
 \end{lstlisting}
 
@@ -644,7 +641,7 @@ The \texttt{AVI} decoder as described now provides all necessary functionality t
 
 \subsection{Steganographic Algorithms}
 
-The concept of a generic stegangraphic embedding algorithm is initially developed and implemented as a \texttt{Steganographic Algorithm} interface. As defined within the background discussion of steganogrphic concepts, a steganogrphic system consists of a pair of functions providing embedding and extraction functionality. The interface will therefore need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data respectively. The \texttt{Video Decoder} interface defined above allows access to video data via individual frame \texttt{Chunk} objects. It was therefore decided to define the \texttt{embed} and \texttt{extract} functions to operate on \texttt{Chunk} objects. Listing \ref{stegoalg} shows the final interface.
+As defined within the previous section, a steganogrphic system consists of a pair of functions providing embedding and extraction functionality. Therefore, a generic \texttt{Steganographic Algorithm} interface will need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data respectively. Listing \ref{stegoalg} shows the interface.
 
 \begin{lstlisting}[language=C++, caption={\texttt{Stego Algorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=stegoalg]
 class SteganographicAlgorithm {
@@ -652,14 +649,14 @@ class SteganographicAlgorithm {
     string password;
     VideoDecoder *dec;
   public:
-    virtual void embed(Chunk *c,char *data,int dataBytes,int offset)=0;
-    virtual void extract(Chunk *c,char *output,int dataBytes,int offset)=0;
+    virtual int embed(Frame *f,char *data,int reqByteCount,int offset) = 0;
+    virtual pair<int, int> extract(Frame *f, char *output, int reqByteCount, int offset) = 0;
     virtual void getAlgorithmCode(char out[4]) = 0;
 };
 \end{lstlisting}
 
 \noindent
-The \texttt{embed} function should be read as ``embed \texttt{dataBytes} bytes from \texttt{data} into chunk \texttt{c} starting at an offset \texttt{offset} bytes into the frame''. Similarly, the \texttt{extract} function should be read as ``extract \texttt{dataBytes} bytes from chunk \texttt{c} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output}''. It was decided to place the error handling logic within the file system code. The steganogrphic algorithm implementations therefore do not contain any such logic and instead assumes that the pointer \texttt{data} does indeed point to at least \texttt{dataBytes} bytes and so on.
+The \texttt{embed} function should be read as ``attempt to embed \texttt{reqByteCount} bytes from \texttt{data} into frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame'' and returns the number of bytes successfully embedded. Similarly, the \texttt{extract} function should be read as ``attempt to extract \texttt{reqByteCount} bytes from frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output}'' and returns the number of bytes successfully extracted and the current frame offset.
 
 \texttt{getAlgorithmCode} simply returns a (unique) 4 character algorithm identifier which is used when users specify which algorithm they want to use.\\
 
