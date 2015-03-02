@@ -858,7 +858,7 @@ Therefore, if the above requirements can be satisfied, a LCG can be used as a ps
 \noindent
 As such, $m$ is set equal to the next power of 2 larger or equal to $n$. Any produced values larger or equal to $n$ are just discarded, therefore producing a full period of size $n$ as required.
 
-The pseudorandom permutation should be dependant on a user provided passphrase. Therefore, the values of $a$ and $c$ are determined using a key derived from the users password. The popular key derivation function \texttt{PBKDF2}\textsuperscript{\cite{keyd}} is used along with the \texttt{Whirlpool}\textsuperscript{\cite{pool}} hash function to generate a 128 byte key pool and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these well known algorithms myself, I used a popular C++ cryptographic library, \texttt{Crypto++}.\\
+The pseudorandom permutation should be dependant on a user provided passphrase. Therefore, the values of $a$ and $c$ are determined using a key derived from the users passphrase. The popular key derivation function \texttt{PBKDF2}\textsuperscript{\cite{keyd}} is used along with the \texttt{Whirlpool}\textsuperscript{\cite{pool}} hash function to generate a 128 byte key pool and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these well known algorithms myself, I used a popular C++ cryptographic library, \texttt{Crypto++}.\\
 
 \noindent
 The result of the permuted embedding algorithm is illustrated in Figure \ref{lsbp_ill}. The left image has data embedded using the sequential embedding algorithm whereas the right image has the same data embedded using the permuted embedding algorithm. Both images were using a capacity setting of 15\%.
@@ -880,7 +880,7 @@ Figure \ref{lsbp_chi} shows the result of applying the Chi-Squared attack to the
 \noindent
 The above example embedded data within an uncompressed \texttt{AVI} video file which was 10 seconds in duration, had a resolution of $1280\times720$ and was \SI{741}{\mega\byte} in size. Using the permuted LSB embedding algorithm with a capacity setting of 15\% (which resisted the Chi-Squared attack), \texttt{Stegasis} informed me that the formatted volume had a total capacity of \SI{14.49}{\mega\byte}, roughly 2\% of the file size. This embedding capacity is already a lot better than some of the those provided by programs investigated in section \ref{tools}, and will be further improved upon during the extension task within section \ref{extffmpeg}.
 
-\subsubsection{Permuted and Encrypted LSB Embedding}
+\subsubsection{Encrypting the embedded data}
 
 To further strengthen the security of \texttt{Stegasis}, I decided to encrypt the data before embedding it within the video. This way, even if the stegosystem is broken, the information itself will not be compromised. The available cryptographic algorithms are decoupled from the steganogrphic systems allowing the user to mix and match between them. In addition, the same user provided passphrase used to permute the data throughout the video frame is used within the encryption process\footnote{A different section of the 128 bytes key pool is used.}, addressing another concern of some of the investigated programs in section \ref{tools}.\\
 
@@ -895,27 +895,30 @@ This concludes the steganogrphic embedding algorithms developed to satisfy the c
 \subsection{The File system}
 \label{fsi}
 
-It was decided early on (and stated within the project proposal) that the file system would only support a subset of the features offered by a fully-fledged standard file system. The following features were considered essential for a practical file system and were planned to be implemented: Creating and deleting files, reading and writing to files, listing the files in the file system and renaming (moving) files. The lack of directory functionality means that all embedded files will reside in the root of the file system. Also note the lack of permissions support, all files will be given the same permissions of \texttt{755} (\texttt{RWXRW-RW-}). Changing a file's access and modification times is also not implemented meaning all times default to 0 \textit{Unix Time} (1 January 1970). Omitting these features does have an impact on the usability of the file system, for example the \texttt{make} command makes use of file modification dates to determine if they need recompiling. However, the file system is not being designed for general purpose use, it is merely supposed to be a container for a collection of files\footnote{However, I would argue that after the directory structure extension task has been implemented, the file system provides enough functionality for most general use cases.}.
+I decided early on that the file system would only support a subset of the features offered by a fully-fledged standard file system. The following features were considered essential for a bare-bones practical file system: Creating and deleting files, reading and writing to files, listing the files in the file system and renaming (moving) files. Support for directories was also considered important and was therefore implemented as an extension task.
+
+File permissions and access / modification times was considered non-essential and therefore not implemented. This means all files will be given the same permissions of \texttt{755} (\texttt{RWXRW-RW-}), and all access / modification times default to 0 \textit{Unix Time} (1 January 1970).
 
 Since the file system functionality was being implemented from scratch, the code written turned out complex and intricate due to the many corner cases encountered during integration testing. A large amount of time was dedicated to testing the implemented file system and tracking down particularly nasty concurrency bugs arising in specific circumstances.\\
 
-The basic idea behind storing the file system within a video is to develop some kind of header which contains the locations of all of the files stored across the video frames. The files themselves will be broken into arbitrary sized \textit{chunks} and stored within a particular frame at a particular offset. Consider the following example use case which motivates the solution developed in this section. A 10 byte text file is first written to the volume and embedded within frame 1 of the video at offset 0. A second file is now written to the volume and is such embedded within frame 1 at offset 80\footnote{Since it takes 8 bytes of frame to embed 1 byte of data.}. Now, additional text is appended to the first file, where should this be embedded? The obvious answer is after the second file, thus requiring some sort of header to keep track of the chunks so that the files can be read back correctly.
+\noindent
+The basic idea behind storing a file system within a video is to develop some kind of header which contains the locations of all of the files stored across the video frames. The files themselves will be broken into arbitrary sized \textit{chunks} and stored within a particular frame at a particular offset. Consider the following example use case which motivates the solution developed in this section. A 10 byte text file is first written to the volume and embedded within frame 1 of the video at offset 0. A second file is now written to the volume and is such embedded within frame 1 at offset 80\footnote{Since it takes 8 bytes of frame to embed 1 byte of data.}. Now, additional text is appended to the first file, where should this be embedded? The obvious answer is after the second file, thus requiring some sort of header to keep track of the chunks so that the files can be read back correctly.
 
 \subsubsection{Developing the header}
 
-The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. It will need to be stored in a known location so that it can be extracted when the video file is mounted. It was decided to use the first frame of the video to store the header and is such named the \textit{File Allocation Frame} or \texttt{FAF} for short. The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets. Figure \ref{header} shows the overall structure of the header.
+The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. It will need to be stored in a known location so that it can be extracted when the video file is mounted. I decided to use the first frame of the video to store the header; referred to as the \textit{File Allocation Frame} or \texttt{FAF} for short. The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets. Figure \ref{header} shows the overall structure of the \texttt{FAF}.
 
 \begin{figure}[!h]
 \centerline{\includegraphics[width=\textwidth]{images/header.png}}
-\caption{Header structure overview.}
+\caption{File allocation frame structure.}
 \label{header}
 \end{figure}
 
 \noindent
-The header section (coloured blue) contains metadata about the embedded file system. ``STEG'' is the literal 4 character \texttt{ASCII} string and is used to check the header has been correctly extracted. If STEG is not found as the first 4 bytes of the header, the extraction process is aborted and an error message displayed to the user. The ``Header Bytes'' field contains the number of remaining bytes in the header (that is, the size of the header not including the blue coloured section), allowing the extraction of the remaining header data from the \texttt{FAF}. This data contains information for each of the files within the file system, including the file name as a null terminated string, the number of chunks the file is split into and the location and size of each of these chunks. A file chunk is represented as a \texttt{Triple} defined in Listing \ref{triple}.
+The header section (coloured blue) contains metadata about the embedded file system. ``STEG'' is the literal 4 character \texttt{ASCII} string and is used to check the header has been correctly extracted. If STEG is not found as the first 4 bytes of the header, the extraction process is aborted and an error message displayed to the user. The ``Header Bytes'' field contains the number of remaining bytes in the header (that is, the size of the header not including the blue coloured section), allowing the extraction of the remaining header data from the \texttt{FAF}. This data contains information for each of the files within the file system, including the file name as a null terminated string, the number of chunks the file is split into and the location and size of each of these chunks. A file chunk is represented as a \texttt{FileChunk} struct defined in Listing \ref{triple}.
 
-\begin{lstlisting}[caption={Triple definition (\texttt{fs/stegfs.h:19})}, frame=single, label=triple]
-struct Triple {
+\begin{lstlisting}[caption={FileChunk definition (\texttt{fs/stegfs.h:19})}, frame=single, label=triple]
+struct FileChunk {
   uint32_t frame;
   uint32_t offset;
   uint32_t bytes;
@@ -923,7 +926,7 @@ struct Triple {
 \end{lstlisting}
 
 \noindent
-Within Figure \ref{header}, a single triple is indicated with square brackets, and is coloured green. A file can contain an arbitrary number of triples each of which can span multiple frames, but note that using an unsigned integer for the struct fields limits individual chunk sizes to (roughly) \SI{4}{\giga\byte}. Also note that only a single frame is used as the \texttt{FAF} - it cannot span multiple frames. This limits the total size of the header, imposing a maximum number of files and chunks.
+Within Figure \ref{header}, a single file chunk is indicated with square brackets, and is coloured green. A file can contain an arbitrary number of chunks each of which can span multiple frames. Note that using an unsigned integer for the struct fields limits individual chunk sizes to roughly \SI{4}{\giga\byte}.
 
 \subsubsection{Reading and writing the header}
 
