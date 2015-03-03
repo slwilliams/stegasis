@@ -36,6 +36,7 @@
 \numberwithin{figure}{section}
 \numberwithin{algorithm}{section}
 \usepackage{url}
+\usepackage{fancyhdr}
 
 
 % --------------------------------------------------------------------
@@ -90,7 +91,11 @@
   literate={~} {$\sim$}{1},
 }
 
-
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\leftmark}
+\fancyhead[RO]{\rightmark}
+\fancyfoot[LE,RO]{\thepage}
 % --------------------------------------------------------------------
 % Metadata
 % --------------------------------------------------------------------
@@ -139,6 +144,7 @@
 \setcounter{page}{1}        
 \pagenumbering{roman}
 \section*{Proforma}
+\thispagestyle{plain}
 \NumTabs{3}
 \textsc{Name}: \tab{Scott Williams}\\
 \textsc{College}: \tab{Christ's}\\
@@ -150,15 +156,17 @@
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
 \subsection*{Original Aims of the Project}
-To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw AVI video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality. If time permits, multiple video formats should be supported along with encryption and plausible deniability functionality.
+To investigate appropriate steganographic embedding methods for video and to develop a practical steganographic software package to enable the embedding of arbitrary data within video files via a file system interface. Raw \texttt{AVI} video files should be supported and a variety of steganograhpic embedding algorithms should be available. Basic file system commands should work within the presented logical volume and embedding should occur with no perceivable impact on video quality. If time permits, multiple video formats should be supported along with encryption and plausible deniability functionality.
 
 \subsection*{Work Completed}
-A complete software package has been developed enabling the embedding of arbitrary files within multiple video formats via a file system interface. A total of 6 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality. Embedding capacities in excess of 100\% of the video size can be achieved by exploiting lossless compression of \texttt{JPEG} images and the performance of the file system is adequate for general use providing read and write speeds on par with USB 3.0 flash drives.
+A complete software package has been developed enabling the embedding of arbitrary files within multiple video formats via a file system interface. A native uncompressed \texttt{AVI} decoder has been implemented along with a generic method for dealing with other video formats. A total of 6 steganographic embedding algorithms are supported, along with encryption and plausible deniability functionality. Common file system operations work as expected within the mounted volume and the embedding process can operate without any perceivable impact on video quality as verified by a user study. The performance of the file system is adequate for general use achieving read and write speeds on par with some USB 3.0 flash drives.
 
 \subsection*{Special Difficulties}
 None.
 
 \pagebreak
+\thispagestyle{plain}
+
 \section*{Declaration of Originality}
 ~\\[5pt]
 I, Scott Williams of Christ's College, being a candidate for Part II of the Computer
@@ -173,12 +181,15 @@ area of the Laboratory's website.\\[20pt]
 \textit{Date:}
 \clearpage
 
+\thispagestyle{plain}
 \tableofcontents
+\thispagestyle{plain}
 \vfill
 
 \pagebreak
-\pagenumbering{arabic} 
+
 \section{Introduction}
+\pagenumbering{arabic} 
 Steganography is the art of hiding information in apparently inconspicuous objects. Whereas cryptography seeks to protect the content of information, steganography attempts to conceal the fact that the information exists\textsuperscript{\cite{digmedia}}. This allows steganographic methods to be utilised in countries where encryption is illegal and identification of encrypted data can be grounds for imprisonment. Within the UK for example, keys for identified encrypted data can be forced to be disclosed\textsuperscript{\cite{uklaw}}, rendering standard cryptographic methods alone unfavourable.
 
 In this project I design and implement a practical steganographic software application - \texttt{Stegasis} - which enables users to embed arbitrary files within video via a file system interface. \texttt{Stegasis} can operate with no perceivable impact on video quality and can provide very large embedding capacities. Multiple video formats are supported along with several steganographic embedding algorithms. Standard encryption algorithms can be used to further protect embedded data and plausible deniability functionality keeps sensitive information safe even when the presence of embedded data has been confirmed.
@@ -641,7 +652,7 @@ The \texttt{AVI} decoder as described now provides all necessary functionality t
 
 \subsection{Steganographic Algorithms}
 
-As defined within the previous section, a steganogrphic system consists of a pair of functions providing embedding and extraction functionality. Therefore, a generic \texttt{Steganographic Algorithm} interface will need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data respectively. Listing \ref{stegoalg} shows the interface.
+As defined within the previous section, a steganogrphic system consists of a pair of functions providing embedding and extraction functionality. Therefore, a generic \texttt{Steganographic Algorithm} interface will need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data into and out of cover objects. Listing \ref{stegoalg} shows the interface.
 
 \begin{lstlisting}[language=C++, caption={\texttt{Stego Algorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=stegoalg]
 class SteganographicAlgorithm {
@@ -656,9 +667,9 @@ class SteganographicAlgorithm {
 \end{lstlisting}
 
 \noindent
-The \texttt{embed} function should be read as ``attempt to embed \texttt{reqByteCount} bytes from \texttt{data} into frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame'' and returns the number of bytes successfully embedded along with the reached frame offset. Similarly, the \texttt{extract} function should be read as ``attempt to extract \texttt{reqByteCount} bytes from frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output}'' and returns the number of bytes successfully extracted along with the reached frame offset.
+The \texttt{embed} function attempts to embed \texttt{reqByteCount} bytes from \texttt{data} into frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and returns the number of bytes successfully embedded along with the reached frame offset. Similarly, the \texttt{extract} function attempts to extract \texttt{reqByteCount} bytes from frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output} and returns the number of bytes successfully extracted along with the reached frame offset.
 
-\texttt{getAlgorithmCode} simply returns a (unique) 4 character algorithm identifier which is used when users specify which algorithm they want to use.\\
+\texttt{getAlgorithmCode} returns a (unique) 4 character algorithm identifier which is used when users specify which algorithm they want to use.\\
 
 \noindent
 Implementations of the \texttt{Steganographic Algorithm} interface are now presented along with corresponding steganalysis methods. 
@@ -696,7 +707,7 @@ Sequential LSB embedding is arguably the simplest steganographic algorithm. It w
 \end{algorithm}
 
 \noindent
-The actual implementation is included below in Listing \ref{lsbimp} along with Figure \ref{lsbill} which illustrates the algorithms operation.
+Listing \ref{lsbimp} shows the actual implementation and Figure \ref{lsbill} illustrates the algorithms operation.
 
 \begin{lstlisting}[language=C++, caption={LSB embedding implementation (\texttt{steg/lsb\_algorithm.cc:8})}, frame=single, label=lsbimp]
 virtual pair<int,int> embed(Frame *f, char *data, int reqByteCount, int offset) {
@@ -730,7 +741,7 @@ virtual pair<int,int> embed(Frame *f, char *data, int reqByteCount, int offset) 
 \end{figure}
 
 \noindent
-Using the algorithm as shown above, \SI{43.2}{\kilo\byte} of data is is embedded into a 1280 $\times$ 720 resolution video frame (a capacity setting of 100\%). The result of this is shown in Figure \ref{lsbemb_full}. The left image is the cover object and the right image is the stego object. 
+Using the LSB embedding algorithm, \SI{43.2}{\kilo\byte} of data is is embedded into a single 1280 $\times$ 720 video frame (using a capacity setting of 100\%). The resulting stego image is shown in Figure \ref{lsbemb_full}, with the left image being the cover object and the right image the stego object. 
 
 \begin{figure}[!h]
 \centerline{\includegraphics[width=\textwidth]{images/lsb_emb_full.png}}
@@ -739,7 +750,7 @@ Using the algorithm as shown above, \SI{43.2}{\kilo\byte} of data is is embedded
 \end{figure}
 
 \noindent
-The visual impact on the video frame is very small and almost certainly not noticeable having been reproduced within this document at a smaller resolution. However, if we take a closer look at a specific portion of the video frame, we can see some small discrepancies between the cover and stego objects - see Figure \ref{lsbcloseup}. I am unsure how well these images will be reproduced when printed, but the difference is definitely noticeable within the \texttt{PDF}. Note that without the original cover object for comparison, it would be very hard to identify these details visually and deduce the presence of embedded data. However, if the LSB plane of the frame is visually inspected, as in Figure \ref{lsbemb}, one can immediately detect the presence of the hidden data - the LSB plane of the stego object looks ``too random''. This is an example of a \textit{visual steganalysis attack}.
+The visual impact on the video frame is very small and almost certainly not noticeable having been reproduced within this document at a smaller resolution. However, if we take a closer look at a specific portion of the video frame, we can see some small discrepancies between the cover and stego objects - see Figure \ref{lsbcloseup}. I am unsure how well these images will be reproduced when printed, but the difference is definitely noticeable within the \texttt{PDF}. Without the original cover object for comparison, it would be very hard to identify these details visually and deduce the presence of embedded data. However, if the LSB plane of the frame is visually inspected, as in Figure \ref{lsbemb}, one can immediately detect the presence of the hidden data - the LSB plane of the stego object looks ``too random''. This is an example of a \textit{visual steganalysis attack}.
 
 
 \begin{figure}
@@ -755,7 +766,7 @@ The visual impact on the video frame is very small and almost certainly not noti
 \label{lsbemb}
 \end{figure}
 
-Formalising the looking ``too random'' idea leads to another steganalysis attack known as the \textit{Chi-Squared attack} developed by Westfeld and Pfitzmann\textsuperscript{\cite{chi}}. To implement the Chi-Squared attack, the concept of \textit{Pair of Values} (PoVs) is first introduced.
+Formalising the looking ``too random'' idea leads to the \textit{Chi-Squared attack} developed by Westfeld and Pfitzmann\textsuperscript{\cite{chi}}. To implement the Chi-Squared attack, the concept of \textit{Pair of Values} (PoVs) is introduced.
 
 One of the effects of an embedding algorithm like sequential LSB embedding is the creation of POVs, pixel values that embed into one another. For example, a pixel value of 100 in the cover image will either stay 100 or change to 101. Similarly, a pixel value of 101 will either stay 101 or change to 100. Thus (100, 101) is a POV. 
 
@@ -798,7 +809,7 @@ The Chi-Squared attack motivates the development of a \textit{permuted} LSB embe
 
 \subsubsection{Permuted LSB Embedding}
 
-One can produce deceptively simple pseudocode for the permuted LSB embedding algorithm as shown in algorithm \ref{lsbp}.
+One can produce deceptively simple pseudocode for the permuted LSB embedding algorithm as shown in Algorithm \ref{lsbp}.
 
 \begin{algorithm}[!h]
 \caption{Permuted LSB embedding algorithm}
@@ -821,7 +832,7 @@ One can produce deceptively simple pseudocode for the permuted LSB embedding alg
 \noindent
 Lines 1 and 2 hide a large amount of complexity involved in actually implementing the permuted LSB algorithm.
 
-Assuming the cover object consists of $n$ bytes, a pseudorandom permutation of the cover object can be thought of as a pseudorandom permutation of the numbers 0 - $n$. One way to produce a pseudorandom permutation of a list of numbers is to shuffle an array containing them. This approach has the drawback that you need to hold the numbers in memory (\SI{11}{\mega\byte} for a single 720p HD video frame). Instead, a different approach using a \textit{Linear Congruential Generator}\textsuperscript{\cite{lcg}} (LCG) was taken.
+Assuming the cover object consists of $n$ bytes, a pseudorandom permutation of the cover object can be thought of as a pseudorandom permutation of the numbers 0 - $n$. One way to produce a pseudorandom permutation of a list of numbers is to shuffle an array containing them. This approach has the drawback that you need to hold the numbers in memory (\SI{11}{\mega\byte} for a single 720p HD video frame). Instead, I took a different approach using a \textit{Linear Congruential Generator}\textsuperscript{\cite{lcg}} (LCG).
 
 \begin{ddef}
 \textsc{Linear Congruential Generator}\\[5pt]
@@ -840,7 +851,7 @@ are integer constants that specify the generator.
 \end{ddef}
 
 \noindent
-The pseudorandom permutation is only needed to uniformly distribute embedding throughout the image and therefore it is not a problem that a Linear Congruential Generator may not produce cryptographically secure random numbers. The Hull-Dobell Theorem\textsuperscript{\cite{hull}} states that a LCG will have a full period if and only if the following 3 requirements are satisfied:
+The pseudorandom permutation is only needed to uniformly distribute embedding throughout the image and it is therefore not a problem that a LCG may not produce cryptographically secure random numbers. The Hull-Dobell Theorem\textsuperscript{\cite{hull}} states that a LCG will have a full period if and only if the following 3 requirements are satisfied:
 \begin{enumerate}
 	\item $gcd(c, m) = 1$ ($c$ and $m$ are relatively prime),
 	\item $a-1$ is divisible by all prime factors of $m$,
@@ -889,7 +900,23 @@ The initial approach to encrypt the embedded data was to simply \texttt{XOR} it 
 
 
 \noindent
-This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break the implemented stego systems. However, more secure steganogrphic systems are investigated within the extension and the framework \texttt{Stegasis} provides would allow easy incorporation of new, more secure embedding algorithms.
+This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Table \ref{totalalgs} shows a complete list of the implemented steganographic and cryptographic algorithms, including those implemented within the extension tasks. Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break these implemented stego systems. However, more secure steganogrphic systems are investigated within the extension tasks and the framework \texttt{Stegasis} provides would allow easy incorporation of new, more secure embedding algorithms.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|lll}
+\cline{1-2}
+\textbf{Steganographic (Algorithm code)} & \textbf{Cryptographic} \\ \cline{1-2}
+LSB Embedding (\texttt{LSB}) & AES   \\ \cline{1-2}
+Permuted LSB embedding (\texttt{LSBP}) & Serpent \\ \cline{1-2}
+DCT LSB embedding (\texttt{DCT}) & TwoFish  \\ \cline{1-2}
+Permuted DCT LSB embedding (OutGuess 0.1) (\texttt{DCTP}) & AES(Serpent(TwoFish)) \\ \cline{1-2}
+F4 (\texttt{F4}) & \\ \cline{1-2}
+F5 (\texttt{F5}) & \\ \cline{1-2}
+\end{tabular}
+\caption{Implemented steganographic and cryptographic algorithms}
+\label{totalalgs}
+\end{table}
 
 
 \subsection{The File system}
@@ -906,7 +933,7 @@ The basic idea behind storing a file system within a video is to develop some ki
 
 \subsubsection{Developing the header}
 
-The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. It will need to be stored in a known location so that it can be extracted when the video file is mounted. I decided to use the first frame of the video to store the header; referred to as the \textit{File Allocation Frame} or \texttt{FAF} for short. The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets. Figure \ref{header} shows the overall structure of the \texttt{FAF}.
+The header serves a similar purpose to the \textit{File Allocation Table} used with the \texttt{FAT} file systems. It will need to be stored in a known location so that it can be extracted when the video file is mounted. I decided to use the first frame of the video to store the header; referred to as the \textit{File Allocation Frame} (\texttt{FAF}). The design of the header went through a number of iterations before arriving at the final version presented here, mainly due to underestimating the number of bits needed to store the file frame numbers and offsets. Figure \ref{header} shows the overall structure of the \texttt{FAF}.
 
 \begin{figure}[!h]
 \centerline{\includegraphics[width=\textwidth]{images/header.png}}
@@ -915,7 +942,7 @@ The header serves a similar purpose to the \textit{File Allocation Table} used w
 \end{figure}
 
 \noindent
-The header section (coloured blue) contains metadata about the embedded file system. ``STEG'' is the literal 4 character \texttt{ASCII} string and is used to check the header has been correctly extracted. If STEG is not found as the first 4 bytes of the header, the extraction process is aborted and an error message displayed to the user. The ``Header Bytes'' field contains the number of remaining bytes in the header (that is, the size of the header not including the blue coloured section), allowing the extraction of the remaining header data from the \texttt{FAF}. This data contains information for each of the files within the file system, including the file name as a null terminated string, the number of chunks the file is split into and the location and size of each of these chunks. A file chunk is represented as a \texttt{FileChunk} struct defined in Listing \ref{triple}.
+The header section (coloured blue) contains metadata about the embedded file system. ``STEG'' is the literal 4 character \texttt{ASCII} string and is used to check the header has been correctly extracted. If STEG is not found as the first 4 bytes of the header, the extraction process is aborted and an error message displayed to the user. The ``Header Bytes'' field contains the number of remaining bytes to be extracted from the \texttt{FAF}. This data contains information for each of the files within the file system, including the file name as a null terminated string, the number of chunks the file is split into and the location and size of each of these chunks. A file chunk is represented as a \texttt{FileChunk} struct defined in Listing \ref{triple}.
 
 \begin{lstlisting}[caption={FileChunk definition (\texttt{fs/stegfs.h:19})}, frame=single, label=triple]
 struct FileChunk {
@@ -926,17 +953,17 @@ struct FileChunk {
 \end{lstlisting}
 
 \noindent
-Within Figure \ref{header}, a single file chunk is indicated with square brackets, and is coloured green. A file can contain an arbitrary number of chunks each of which can span multiple frames. Note that using an unsigned integer for the struct fields limits individual chunk sizes to roughly \SI{4}{\giga\byte}.
+Within Figure \ref{header}, a single file chunk is indicated with square brackets, and is coloured green. A file can contain an arbitrary number of chunks each of which can span multiple frames. Note that using an unsigned integer for the struct fields limits individual chunk sizes to roughly \SI{4}{\giga\byte}. However, this shouldn't be a problem since writes to the file system occur in 65 kB chunks.
 
 \subsubsection{Reading and writing the header}
 
-Internally, the header data will be stored in memory as a pair of \texttt{unordered\_map}s, one mapping from file name to file size and the other from file name to a vector\footnote{This is an ordered data structure, the triple contained in vector[0] will contain the file data immediately preceding vector[1].} of \texttt{Triple}s. These are named \texttt{fileSizes} and \texttt{fileIndex}.
+Internally, the header data will be stored in memory as a pair of \texttt{unordered\_map}s, one mapping from file name to file size and the other from file name to a vector\footnote{This is an ordered data structure, the triple contained in vector[0] will contain the file data immediately preceding vector[1].} of \texttt{FileChunks}. These are named \texttt{fileSizes} and \texttt{fileIndex}.
 
-The process of reading the header is split up into 2 main sections, reading the header data and reading the file data. These are both illustrated within Algorithm \ref{readheader}.
+The process of reading the header is split up into 2 sections, reading the header data and reading the file data. These are both illustrated within Algorithm \ref{readheader}.
 
 The video decoder get and set frame offset methods, briefly mentioned in section \ref{avidec}, are used to indicate where new files written to this existing file system should be embedded within the video. The read header process identifies the highest frame and offset and passes this data to the video decoder.
 
-Writing back the header is a similar process explained within algorithm \ref{writeheader}.
+Writing back the header is a similar process explained within Algorithm \ref{writeheader}.
 
 \begin{algorithm}
 \caption{Reading the file system header.}
@@ -945,20 +972,19 @@ Writing back the header is a similar process explained within algorithm \ref{wri
 \State header\_frame $\gets$ first video frame
 \State header\_sig $\gets$ extract 4 characters from header\_frame
 \If{header\_sig != STEG}
-	\State print ``Video has not been formatted, or invalid password provided.''
-	\State Exit
+	\State Error ``Video has not been formatted, or invalid password provided.''
 \EndIf
 \State algorithm\_code $\gets$ extract 4 characters from header\_frame
 \State capacity $\gets$ extract byte from header\_frame
 \State header\_bytes $\gets$ extract integer from header\_frame
 \While{extracted $<$ header\_bytes}
 	\State file\_name $\gets$ extract string from header\_frame
-	\State number\_triples $\gets$ extract integer from header\_frame
+	\State number\_chunks $\gets$ extract integer from header\_frame
 	\State file\_size $\gets$ 0	
-	\For{j $\gets$ 0 upto number\_triples - 1}
-		\State triple $\gets$ extract triple from header\_frame
-		\State fileIndex[file\_name].append(triple)
-		\State file\_size += triple.bytes
+	\For{j $\gets$ 0 upto number\_chunks - 1}
+		\State chunk $\gets$ extract fileChunk from header\_frame
+		\State fileIndex[file\_name].append(chunk)
+		\State file\_size += chunk.bytes
 	\EndFor
 	\State fileSizes[file\_name] $\gets$ file\_size
 \EndWhile
@@ -975,47 +1001,33 @@ Writing back the header is a similar process explained within algorithm \ref{wri
 \State header\_frame $\gets$ the first video frame
 \State header $\gets$ byte array
 \State header\_bytes $\gets$ 0
-\State offset $\gets$ 0
-\For{(file\_name, triples) in fileIndex}
-	\State header[offset] $\gets$ file\_name
-	\State offset += file\_name.length() + 1
-	\Comment{Null terminated}
-	\State num\_triples $\gets$ triples.length()
-	\State header[offset] $\gets$ num\_triples
-	\State offset += 4
-	\For{triple in triples}
-		\State header[offset] $\gets$ triple
-		\State offset += sizeof(triple)
-	\EndFor
+\For{(file\_name, chunks) in fileIndex}
+	\State header[header\_bytes] $\gets$ file\_name
 	\State header\_bytes += file\_name.length() + 1
+	\Comment{Null terminated}
+	\State num\_chunks $\gets$ chunks.length()
+	\State header[header\_bytes] $\gets$ num\_chunks
 	\State header\_bytes += 4
-	\State header\_bytes += sizeof(triple)*num\_triples
+	\For{chunk in chunks}
+		\State header[header\_bytes] $\gets$ chunk
+		\State header\_bytes += sizeof(chunk)
+	\EndFor
 \EndFor
 \State embed header\_bytes into header\_frame
 \State embed header into header\_frame
 \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{Compacting the header}
-
-During testing, it was noticed that writes to the file system seemed to occur in chunks of \texttt{4096} bytes. Due to the above presented design of the file system header, this resulted in relatively large files containing a very large number of chunks, too large to fit into the singe \texttt{FAF}. For example, a \SI{5}{\mega\byte} music file would be written into 1221 chunks. Since each chunk consists of 12 bytes (three 4 byte integers), you would need \SI{14.65}{\kilo\byte} to just store all of the triples into the header. Unfortunately, this meant the largest file you could embedded within any 720p uncompressed \texttt{AVI} (regardless of the length) was \SI{117}{\mega\byte}. This was decided to be an unacceptable limitation and so a process to compact the header and remove unnecessary chunks was developed. Figure \ref{compact} shows a visual representation of this process occurring, green and red lines indicate the start and end of a chunk respectively. The first process compacts sequential chunks of the same file within frames to give single chunks per frame, sequential single frame chunks are then combined in the second process. This allows a file spread across the entire video to be represented by a single chunk.
-
-\begin{figure}[!h]
-\centerline{\includegraphics[width=\textwidth]{images/compact.png}}
-\caption{Header compaction process.}
-\label{compact}
-\end{figure}
-
 \subsubsection{Writing to the file system}
 
-A write to the file system will occur in three main stages. First, \texttt{create} will be called requesting that a new file be created with a specified name. Next, the \texttt{write} function will be called a number of times requesting that data be written to the file. Finally \texttt{flush} will be called for the file requesting that any data held in memory be flushed to disk.
+A write to the file system occurs in three main stages. First, \texttt{create} will be called requesting that a new file be created with a specified name. Next, the \texttt{write} function will be called a number of times requesting that data be written to the file. Finally \texttt{flush} will be called for the file requesting that any data held in memory be flushed to disk.
 
 The first stage is easy to implement and is listed in Listing \ref{create}.
 
-\begin{lstlisting}[language=C++, caption={The \texttt{create} function call (\texttt{fs/stegfs.cc:202}).}, frame=single, label=create,float,floatplacement=!Ht]
+\begin{lstlisting}[language=C++, caption={The \texttt{create} function call (\texttt{fs/stegfs.cc:202}).}, frame=single, label=create]
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
   this->fileSizes[path] = 0;
-  this->fileIndex[path] = std::vector<struct Triple>();
+  this->fileIndex[path] = std::vector<struct FileChunk>();
   return 0;
 };
 \end{lstlisting}
@@ -1028,12 +1040,12 @@ The write calls are a bit trickier, recall the \texttt{FUSE} write call which re
 \label{write}
 \begin{algorithmic}[1]
 \State bytes\_written $\gets$ 0
+\State chunk $\gets$ FileChunk()
 \While{bytes\_written $<$ size}
 	\State (next\_frame, next\_offset) $\gets$ decoder.getNextFrameOffset()
 	\State frame $\gets$ getFrame(next\_frame)
-	\State triple $\gets$ Triple()
-	\State triple.frame $\gets$ next\_frame
-	\State triple.offset $\gets$ next\_offset
+	\State chunk.frame $\gets$ next\_frame
+	\State chunk.offset $\gets$ next\_offset
 	\State bytes\_left\_in\_frame $\gets$ Frame Size - next\_offset
 	\If{size - bytes\_written $<$ bytes\_left\_in\_frame}
 		\State		
@@ -1060,7 +1072,7 @@ The above explanation doesn't address the case where writes occur to a file alre
 
 Finally, \texttt{flush} is called which will write the header and ask the video decoder to write back to disk. Note the conditional flag \textit{performance}, running \texttt{Stegasis} with the \texttt{-p} flag will cause this process be skipped.
 
-\begin{lstlisting}[language=C, caption={\texttt{FUSE} flush implementation (\texttt{fs/stegfs.cc:537}).}, frame=single,float,floatplacement=!Htb]
+\begin{lstlisting}[language=C, caption={\texttt{FUSE} flush implementation (\texttt{fs/stegfs.cc:537}).}, frame=single]
 int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi) {
   if (!this->performance) {
     this->writeHeader();
@@ -1072,46 +1084,38 @@ int SteganographicFileSystem::flush(const char *path, struct fuse_file_info *fi)
 
 \subsubsection{Reading from the file system}
 
-The read function call is similar, recall the declaration which requests that \texttt{size} bytes of the file \texttt{path} starting at offset \texttt{offset} should be written to the buffer \texttt{buf}. The read function must identify the chunk \texttt{offset} points to and then return the correct amount of data possibly spread across multiple subsequent chunks. Algorithm \ref{read} describes the function operation. Note that two cases are needed when extracting data from chunks due to the possibility of data being encrypted. If \texttt{read} requests data from the middle of a chunk, the entire chunk is first decrypted, and then the correct data returned from this.
+The read function call is similar, recall the declaration which requests that \texttt{size} bytes of the file \texttt{path} starting at offset \texttt{offset} should be written to the buffer \texttt{buf}. The read function must identify the chunk \texttt{offset} points to and then return the correct amount of data possibly spread across multiple subsequent chunks. Algorithm \ref{read} describes the function operation. See the Appendix Section \ref{app:coderead} for the full implementation.
 
 \begin{algorithm}[!htb]
 \caption{Reading from the file system.}
 \label{read}
 \begin{algorithmic}[1]
-\State bytes\_written $\gets$ 0
-\State (triple, chunk\_offset) $\gets$ findTriple(offset)
-\While{bytes\_written $<$ size}
-	\State bytes\_left\_in\_chunk $\gets$ triple.bytes - chunk\_offset
-	\State frame $\gets$ getFrame(triple.frame)
-	\If{size - bytes\_written $<$ bytes\_left\_in\_chunk}
-		\If{chunk\_offset == 0}
-			\State extract size-bytes\_written bytes from frame at offet triple.offset into buf+bytes\_written
-		\Else
-			\State extract entire triple from frame into temp
-			\State copy size-bytes\_written bytes from temp+chunk\_offset into buf+bytes\_written 
-		\EndIf
-		\State return size
-	\EndIf
-	\If{chunk\_offset == 0}
-		\State extract bytes\_left\_in\_chunk bytes from frame at offet triple.offset into buf+bytes\_written
+\State bytesWritten $\gets$ 0, chunkNum $\gets$ 0, bytesWritten $\gets$ 0
+\For{chunk in fileChunks}
+	\If{bytesRead + chunk.bytes $>$ offset}
+		\State break
 	\Else
-		\State extract entire triple from frame into temp
-		\State copy bytes\_left\_in\_chunk from temp+chunk\_offset into buf+bytes\_written 
+		\State bytesRead += chunk.bytes
+		\State chunkNum ++
 	\EndIf
-	\State bytes\_written += bytes\_left\_in\_chunk
-	\State chunk\_offset $\gets$ 0
-	\State triple $\gets$ getNextTriple()
+\EndFor
+\While{bytesWritten $<$ size}
+	\State chunk $\gets$ fileChunks[chunkNum]
+	\State bytesLeftInChunk $\gets$ chunk.bytes - chunkOffset
+	\State bytesLeftInChunk $\gets$ min(bytesLeftInChunk, size-bytesWritten)
+	\State extract(chunk.frame, chunk.offset + chunkOffset, bytesLeftInChunk, buf+bytesWritten)
+	\State bytesWritten += bytesLeftInChunk
+	\State chunkOffset $\gets$ 0
+	\State chunkNum ++
 \EndWhile
 \end{algorithmic}
 \end{algorithm}
-
-The described algorithm doesn't work for chunks spanning multiple frames as it is rather verbose to list here, a complete version which does is listed in appendix section \ref{app:coderead}.
 
 \subsubsection{Listing files in the file system}
 
 The function \texttt{readdir} is called when the contents of a directory are requested to be listed, the implementation is straightforward and just iterates of the fileSizes map as shown in Listing \ref{readdir}.\\
 
-\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true,float,floatplacement=!Hhbt]
+\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true]
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
   filler(buf, '.', NULL, 0);
   filler(buf, '..', NULL, 0);
@@ -1130,15 +1134,15 @@ The above \texttt{FUSE} operations cover the majority of the core file system im
 To complete \texttt{Stegasis}, the implemented components must be assembled together and a user interface produced. It was decided that a command line application would be developed allowing the user to utilise the functionality developed within this project. Listing \ref{stegasisrun} shows the process of formatting and mounting a video using \texttt{Stegasis}.
 
 \begin{lstlisting}[caption={Using \texttt{Stagasis} to format and mount a video.}, frame=single, label=stegasisrun]
-$ stegasis format -alg=lsbp -pass=password -cap=25 ~/my_video.avi
+$ stegasis format -alg=lsbp -crypt=aes -pass=password -cap=25 ~/my_video.avi
 Formatting video...
 Volume size: 30 MB
 Format Successful
-$ stegasis mount -alg=lsbp -pass=password ~/my_video.avi /mnt/video
+$ stegasis mount -alg=lsbp -crypt=aes -pass=password ~/my_video.avi /mnt/video
 Video mounted at /mnt/video
 \end{lstlisting}
 
-At this point, the user can copy files into \texttt{/mnt/video} and they will be automatically embedded within the video. The user can unmount the video by closing the program (for example by pressing Control-C), \texttt{Stegasis} will gracefully exit, writing back any unflushed changes to disk. See the appendix section \ref{app:steg} for some more detailed usage information.
+At this point, the user can copy files into \texttt{/mnt/video} and they will be automatically embedded within the video. The user can unmount the video by closing the program (for example by pressing Control-C), \texttt{Stegasis} will gracefully exit, writing back any unflushed changes to disk. See the Appendix Section \ref{app:steg} for more detailed usage information.
 
 \texttt{Stegasis} works exactly how I envisioned it during the project inception. The example usage I gave within the project proposal is exactly reflected within the finished product\footnote{With the exception of pressing Control-C to exit rather than typing \texttt{stegasis unmount}.}.
 
@@ -1149,44 +1153,42 @@ All of the extension tasks listed within the project proposal were addressed and
 \subsubsection{Supporting multiple video formats}
 \label{extffmpeg}
 
-As discussed in the preparation section, there exist several reasons why it would be beneficial for \texttt{Stegasis} to operate on video formats other than uncompressed \texttt{AVI}. To accomplish this, rather than develop many steganographic methods for multiple video formats, a generic solution was designed and implemented utilising \texttt{FFmpeg}.
+As discussed, there are several reasons why it would be beneficial for \texttt{Stegasis} to operate on video formats other than uncompressed \texttt{AVI}. To accomplish this, rather than develop many video decoders and steganographic systems for multiple video formats, a generic solution was designed and implemented utilising \texttt{FFmpeg}.
 
-Regardless of the video format, a video can be thought of as a sequence of video frames played back at a specific frame rate. This idea is used to allow a universal steganographic method operating on sequences of images to operate across all video formats. Figure \ref{multi} shows an overview of the approach.
+Regardless of the video format, a video can be thought of as a sequence of video frames played back at a specific frame rate together with an optional audio track. Using \texttt{FFmpeg} to extract the frames of a video and implementing steganographic systems operating on sequences of images, \texttt{Stegasis} can function seamlessly across multiple video formats. For example, if a user provides a compressed \texttt{h.264} video, \texttt{FFmpeg} will extract each frame as a \texttt{JPEG} along with the audio track as an \texttt{mp3}. \texttt{Stegasis} will then embed and extract data into and out of the extracted \texttt{JPEG} images. When the video is unmounted, the modified images will be re-muxed as a \textit{Motion JPEG} stream together with the audio to produce an \texttt{MKV} file - the stego object. The \texttt{JPEG} file format was chosen for the intermediate frames due to the large number of steganographic algorithms operating on them. Figure \ref{multi} shows an overview of the approach.
 
 \begin{figure}[!htb]
 \centerline{\includegraphics[width=0.9\textwidth]{images/multi.png}}
-\caption{Embedding within multiple video formats.}
+\caption{Operation on multiple video formats.}
 \label{multi}
 \end{figure}
 
-The user specified video is first converted into a sequence of images, one for each frame of the video. Steganographic embedding then occurs within these images before being reassembled back into a video\footnote{The (possible) video audio is extracted separately and then recombined during the assembly process.}. The \texttt{JPEG} file format was chosen for the intermediate frames due to the large number of steganographic algorithms operating on them. \texttt{FFmpeg} facilitates the extraction and assembling of the video frames, allowing this method to work with virtually any video format due to its extensive codec library. Note that the extraction of video frames will be a lossy process, leading to small visible \texttt{JPEG} compression artifacts when comparing the original video and the extracted frames. This is (initially) not a issue for the proposed technique and is not an indication of steganographic embedding. However, the reassembly process cannot be lossy. The data embedded using the identified embedding algorithms operating on \texttt{JPEG} images will not survive recompression. This constraint leads to the following pair of \texttt{FFmpeg} commands shown in Listing \ref{extract} and \ref{assembly}.
+This method will work with virtually any video format presented to \texttt{Stegasis} due to the extensive codec library of \texttt{FFmpeg}. 
 
+Although the initial conversion of the provided video to \texttt{JPEG} images can be lossy, the reassembly of video frames and extraction thereafter cannot - this would damage the embedded file system. This constraint leads to the following four \texttt{FFmpeg} commands shown in Listing \ref{ffmpegcmd}.
 
-\begin{lstlisting}[caption={\texttt{FFmpeg} frame extraction command.}, frame=single, label=extract,upquote=true]
+\begin{lstlisting}[caption={\texttt{FFmpeg} frame extraction and reassembly command.}, frame=single, label=ffmpegcmd,upquote=true]
+// Convert an arbitrary video to JPEG images (Lossy)
 ffmpeg -r <video_fps> -i <video_path> -qscale:v 1 -f image2 /tmp/stegasis/image-%d.jpg
+// Extract video audio
 ffmpeg -i <video_path> /tmp/stegasis/audio.mp3
-\end{lstlisting}
 
-\begin{lstlisting}[caption={\texttt{FFmpeg} video reassembly command.}, frame=single, label=assembly,upquote=true]
-ffmpeg -r <video_fps> -i /tmp/stegasis/image-%d.jpg -i /tmp/stegasis/audio.mp3 -codec copy -c:a aac -strict -2 -b:a 192k -shortest output.mkv
-\end{lstlisting}
+// Losslessly convert modified JPEG images to an MJPEG stream
+ffmpeg -framerate <video_fps> -i /tmp/stegasis/image-%d.jpg -i /tmp/stegasis/audio.mp3 -codec copy -shortest output.mkv
 
-The frame extraction command extracts each frame of the video file using the highest quality setting and writes them as \texttt{JPEGs} to \texttt{/tmp/stegasis/}. The reassembly command \textit{muxes} the modified video frames and audio together into a single \texttt{MKV} file. Note the use of \texttt{-codec copy}, this tells \texttt{FFmpeg} to literally copy the \texttt{JPEGs} into a \textit{Motion JPEG} (\texttt{MJPEG}) stream. This ensures the frames are not recompressed - preserving the embedded data. This process was verified to be correct by noting the \texttt{MD5} hash of the \texttt{JPEG} frames prior to being muxed. These frames were then extracted from the resulting \texttt{MKV} file, their hashes computed and compared.
-
-This method allows \texttt{Stegasis} to operate on an arbitrary video file, but not to remount the produced \texttt{MKV} file. The above paragraph states that the extraction process being lossy is (initially) not a problem. However, if we extract the frames of a produced \texttt{MKV} file using a lossy process, the data embedded within the frames will be damaged. To combat this, a third \texttt{FFmpeg} command is used when remounting an already formatted \texttt{MKV} file, as shown in Listing \ref{remount}.
-
-\begin{lstlisting}[caption={\texttt{FFmpeg} \texttt{MKV} \texttt{MJPEG} fram extraction command.}, frame=single, label=remount,upquote=true]
+// Losslessly extract JPEGs from a video already formatted by Stegasis
 ffmpeg -r <video_fps> -i <video_path> -vcodec copy /tmp/stegasis/image-%d.jpg
 \end{lstlisting}
 
-The use of \texttt{-vcodec copy} tells \texttt{FFmpeg} to losslessly extract each \texttt{JPEG} image from the \texttt{MJPEG} stream - preserving the embedded data.
 
-As with the core project, a video decoder performing the above proposed method was implemented satisfying the \texttt{Video Decoder} interface. When \texttt{Stegasis} is run, a check occurs to see whether the provided file is an uncompressed \texttt{AVI}. If it is, the native \texttt{AVI} decoder developed is used. If it is not, the above video decoder is used, allowing \texttt{Stegasis} to operate seamlessly across all video types without the user needing to manually specify which video decoder to use.\\
+The first frame extraction command converts each frame of the video file to a \texttt{JPEG} image using the highest quality setting and writes them to \texttt{/tmp/stegasis/}. The reassembly command muxes the modified video frames and audio together into a single \texttt{MKV} file. The use of \texttt{-codec copy} tells \texttt{FFmpeg} to literally copy the \texttt{JPEGs} into a Motion JPEG (\texttt{MJPEG}) stream. This ensures the frames are not recompressed - preserving the embedded data. This process was verified to be correct by noting the \texttt{MD5} hash of the \texttt{JPEG} frames prior to being muxed. These frames were then extracted from the resulting \texttt{MKV} file, their hashes computed and compared. The second frame extraction command uses \texttt{-vcodec copy} which tells \texttt{FFmpeg} to losslessly extract each \texttt{JPEG} image from the \texttt{MJPEG} stream - preserving the embedded file system.
+
+Using the above commands, I implemented a video decoder performing the described method. When \texttt{Stegasis} is run, a check occurs to see whether the provided file is an uncompressed \texttt{AVI}. If it is, the native \texttt{AVI} decoder developed is used. If it is not, this video decoder is used, allowing \texttt{Stegasis} to operate seamlessly across all video types without the user needing to manually specify which video decoder to use.\\
 
 \noindent
-The final step of this method is to implement embedding algorithms operating on \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{Steganographic Algorithm} interface, all of the file system logic will continue to work as expected.
+The final step of this extension task is to implement embedding algorithms operating on the extracted \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{Steganographic Algorithm} interface, all of the file system logic will continue to work as expected.
 
-The implemented algorithms are all based on the \texttt{JPEG} DCT LSB method (also known as the \textit{JSteg} algorithm) and embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. As with the core project, several versions of the basic algorithm were developed including permuted and encrypted variants, reusing ideas and code from the core implementation. Algorithm \ref{jpegalg} shows pseudocode for the basic embedding algorithm.
+The implemented algorithms all embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. As with the core project, several versions of the basic algorithm were implemented along with more advanced algorithms such as \texttt{F4} and \texttt{F5}. Algorithm \ref{jpegalg} shows pseudocode for the basic embedding algorithm.
 
 \begin{algorithm}
 \caption{Basic \texttt{JPEG} embedding algorithm.}
@@ -1197,7 +1199,7 @@ The implemented algorithms are all based on the \texttt{JPEG} DCT LSB method (al
 		\State (row, block, coefficient) $\gets$ getCoefficientForOffset(offset++)
 		\State component = 2
 		\Comment{Components 2 and 3 are the chroma components.}
-		\State row $\gets$ chunk.getRow(row, component)
+		\State row $\gets$ frame.getRow(row, component)
 		\If{ The jth significant bit of data[i] == 1}
 			\State Set LSB(row[block][coefficient]) to 1
 		\Else
@@ -1208,32 +1210,9 @@ The implemented algorithms are all based on the \texttt{JPEG} DCT LSB method (al
 \end{algorithmic}
 \end{algorithm}
 
-Listing \ref{dctp} shows the permuted variant of the implemented \texttt{JPEG} embedding algorithm.\\
+Within the actual implementation, the component to embed within is chosen using the calculation \texttt{(co \% 2) + 1}. This uniformly distributes the embedded data bits between the two chroma components, deliberately not touching the luminance component. 
 
-\begin{lstlisting}[caption={Permuted \texttt{JPEG} embedding algorithm (\texttt{steg/dctp\_algorithm.cc:48}).}, frame=single, label=dctp,upquote=true,float,floatplacement=!h]
-virtual void embed(Chunk *c, char *data, int dataBytes, int offset) {
-  int frameByte = lcg.map[offset++];
-  int row, block, co, comp;
-  JBLOCKARRAY frame; 
-  for (int i = 0; i < dataBytes; i ++) {
-    for (int j = 7; j >= 0; j --) {
-      this->getCoef(frameByte, &row, &block, &co);
-      comp = (co % 2) + 1;
-      frame = (JBLOCKARRAY)c->getFrameData(row, comp);
-      if ((((1 << j) & data[i]) >> j) == 1) {
-        frame[0][block][co] |= 1;
-      } else {
-        frame[0][block][co] &= ~1;
-      }
-      frameByte = lcg.map[offset++];
-    }
-  }
-};
-\end{lstlisting}
-
-The component to embed within is chosen using the calculation \texttt{(co \% 2) + 1}, this will uniformly distribute the embedded data bits between the two chroma components, deliberately not touching the luminance component. 
-
-At higher capacity settings, this embedding algorithm does begin to produce visual artifacts within the video frames. Figure \ref{jpegarti} illustrates this when a capacity setting of 100\% was used.
+At higher capacity settings, this embedding algorithm does begin to produce visual artifacts within the video frames. Figure \ref{jpegarti} illustrates this when a capacity setting of 100\% is used.
 
 \begin{figure}[!h]
 \centerline{\includegraphics[width=\textwidth]{images/bb_100cap.png}}
@@ -1241,7 +1220,7 @@ At higher capacity settings, this embedding algorithm does begin to produce visu
 \label{jpegarti}
 \end{figure}
 
-However, at lower capacity settings it is not possible to visually differentiate between the cover and stego objects\footnote{This claim is verified within the evaluation section \ref{security}.}. Figure \ref{jpegnoart} shows the same frame as above, but using a capacity setting of 20\%. (Left image is the original frame.)
+However, at lower capacity settings it is not possible to visually differentiate between the cover and stego objects\footnote{This claim is verified within the evaluation section \ref{security}.}. Roughly, any capacity setting above 50\% begins to introduce visually detectable artifacts. Figure \ref{jpegnoart} shows the same frame as above, but using a capacity setting of 20\%. (Left image is the original frame.)
 
 \begin{figure}[!h]
 \centerline{\includegraphics[width=\textwidth]{images/bb_20cap.png}}
@@ -1249,8 +1228,10 @@ However, at lower capacity settings it is not possible to visually differentiate
 \label{jpegnoart}
 \end{figure}
 
-\noindent
-The \texttt{JEPG} embedding algorithms allow \texttt{Stegasis} to achieve the $>$100\% embedding capacities claimed within the opening paragraph of this document. The reason this is possible is due to the final stage of \texttt{JPEG} compression - ``Encode the resulting coefficients using a Huffman variable word-length algorithm''. This effectively compresses the embedded data before it is written back to disk. To show this in action, Listing \ref{200cap} shows a 306 MB file embedded within a 189 MB video.
+The basic \texttt{JPEG} embedding algorithm and the permuted variant (\texttt{OutGuess 0.1}) are both vulnerable to the \textit{histogram attack} discussed in Section \ref{security}. This motivates the implementation of more advanced algorithms such as \texttt{F4} and \texttt{F5} which resist this type of steganalysis attack. Instead of replacing the LSB of DCT coefficients, \texttt{F5} decrements the absolute value via \textit{matrix encoding}. This results in no pairs of values being produced and thus \texttt{F5} cannot be detected by the Chi-Squared attack. Matrix encoding within \texttt{F5} uses \textit{Hamming codes} to embed a k-bit message into a $2^k -1$ bit code word, changing it at most by one bit. This allows \texttt{F5} to achieve high embedding efficiencies. See the Appendix Section \ref{app:f5} for more details and an implementation of \texttt{F5}.\\
+ 
+\noindent 
+Due to the final lossless stage of \texttt{JPEG} compression, it can in some cases\footnote{This is highly dependant on the data being embedded. The best possible scenario is embedding all zeros.} be possible to embedded files larger than the cover object - achieving embedding capacities in excess of 100\%. This is because the encoding effectively compresses the embedded data before it is written back to disk. To show this in action, Listing \ref{200cap} shows a 306 MB file embedded within a 189 MB video.
 
 \begin{lstlisting}[language=bash,caption={Demonstration of 162\% embedding capacity.}, frame=single, label=200cap]
 $ ls -lah
@@ -1265,10 +1246,11 @@ drwxrwxrwt 12 root root 4.0K Jan 15 22:26 ..
 -rwxr-xr-x  1 root root 306M Jan  1  1970 file1
 \end{lstlisting}
 
-The performance of \texttt{Stegasis} using this method is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the large amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
+\noindent
+The performance of \texttt{Stegasis} operating on \texttt{JPEG} images is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the large amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
 
 \noindent
-The above described additions to \texttt{Stegasis} allow it to operate across a large range of video formats, greatly increasing practicality and successfully completing the extension task.
+The above described additions to \texttt{Stegasis} allow it to seamlessly operate across a large range of video formats, greatly increasing practicality and successfully completing the extension task.
 
 \subsubsection{File system directory structures}
 
@@ -1283,7 +1265,7 @@ int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
 }
 \end{lstlisting}
 
-Changes will have to be made to a few \texttt{FUSE} functions including \texttt{readdir}. It is no longer correct to just iterate over all files in the file system and return their names since you only want to return a file if the function call is requesting the folder that file directly resides within. Consider the following example wherein the file system contains one sub-directory and two files; \texttt{/test.txt}, \texttt{/folder/other.txt}. If \texttt{readdir} requests a path of \texttt{/folder/}, only \texttt{/folder/other.txt} should be returned. This can be accomplished by testing if the requested path is a prefix of the file name. However, this method fails when directories are created within directories - files within sub-directories of the path should not be returned. This is fixed by checking the number of slashes in the file name and comparing this number of slashes in the path. Algorithm \ref{dirs} describes the \texttt{readdir} implementation.
+The \texttt{readdir} implementation will need to be modified to correctly list the files with respect to the current working directory. It is no longer correct to just iterate over all files in the file system and return their names since you only want to return a file if the function call is requesting the folder that file directly resides within. Consider the following example wherein the file system contains one sub-directory and two files; \texttt{/test.txt}, \texttt{/folder/other.txt}. If \texttt{readdir} requests a path of \texttt{/folder/}, only \texttt{/folder/other.txt} should be returned. This can be accomplished by testing if the requested path is a prefix of the file name. However, this method fails when directories are created within directories - files within sub-directories of the path should not be returned. This is fixed by checking the number of slashes in the file name and comparing this number of slashes in the path. Algorithm \ref{dirs} describes the \texttt{readdir} implementation.
 
 \begin{algorithm}
 \caption{Algorithm for the \texttt{readdir} implementation.}
@@ -1305,7 +1287,7 @@ Changes will have to be made to a few \texttt{FUSE} functions including \texttt{
 \end{algorithmic}
 \end{algorithm}
 
-Changes will now need to be made to write the directories to the video file and to read them back, preserving the directory structure between unmounts and remounts. It was chosen to represent a directory as a file in the header of the video which has a value of $-1$ in the \texttt{number of triples} field. The \texttt{readHeader} and \texttt{writeHeader} functions were modified appropriately.
+Changes will now need to be made to write the directories to the video file and to read them back, preserving the directory structure between unmounts and remounts. I chose to represent a directory as a file in the header of the video which has a value of $-1$ in the \texttt{number of triples} field. This meant the structure of the \texttt{FAF} did not need to be modified. The \texttt{readHeader} and \texttt{writeHeader} functions were modified appropriately.
 
 These changes successfully implement the extension task and greatly improve the usability of the file system. With the exception of permissions and access and modification times, \texttt{Stegasis} now provides all the functionality one would expect from a typical file system.
 
@@ -1314,17 +1296,17 @@ These changes successfully implement the extension task and greatly improve the 
 
 \subsubsection{Plausible deniability}
 
-Similar to \texttt{TrueCrypt}'s hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using a different user provided passphrase. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to have seen. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
+Similar to \texttt{TrueCrypt}'s hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using a different user provided passphrase. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to reveal if necessary. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
 
 This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process\textsuperscript{\cite{random}}.
 
-The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag, \texttt{pass2} was added, if this is specified during the format process random data is written to each frame of the video and two headers are written at the start and in the middle of the video. The mount process will now attempt to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
+The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag, \texttt{pass2} was added, if this is specified during the format process two headers are written at the start and in the middle of the video. The mount process will now attempt to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
 \begin{lstlisting}[language=bash,caption={\texttt{Stegasis} plausible deniability functionality.}, frame=single, label=deny,float,floatplacement=!htb]
-$ stegasis format -alg=lsba -pass=outer -pass2=hidden -cap=20 /media/Backup/video.avi
+$ stegasis format -alg=lsb -crypt=serpent -pass=outer -pass2=hidden -cap=20 video.avi
 [...]
 Format successful!
-$ stegasis mount -alg=lsba -pass=outer /media/Backup/video.avi /tmp/steg
+$ stegasis mount -alg=lsbp -crypt=serpent -pass=outer video.avi /tmp/steg
 [...]
 Mounting...
 
@@ -1334,7 +1316,7 @@ $ echo 'outer' > /tmp/steg/outer.txt
 [First Terminal]
 <Control-C>
 [...]
-$ stegasis mount -alg=lsba -pass=hidden /media/Backup/video.avi /tmp/steg
+$ stegasis mount -alg=lsbp -crypt=serpent -pass=hidden video.avi /tmp/steg
 [...]
 Mounting...
 
@@ -1344,11 +1326,9 @@ $ echo 'inner' > /tmp/steg/sensitivefile.txt
 
 Since the header and data for the hidden file system is stored within the middle video frame onwards, it is possible to damage it by writing too much data to the outer volume. The user has effectively sacrificed half of the total embedding capacity in return for plausible deniability.
 
-A subtlety to note here is that since the random data is only written to the video when a hidden volume is requested, this itself becomes an indication of the hidden volumes presence. To combat this, a \texttt{random} command is added to \texttt{Stegasis} which will simply write random data to the entire video. A user can then confidently claim this is the reason why the video in question has random data written to it, not because a hidden volume resides within it. 
-
 \subsubsection{Hiding data within audio}
 
-It is stated within the project proposal that ``a substantial part of an \texttt{AVI} file may be the audio data''. I was correct to use the word ``may'' within this statement since it turns out that a very small percentage of an uncompressed \texttt{AVI} file is the audio data. Similarly low percentages apply to other video formats due to modern audio compression algorithms such as \texttt{MP3}. The question of how this extra embedding capacity could actually be utilised is also quite prevalent since \texttt{Stegasis} and the file system logic all rely on the idea of the video being broken up into frames. This concept does not translate easily over to audio. It was therefore deemed not worth perusing this extension task. 
+It is stated within the project proposal that ``a substantial part of an \texttt{AVI} file may be the audio data''. I was correct to use the word ``may'' within this statement since it turns out that a very small percentage of an uncompressed \texttt{AVI} file is the audio data. Similarly low percentages apply to other video formats due to modern audio compression algorithms such as \texttt{MP3}. The question of how this extra embedding capacity could actually be utilised is also quite prevalent since \texttt{Stegasis} and the file system logic all rely on the idea of the video being broken up into frames. This concept does not translate easily over to audio. I therefore decided not to peruse this extension task. 
 
 \subsubsection{Evaluation of embedding impact on video quality}
 
@@ -1365,12 +1345,12 @@ The user is presented with two images and asked the question ``Which image do yo
 In total there are 14,912 pairs of images, one of which is randomly selected for each page load. One of the images is the original video frame while the other has 2.5 kB of data embedded within it using the permuted \texttt{JPEG} embedding algorithm and a capacity setting of 20\% (the default value). The position of the ``correct'' image is randomly chosen and the file names of the images are also random strings. This tries to thwart any attempts at foul play, possibly damaging the collected results. When a user first visits the site, a cookie containing a unique ID is issued allowing data points from the same user to be aggregated together.\\
 
 \noindent
-The results of this evaluation study obtained by the implemented web application are discussed in section \ref{security} and give a definitive answer to the question of perceivable embedding impact.
+The results of this evaluation study obtained by the implemented web application are discussed in section \ref{security} and conclude that it is not possible to visually differentiate between the cover and stego objects at the default capacity setting of 20\%.
 
 \subsection{Testing}
 \label{testing}
 
-\texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all 11 embedding algorithms and associated code. Listing \ref{unittest} gives an example unit test.
+\texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all stenographic algorithms and associated code. Listing \ref{unittest} gives an example unit test.
 
 \begin{lstlisting}[caption={Embedding algorithm unit test (\texttt{steg/steg\_algorithm\_test.cc:100}).}, frame=single, label=unittest]
 bool SteganographicUnitTests::completeness(SteganographicAlgorithm alg) {
@@ -1383,11 +1363,13 @@ bool SteganographicUnitTests::completeness(SteganographicAlgorithm alg) {
 
 The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded using a key \textbf{k} is correctly extracted when using the same key.
 
-It was deemed more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. These archives are then copied into the file system and uncompressed. Once the extraction process has completed, the resulting file system is traversed to check the contents is as expected. Visual testing was also employed. For example, large media content such as high definition video was copied into the mounted volume and checked to see if it played back correctly. This is a good test case since the file (due to its size) will be spread across a large proportion of the video. Indeed, several bugs were identified using this testing approach.
+It was deemed more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. These archives are then copied into the file system and uncompressed. Once the extraction process has completed, the resulting file system is traversed to check the contents is as expected.
+
+Visual testing was also employed. For example, large media content such as high definition video was copied into the mounted volume and checked to see if it played back correctly. This is a good test case since the file (due to its size) will be spread across a large proportion of the video. Indeed, several bugs were identified using this testing approach.
 
 The \texttt{AVI} parser was tested using a black box testing approach on a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. For example, the resolution of the video contained within the \texttt{BITMAPINFOHEADER} can be compared against the known value. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
 
-See the appendix section \ref{app:codetest} for some more testing code samples. 
+See the Appendix Section \ref{app:codetest} for some more testing code samples. 
 
 \vfill
 \pagebreak
@@ -2174,6 +2156,10 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   return size;
 };
 \end{lstlisting}
+
+\subsection{Implementing F5}
+\label{app:f5}
+Blah
 
 \vfill
 \pagebreak
