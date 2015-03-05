@@ -85,7 +85,7 @@ void wrap_mount(string mountPoint) {
   argv[4][1] = 'o'; 
   argv[4][2] = '\0'; 
 
-  string r = "max_write=345600";
+  string r = "max_write=65536";
   argv[5] = (char *)malloc(sizeof(char)*r.length() + 1);
   for(int i = 0; i < r.length(); i ++) {
     argv[5][i] = r.c_str()[i];

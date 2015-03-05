@@ -464,13 +464,13 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   while (bytesWritten < size) {
     this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
 
-    printf("\e[1A"); 
-    printf("\e[0K\rEmbeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
+   // printf("\e[1A"); 
+   // printf("\e[0K\rEmbeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset, bytesWritten);
     int tmp = this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten), size-bytesWritten, nextOffset); 
     triple.bytes += tmp;
 
     if (tmp != 0) {
-      // ------ tmp ------
+    /*  // ------ tmp ------
       char *tmpData = (char *)malloc(sizeof(int) * tmp);
       this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, tmp, 0);
       for (int i = 0; i < tmp; i ++) {
@@ -478,7 +478,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
           printf("i: %d, input: %d, gotout: %d, tmp: %d\n", i, (buf + bytesWritten)[i], tmpData[i], tmp);
           abort();
         }
-      }
+      }*/
       // ------- end tmp -----
     }
     bytesWritten += tmp;
@@ -616,7 +616,7 @@ void SteganographicFileSystem::writeHeader() {
     // Copy all the chunks
     int embedded = 0;
     for (struct FileChunk t : f.second) {
-      printf("embedding triple with frame: %d, bytes: %d, off: %d\n", t.frame, t.bytes, t.offset);
+      //printf("embedding triple with frame: %d, bytes: %d, off: %d\n", t.frame, t.bytes, t.offset);
       memcpy(header + offset, (char *)&t, sizeof(FileChunk));
       offset += sizeof(FileChunk);
       headerBytes += sizeof(FileChunk); 
