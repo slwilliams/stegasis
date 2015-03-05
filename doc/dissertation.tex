@@ -14,6 +14,7 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{float}
 \usepackage{listings}
+\usepackage{seqsplit}
 
 \usepackage[draft]{graphicx}
 %\usepackage{graphicx}
@@ -1298,7 +1299,7 @@ These changes successfully implement the extension task and greatly improve the 
 
 Similar to \texttt{TrueCrypt}'s hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using a different user provided passphrase. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to reveal if necessary. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
 
-This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process\textsuperscript{\cite{random}}.
+This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process using both passphrases. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process\textsuperscript{\cite{random}}.
 
 The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag, \texttt{pass2} was added, if this is specified during the format process two headers are written at the start and in the middle of the video. The mount process will now attempt to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
@@ -1369,7 +1370,8 @@ Visual testing was also employed. For example, large media content such as high 
 
 The \texttt{AVI} parser was tested using a black box testing approach on a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. For example, the resolution of the video contained within the \texttt{BITMAPINFOHEADER} can be compared against the known value. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
 
-See the Appendix Section \ref{app:codetest} for some more testing code samples. 
+See the Appendix Section \ref{app:codetest} for some more testing code samples.
+
 
 \vfill
 \pagebreak
@@ -1377,54 +1379,54 @@ See the Appendix Section \ref{app:codetest} for some more testing code samples.
 \section{Evaluation}
 \subsection{Satisfaction of Requirements}
 
-As stated in the preparation section, the project will be considered a success if all of the core requirements have been satisfied. Each requirement will now be addressed in turn.
+\texttt{Stegasis} satisfies all of the core requirements and addresses all of the proposed extension tasks. I therefore consider the project a success. Each requirement will now be addressed in turn.
 
 \subsubsection{Embedding data within video files}
 
-\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 10 steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by one of the unit test cases as explained in section \ref{testing}.} and, after an evaluation study discussed in section \ref{security} below, it was concluded that \texttt{Stegasis} can operate with no perceivable impact on video quality. A number of steganalysis tools were developed and tested the security of the proposed stego systems, prompting the design of more secure embedding algorithms. Encryption functionality is also provided making use of a user provided passphrase. Finally, a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity. This satisfies all points of the first requirement.
+\texttt{Stegasis} does indeed allow data to be embedded within video files. Furthermore, it provides a total of 6 different steganogrphic embedding algorithms all of which satisfy correctness\footnote{Verified by unit test cases as explained in section \ref{testing}.} and, an evaluation study discussed in section \ref{security} below concludes that \texttt{Stegasis} can operate with no perceivable impact on video quality. A number of steganalysis tools were developed to test the security of the proposed steganographic systems, prompting the design and implementation of more secure embedding algorithms. Encryption functionality is also provided making use of the user provided passphrase. Finally, a capacity setting was also implemented allowing users to choose a trade off between steganographic security and embedding capacity.
 
 \subsubsection{Providing a file system interface}
 
-\texttt{Stegasis} also successfully satisfies the second requirement. Users can specify a mount point at which the volume will be mounted and data written to and read from this volume will embedded and extracted from the video on the fly. Standard Unix tools including \texttt{cp}, \texttt{mv} and \texttt{rm} work as expected and the file system is correctly persevered between unmounts and remounts of the same video.
+\texttt{Stegasis} allows users to specify a mount point at which the volume will be mounted and data written to and read from this volume will embedded and extracted from the video on the fly. Standard Unix tools including \texttt{cp}, \texttt{mv} and \texttt{rm} work as expected and the file system is correctly persevered between unmounts and remounts of the same video.
 
 \subsubsection{Supporting uncompressed AVI}
 
-Raw uncompressed \texttt{AVI} files are supported via a developed native parser which allows access to and modification of individual pixel data, therefore fulfilling this requirement.
+Raw uncompressed \texttt{AVI} files are supported via a developed native parser which allows access to and modification of individual pixel data along with extraction of meta-data about the video.
 
 \subsubsection{File system performance}
 
-The performance of the file system allows full HD video content to be played back from within the volume, meeting the first point of this requirement. The second point was harder to satisfy; achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system can provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed in section \ref{perf}.},  160MB/s.), but only for the algorithms which do not encrypt the embedded data and only if the performance flag has been specified. Since read and write speeds in excess of 20 MB/s can be provided by the file system, I consider this requirement satisfied. Performance is discussed in more detail in section \ref{perf}.
+The performance of the file system allows full HD video content to be played back from directly within the volume (12 Mb/s). However, achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system can provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed in section \ref{perf}.},  160MB/s.), but only for the algorithms which do not encrypt the embedded data and only if the performance flag has been specified (to stop synchronous flushed to disk). Performance is discussed in more detail in section \ref{perf}.
 
 \noindent
-\texttt{Stegasis}, having satisfied all of the core requirements can therefore be considered a success. The extension task requirements are now discussed individually. 
+The extension task requirements are now discussed individually. 
 
 \subsubsection{Supporting multiple video formats}
 
-The novel method described in section \ref{extffmpeg} allows \texttt{Stegasis} to seamlessly operate across virtually every video format available today, including the explicitly mentioned \texttt{MP4} format. The implemented embedding algorithms operating on \texttt{JPEG} images enable very large embedding capacities allowing multiple large files to hidden inside of a single video.
+The novel method described in Section \ref{extffmpeg} allows \texttt{Stegasis} to seamlessly operate across virtually every video format available today. The basic implemented embedding algorithms operating on \texttt{JPEG} images (\texttt{DCT}, \texttt{DCTP}) offer large embedding capacities allowing multiple large files to hidden inside of a single video, while the more advanced implemented algorithms (\texttt{F4}, \texttt{F5}) offer high steganographic security.
 
 \subsubsection{File system directory operations}
 
-Directory functionality was successfully implemented allowing the creation and manipulation of directory structures, enabling users to organise their files within folders. The \texttt{mv} and \texttt{rm} commands work as expected when operating on directories as well as normal files. 
+Directory functionality was successfully implemented allowing the creation and manipulation of directory structures, enabling users to organise their embedded files within folders. The \texttt{mv} and \texttt{rm} commands work as expected when operating on directories as well as normal files. 
 
 \subsubsection{Embedding within audio}
 
-This extension task was investigated but was decided not to be implemented due to the relativity little embedding capacity gain compared to the work required to implement it.
+This extension task was investigated but I decided not to pursue it due to the relativity little embedding capacity gain compared to the work required to implement it.
 
 \subsubsection{Plausible deniability}
-
-Plausible deniability functionality was implemented within \texttt{Stegasis} allowing a second hidden file system to be optionally embedded within a video. Depending on the passphrase provided by the user during mounting, either the outer or inner volume is presented. This satisfies the first requirement point. The second point, that the hidden volume should not be detectable, is more complex. Although it will not be possible to differentiate between random data and an encrypted volume\textsuperscript{\cite{random}}, steganalysis attacks may still be able to detect the presence of the volume when using low capacity settings. This is because two different passphrases are being used to permute the randomly written data and the inner volume data. A steganalysis technique may be able to detect the two seperate embedding permutations if they do not overlap significantly. This can be alleviated by using a large capacity setting, and fixed completely by using a capacity setting of 100\%. However, this would produce visual artifacts as illustrated in the implementation section (Figure \ref{jpegarti}). As with other similar tradeoffs, this choice is given to the user.
+% write random data using both passwords i.e. do it twice 
+Plausible deniability functionality was implemented allowing a second hidden file system to be optionally embedded within a video. Depending on the passphrase provided by the user during mounting, either the outer or inner volume is presented. This satisfies the first requirement point. The second point, that the hidden volume should not be detectable, has also been satisfied since it is not possible to differentiate between the random data written during the format process and the second encrypted hidden volume\textsuperscript{\cite{random}}.
 
 \subsubsection{Evaluation of the visual impact of embedding}
 
-A website was implemented and hosted for the majority of the duration of the project. A total of 2057 data points were collected from 21 unique users. The results are discussed below in section \ref{security}, and the outcome of the study confirms that it is not possible to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
+A web application was implemented and hosted for the majority of the duration of the project. A total of 2057 data points were collected from 21 unique users. The results are discussed below in section \ref{security}, and the outcome of the study confirmed that it was not possible for the users to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
 
 \noindent
-\texttt{Stegasis} therefore has also satisfied all\footnote{I am considering the audio extension task satisfied since it was investigated and chosen not to be implemented.} of the proposed extension tasks, further cementing the success of the project.
+\texttt{Stegasis} therefore has addressed all of the proposed extension tasks, further cementing the success of the project.
 
 \subsection{Security}
 \label{security}
 
-Although security of the embedding algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The evaluation user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{Stegasis} when using its default capacity setting of 20\%. The results of this study are now statistically analysed to give an answer to this question.
+Although security of the steganographic algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The evaluation user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{Stegasis} when using its default capacity setting. The results of this study are now statistically analysed.
 
 It is first noted that if a user cannot tell the difference between the two presented images, they will select one at random. From the phrasing of the question posed to the user, a response is considered correct if the image selected did contain hidden data and incorrect if it did not. If a user were to randomly guess each time, the resulting data stream would be a random stream of corrects and incorrects. Letting correct be represented as 1 and incorrect as 0, this stream of random corrects and incorrects becomes a random bit string. Therefore, if it can be shown that the collected data is a random bit string, it can then be concluded that the users must have been randomly guessing and therefore could not differentiate between the two presented images.
 
@@ -2159,7 +2161,154 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
 \subsection{Implementing F5}
 \label{app:f5}
-Blah
+
+The \texttt{F5} steganographic algorithm, developed by Andreas Westfeld, embeds data within the LSBs of DCT coefficients within \texttt{JPEG}  images. \texttt{F5} implements matrix encoding to improve embedding efficiency and is not vulnerable to the Chi-Squared and Histogram attacks. 
+
+The \texttt{F5} embedding procedure is summarised in Algorithm \ref{algf5}.
+
+\begin{algorithm}[!h]
+\caption{The \texttt{F5} algorithm.}
+\label{algf5}
+\begin{algorithmic}[1]
+\State Estimate the embedding capacity of the carrier medium
+\State Determine the parameter k from the message size and embedding capacity. 
+\State Calculate the code word length $n = 2^k - 1$
+\State Embed the secret message with $(1, n, k)$ matrix encoding:
+\State \ \ \ Fill a buffer with the LSBs of $n$ nonzero DCT coefficients
+\State \ \ \ Hash this buffer
+\State \ \ \ \texttt{XOR} the next k bits of the message with the hash value
+\State \ \ \ If the output $i$ is nonzero, the absolute value of the coefficient at buffer index $i-1$ is decremented
+\State \ \ \ Test for shrinkage. If so, jump to line 5, else advance the coefficients behind the buffer
+\State \ \ \ If there is still message data, jump to line 5, else return
+\end{algorithmic}
+\end{algorithm}
+
+\texttt{F5} only embeds data within zero valued DCT coefficients. This can lead to a situation known as \textit{shrinkage} which occurs when a coefficient with absolute value 1 is decremented, becoming zero. The extraction processes cannot distinguish between zero valued coefficients skipped and those which were decremented. Therefore when shrinkage occurs, that k-bit message must be embedded again.
+To estimate the embedding capacity of the carrier medium taking into account possible shrinkage the following formula is used:
+\begin{center}
+$\mathcal{C} = DCT - DCT/64 - DCT_{0} - DCT_{1} + 0.49 \cdot DCT_{1}$
+\end{center}
+where $DCT$ is the total number of DCT coefficients in the image, $DCT_{0}$ the total number of zero valued coefficients and $DCT_{1}$ the total number of coefficients with absolute value 1. $-0.51 \cdot DCT_{1}$ is the estimated loss due to shrinkage.
+
+The embedding rate is defined as:
+\begin{center}
+$\mathcal{R}(k) = \dfrac{k}{2^k - 1}$
+\end{center}
+and is used to compute the optimal value for $k$. From the estimated capacity $\mathcal{C}$ and the message length $m$, the optimal embedding rate is calculated as $r = \dfrac{m}{\mathcal{C}}$ we then seek the maximum integer $k \geq 1$ such that:
+\begin{center}
+$\mathcal{R}(k) > r$
+\end{center}
+The hash function used to hash the LSBs of the nonzero DCT coefficients is the bitwise \texttt{XOR} of each element:
+\begin{equation*}
+  f(\mathbf{a}) = \sideset{}{a_{i} \cdot i}\bigoplus_{i=1}^{n}
+\end{equation*}
+The index of the coefficient to modify (if any) is calculated by \texttt{XOR}ing $k$ bits of the message with the hash of the coefficient buffer as follows:
+\begin{equation*}
+  i = M_{k} \oplus f(\text{buffer})
+\end{equation*}
+If $i \neq 0$ then the $(i - 1)$th buffer elements coefficients absolute value is decremented by 1.\\
+
+\noindent 
+Extraction follows a similar procedure in which blocks of $n$\footnote{There are some fiddly issues here which are not mentioned within the original paper on \texttt{F5} since the extraction procedure must know the value of $k$ in advance along with the number of embedded bits within the image. My solution for this was to embed the value of $k$ and the number of embedded bits within the second \texttt{JPEG} component using the basic \texttt{JSteg} algorithm. The \texttt{F5} extraction producer can then access this information.}  nonzero valued DCT coefficients are hashed to give $k$ message bits. These need to be collected together and return as a byte array.
+
+Listing \ref{f5imp} shows a cut down version of the final implementation.
+
+
+\begin{lstlisting}[caption={\texttt{F5} embedding implementation (\texttt{steg/f5.cc:86})).}, frame=single, label=f5imp,showstringspaces=false,upquote=true]
+THIS IS NOT A PAIR<>!!!!!!  --------------------------------------<<<<<<<<<<<<<<<<
+virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+  this->crypt->encrypt(data, reqByteCount);
+  JBLOCKARRAY frame;
+  int row, block, co;
+  // Estimate the embedding capacity
+  int totalCoefficients = this->dec->getFrameHeight() * this->dec->getFrameWidth() * 64;
+  int zeroCoefficients = 0, oneCoefficients = 0;
+  for (int i = 0; i < totalCoefficients; i ++) {
+    this->getCoef(lcg.map[i], &row, &block, &co);
+    frame = (JBLOCKARRAY)c->getFrameData(row, 1);
+    if (frame[0][block][co] == 0) zeroCoefficients ++;
+    if (frame[0][block][co] == 1 || frame[0][block][co] == -1) oneCoefficients ++;  
+  }
+  // Embed value of 255 for k into the second component
+  for (int j = 7; j >= 0; j --) {
+    this->getCoef(lcg.map[j+5], &row, &block, &co);
+    frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+    if ((255 & (1 << j)) != 0) {
+      frame[0][block][co] |= 1;
+    } else {
+      frame[0][block][co] &= (~1);
+    }
+  }
+  // In bits
+  int embeddingCapacity = totalCoefficients - totalCoefficients/64 - zeroCoefficients - oneCoefficients - 0.49*oneCoefficients;
+  // Force to be a multiple of 8
+  embeddingCapacity -= embeddingCapacity % 8;
+  if (embeddingCapacity < 8) {
+    // Not point trying to embed anything in this frame
+    int currentFrame, currentFrameOffset;
+    this->crypt->decrypt(data, reqByteCount);
+    return 0;
+  }
+  int bitsToEmbed = min(reqByteCount * 8, (int)(embeddingCapacity * (this->dec->getCapacity()/100.0)));
+  double embeddingRate = (double)bitsToEmbed / (double)embeddingCapacity;
+  char k = 1;
+  while (true) {
+    double rate = (double)k / (pow(2, k) - 1);
+    if (rate < embeddingRate) break;
+      k ++;
+  }
+  k --;
+  // Embed value of k into the second component
+  for (int j = 7; j >= 0; j --) {
+    this->getCoef(lcg.map[j+5], &row, &block, &co);
+    frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+    if ((k & (1 << j)) != 0) {
+      frame[0][block][co] |= 1;
+    } else {
+      frame[0][block][co] &= (~1);
+    }
+  }
+  int codeWordLength = pow(2, k) - 1;
+  int bitsEmbedded = 0;  
+  while (bitsEmbedded < bitsToEmbed) {
+    int oldOffset = offset;
+    int *coefficients = this->getNextCoefficientBlock(c, &offset, codeWordLength);
+    if (coefficients == NULL) break;
+    int hashOfCoefficients = this->hash(coefficients, codeWordLength);
+    int dataBlock = this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded);
+    int index = hashOfCoefficients ^ dataBlock;
+    if (index == 0) {
+      // Don't need to do anything
+      bitsEmbedded += k;
+      continue;
+    } else {
+      // Need to decrement coefficent at index
+      index --;
+      if (this->decCo(c, oldOffset, codeWordLength, index) == 0) {
+        // Shrinkage occured
+        offset = oldOffset;
+        continue;
+      } else {
+        bitsEmbedded += k;
+        continue;
+      }
+    }  
+    free(coefficients);
+  }  
+  // Embed the amount of bytes into the second comp
+  short toEmbed = (short)(bitsEmbedded / 8);
+  for (int j = 15; j >= 0; j --) {
+    this->getCoef(lcg.map[j+15], &row, &block, &co);
+    frame = (JBLOCKARRAY)c->getFrameData(row, 2);
+    if ((toEmbed & (1 << j)) != 0) {
+      frame[0][block][co] |= 1;
+    } else {
+      frame[0][block][co] &= (~1);
+    }
+  }
+  return bitsEmbedded / 8;
+}; 
+\end{lstlisting}
 
 \vfill
 \pagebreak
@@ -2239,6 +2388,24 @@ exit
 \end{lstlisting}
 
 Other similar tests exist which test different parts of the file system functionality. For example the moving of files using \texttt{mv} and copying large amounts of data using \texttt{cp}.
+
+\vfill
+\pagebreak
+
+\section{User study results}
+\label{app:userstudy}
+
+Listing \ref{userdata} shows the the raw data collected from the user study.
+\lstset{% Literate one-to-one mapping of numerals
+    literate={0}{0}{1}%
+             {1}{1}{1}%
+}
+
+\begin{lstlisting}[language=bash,caption={Data from the user study.},frame=single, upquote=true,label=userdata,breaklines=true]
+Raw data: 01000001101111001001110000000000001011011000000100101110110101110011010110111101111000000101111100100111011100101110000101100011101110001000110010111001001001100000100010100111101011011101100010001100000011110110011010001110011101101111110001110011111101100011001111011101000011100011010001100111110111100110001010011110100010100011110000110111001110111101100101001111100111000010001110000111101000010010110010111011111011011101101100011101001100000000011011000111001100000010100111000000010000010101011110001011010101000100111010001101100111010000111100111101000100110011010010101101001010101111001010011100111001001001111000110101011100000001001000101100110100011010111011100110011010111111010111000111000110100010100010111010010000001110010010100010111101000001100100111011010101011110111010011011010010001011010111000010010110100100111101000111101010101101000011110010100101111100111110101101001000101001001001101001100101001010111010011001011010111110111011000000111100011000101101001001111101001000001110101000110010011110001111101110110110110101010100011001100010010011101010101100000010001111011010001101101010110110001000110111101100111111000011010111011011011101110001000110111011101101101010100111000101001000111001111000010001110101111001011000010010110011101000100100101110101101011100001111100110100100110011101100100000111000110011010011011011111110100111100001010110010111010000111100011001010110011010110011101110010101110100011011111100110001001000011010011101000101010101010100000001001010010011011000001110011001001100110111101100000101101011111001000111101110110110011010100100100100001100011110110010001100011010010111100011101000101010010111000101101111010001000111001011101110011101011110010001100111101010110110110110101011110110101010100110111001101110111111001010111101010111000110010101101000010101001111111010010011001110010000010111110001110100010011101110110111011111011100100011010000011010110000001100100011010010001101101101000001101010111111000101001001110000101111000001000101111001101110000001100001100
+Total : 2057, Correct : 1042, Incorrect : 1015
+Users: 21
+\end{lstlisting}
 
 \vfill
 \pagebreak
