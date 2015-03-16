@@ -12,17 +12,17 @@ using namespace std;
 class LSBPAlgorithm : public SteganographicAlgorithm {
   public:
     LSBPAlgorithm(string password, VideoDecoder *dec, CryptographicAlgorithm *crypt): SteganographicAlgorithm(password, dec, crypt) {};
-    virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+    virtual pair<int, int> embed(Frame *c, char *data, int reqByteCount, int offset) {
       this->crypt->encrypt(data, reqByteCount); 
 
       char *frame = c->getFrameData();
       int frameByte = 0, bytesEmbedded = 0, originalOffset = offset;
       while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
         for (int j = 7; j >= 0; j --) {
-          if (offset == this->dec->getFrameSize()) {
+          /*if (offset == this->dec->getFrameSize()) {
             bytesEmbedded --;
             break;
-          }
+          }*/
           frameByte = lcg.map[offset++];
           if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
             frame[frameByte] |= 1;
@@ -33,17 +33,12 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
         bytesEmbedded ++;
       }
 
-      int currentFrame, currentFrameOffset;
-      this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
-
-      if (offset == this->dec->getFrameSize()) {
-        this->dec->setNextFrameOffset(currentFrame + 1, 0);
-      } else {
-        this->dec->setNextFrameOffset(currentFrame, currentFrameOffset + (offset - originalOffset)); 
-      }
-
       this->crypt->decrypt(data, reqByteCount);
-      return bytesEmbedded;
+      if (offset == this->dec->getFrameSize()) {
+        return make_pair(bytesEmbedded, 0);
+      } else {
+        return make_pair(bytesEmbedded, offset);
+      }
     };
     virtual pair<int, int> extract(Frame *c, char *output, int reqByteCount, int offset) {
       char *frame = c->getFrameData();

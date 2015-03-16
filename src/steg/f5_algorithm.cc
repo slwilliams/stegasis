@@ -83,8 +83,8 @@ class F5Algorithm : public SteganographicAlgorithm {
       }
       return output;
     };
-    virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
-      if (reqByteCount == 0) return 0;
+    virtual pair<int, int> embed(Frame *c, char *data, int reqByteCount, int offset) {
+      if (reqByteCount == 0) return make_pair(0, 0);
       this->crypt->encrypt(data, reqByteCount);
 
       ASSERT(offset != 0, "Embed offset is zero\n");
@@ -125,7 +125,7 @@ class F5Algorithm : public SteganographicAlgorithm {
         this->dec->setNextFrameOffset(currentFrame + 1, 0);
 
         this->crypt->decrypt(data, reqByteCount);
-        return 0;
+        return make_pair(0, 0);
       }
 
       int bitsToEmbed = min(reqByteCount * 8, (int)(embeddingCapacity * (this->dec->getCapacity()/100.0)));
@@ -201,12 +201,8 @@ class F5Algorithm : public SteganographicAlgorithm {
         }
       }
 
-      int currentFrame, currentFrameOffset;
-      this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
-      this->dec->setNextFrameOffset(currentFrame + 1, 0);
-
       this->crypt->decrypt(data, reqByteCount);
-      return bitsEmbedded / 8;
+      return make_pair(bitsEmbedded / 8, 0);
     }; 
     virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
       if (dataBytes == 0) return make_pair(0, 0);
@@ -215,7 +211,6 @@ class F5Algorithm : public SteganographicAlgorithm {
       JBLOCKARRAY frame;
       int row, block, co;
 
-      // Changing the permutation will stop this from working...
       char k = 0;
       for (int j = 7; j >= 0; j --) {
         this->getCoef(lcg.map[j+5], &row, &block, &co); 

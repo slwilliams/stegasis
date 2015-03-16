@@ -51,7 +51,7 @@ class SteganographicAlgorithm {
       if (lcgKey < 0) lcgKey *= -1;
       this->lcg = LCG(dec->getFrameSize(), lcgKey);
     };
-    virtual int embed(Frame *c, char *data, int reqByteCount, int offset) = 0;
+    virtual pair<int,int> embed(Frame *c, char *data, int reqByteCount, int offset) = 0;
     virtual pair<int,int> extract(Frame *c, char *output, int reqByteCount, int offset) = 0;
     virtual void getAlgorithmCode(char out[4]) = 0;
 };

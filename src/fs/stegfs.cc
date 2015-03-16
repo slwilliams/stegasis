@@ -33,7 +33,7 @@ void SteganographicFileSystem::extract(int *frame, int *offset, int bytes, char 
   (*offset) = extractedWritten.second;
 };
 
-//// <bytesWritten, offset>
+// <bytesWritten, offset>
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg,
     bool performance): decoder(decoder), alg(alg), performance(performance) {
   bool hiddenVolume = false;
@@ -333,29 +333,31 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   triple.bytes = 0;
 
   while (bytesWritten < size) {
-    this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
-
     printf("\e[1A"); 
     printf("\e[0K\rEmbeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset * 8, bytesWritten);
-    int tmp = this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten), size-bytesWritten, nextOffset); 
-    triple.bytes += tmp;
+    pair<int, int> written = this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten), size-bytesWritten, nextOffset); 
+    triple.bytes += written.first;
 
-    if (tmp != 0) {
+    if (written.first != 0) {
       // ------ tmp ------
-      char *tmpData = (char *)malloc(sizeof(int) * tmp);
-      this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, tmp, nextOffset);
-      for (int i = 0; i < tmp; i ++) {
+      char *tmpData = (char *)malloc(sizeof(int) * written.first);
+      this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, written.first, nextOffset);
+      for (int i = 0; i < written.first; i ++) {
         if (tmpData[i] != (buf + bytesWritten)[i]) {
-          printf("i: %d, input: %d, gotout: %d, tmp: %d\n", i, (buf + bytesWritten)[i], tmpData[i], tmp);
+          printf("i: %d, input: %d, gotout: %d, tmp: %d\n", i, (buf + bytesWritten)[i], tmpData[i], written.first);
           abort();
         }
       }
       // ------- end tmp -----
+      nextOffset = written.second;
+      if (written.second == 0) nextFrame ++;
     }
-    bytesWritten += tmp;
+    bytesWritten += written.first;
   }
   //printf("adding triple frame: %d, bytes:%d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
   this->fileIndex[path].push_back(triple);
+
+  this->decoder->setNextFrameOffset(nextFrame, nextOffset);
 
   if (offset == 0) {
     this->fileSizes[path] = size;
@@ -465,131 +467,64 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
 void SteganographicFileSystem::writeHeader() {
   this->mux.lock();
-  int oldFrameOffset, oldFrame;
-  this->decoder->getNextFrameOffset(&oldFrame, &oldFrameOffset);
 
   char *header = (char *)malloc(this->decoder->getFrameSize() * sizeof(char) * 50);
-  int headerBytes = 0, offset = 0;
+  int offset = 0;
   for (auto f : this->fileIndex) {
     // Copy the filename
     memcpy(header + offset, (char *)f.first.c_str(), f.first.length()+1);
     offset += f.first.length() + 1;
-    headerBytes += f.first.length() + 1;
 
     // Copy the number of chunks
     int triples = f.second.size();
     memcpy(header + offset, (char *)&triples, 4);
     offset += 4;
-    headerBytes += 4;
     
     // Copy all the chunks
     int embedded = 0;
     for (struct FileChunk t : f.second) {
       //printf("embedding triple with frame: %d, bytes: %d, off: %d\n", t.frame, t.bytes, t.offset);
-      printf("about to find k...\n");
       memcpy(header + offset, (char *)&t, sizeof(FileChunk));
       offset += sizeof(FileChunk);
-      headerBytes += sizeof(FileChunk); 
     }
   }
   // Copy dirs
   for (auto d : this->dirs) {
     memcpy(header + offset, (char *)d.first.c_str(), d.first.length()+1);
     offset += d.first.length() + 1;
-    headerBytes += d.first.length() + 1;
 
     int dirTriples = -1;
     memcpy(header + offset, (char *)&dirTriples, 4);
     offset += 4;
-    headerBytes += 4;
   }
-  printf("Headerbytes: %d\n", headerBytes);
+  printf("Headerbytes: %d\n", offset);
 
-  int tmp = headerBytes;
-  int currentFrame, currentOffset;
-  this->decoder->setNextFrameOffset(this->headerBytesFrame, this->headerBytesOffset);
+  int tmp = offset;
+  int currentFrame = this->headerBytesFrame, currentOffset = this->headerBytesOffset;
 
   int bytesWritten = 0;
   int bytesToWrite = 4;
   do {
-    this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
-    bytesWritten += alg->embed(this->decoder->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, bytesToWrite-bytesWritten, currentOffset);
+    pair<int, int> written = alg->embed(this->decoder->getFrame(currentFrame), ((char *)&offset)+bytesWritten, bytesToWrite-bytesWritten, currentOffset);
+    bytesWritten += written.first;
+    currentOffset = written.second;
+    if (written.second == 0) currentFrame ++;
   } while (bytesWritten != bytesToWrite);
 
   bytesWritten = 0;
   bytesToWrite = tmp;
   do {
-    this->decoder->getNextFrameOffset(&currentFrame, &currentOffset);
     if (currentFrame == 50) {
       printf("did get here\n\n");
       break;
     }
-    bytesWritten += alg->embed(this->decoder->getFrame(currentFrame), header+bytesWritten, bytesToWrite-bytesWritten, currentOffset);
+    pair<int, int> written = alg->embed(this->decoder->getFrame(currentFrame), header+bytesWritten, bytesToWrite-bytesWritten, currentOffset);
+    bytesWritten += written.first;
+    currentOffset = written.second;
+    if (written.second == 0) currentFrame ++;
   } while (bytesWritten != bytesToWrite);
   free(header);
 
-  this->decoder->setNextFrameOffset(oldFrame, oldFrameOffset);
   this->mux.unlock();
 };
 
-/*void SteganographicFileSystem::compactHeader() {
-  this->mux.lock();
-  printf("Compacting header...\n");
-  for (auto f : this->fileIndex) {
-    int i = 0;
-    unordered_map<int, vector<int> > chunkOffsets = unordered_map<int, vector<int> >();
-    int size = f.second.size();
-    while (i < size - 1) {
-      struct FileChunk current = f.second.at(i);
-      struct FileChunk next = f.second.at(i+1);
-      if (current.frame == next.frame && current.offset + current.bytes == next.offset) {
-        chunkOffsets[i].push_back(next.offset);
-        current.bytes += next.bytes;
-        f.second[i] = current;
-        f.second.erase(f.second.begin() + i+1);
-        size --;
-      } else {
-        i ++;
-      }
-    }
-    char *tmp = (char *)malloc(this->decoder->getFrameSize() * sizeof(char));
-    for (i = 0; i < f.second.size(); i ++) {
-      loadBar(i+1, f.second.size(), 50);
-      if (chunkOffsets[i].size() != 0) {
-        struct FileChunk t = f.second[i];
-        int bytesRead = 0;
-        Frame *f = this->decoder->getFrame(t.frame);
-        for (int j : chunkOffsets[i]) {
-          int relOffset = j - t.offset;
-          this->alg->extract(f, tmp + bytesRead, relOffset - bytesRead, (t.offset + bytesRead) * 8);
-          bytesRead += (relOffset - bytesRead);
-        }
-        this->alg->extract(f, tmp + bytesRead, t.bytes - bytesRead, (t.offset + bytesRead) * 8);
-        this->alg->embed(f, tmp, t.bytes, t.offset * 8);
-        delete f;
-      }
-    }
-    free(tmp);
-    i = 0;
-    // TODO: don't do the next bit if file size > 2GB...
-    int framesAhead = 1;
-    size = f.second.size();
-    while (i < size - 1) {
-      struct FileChunk current = f.second.at(i);
-      struct FileChunk next = f.second.at(i+1);
-      // TODO: This wont' work for the case where 2 spanning chunks sandwich a normal chunk...
-      if (next.offset == 0 && current.offset + current.bytes == (this->decoder->getFrameSize() / 8) * framesAhead) {
-        current.bytes += next.bytes;
-        f.second[i] = current;
-        f.second.erase(f.second.begin() + i+1);
-        size --;
-        framesAhead ++;
-      } else {
-        i ++;
-      }
-    }
-    this->fileIndex[f.first] = f.second;
-  }
-  this->decoder->getHeaderFrame()->setDirty();
-  this->mux.unlock();
-};*/

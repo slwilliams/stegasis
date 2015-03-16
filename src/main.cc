@@ -93,8 +93,8 @@ void doMount(string videoPath, string mountPoint, string stegAlg, string cryptAl
     dec = extension == "avi" ? (VideoDecoder *)new AVIDecoder(videoPath) : (VideoDecoder *)new JPEGDecoder(videoPath, false);
   }
   CryptographicAlgorithm *crypt = getCrypt(cryptAlg, pass, dec);
-  SteganographicAlgorithm *lsb = getSteg(stegAlg, pass, dec, crypt); 
-  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, lsb, performance)); 
+  SteganographicAlgorithm *alg = getSteg(stegAlg, pass, dec, crypt); 
+  SteganographicFileSystem::Set(new SteganographicFileSystem(dec, alg, performance)); 
 
   printf("\nMounting at %s...\n", mountPoint.c_str());
   wrap_mount(mountPoint);
@@ -136,35 +136,41 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
     }
   }
 
-  int currentFrame, currentOffset;
+  int currentFrame = 0, currentOffset = 0;
   int bytesWritten = 0;
-  dec->setNextFrameOffset(0, 0);
   char header[4] = {'S', 'T', 'E', 'G'};
   do {
-    dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    bytesWritten += alg->embed(dec->getFrame(currentFrame), header+bytesWritten, 4-bytesWritten, currentOffset); 
+    pair<int, int> written = alg->embed(dec->getFrame(currentFrame), header+bytesWritten, 4-bytesWritten, currentOffset); 
+    bytesWritten += written.first;
+    currentOffset = written.second;
+    if (written.second == 0) currentFrame ++;
   } while (bytesWritten != 4);
   bytesWritten = 0;
 
   char algCode[4];
   alg->getAlgorithmCode(algCode);
   do {
-    dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    bytesWritten += alg->embed(dec->getFrame(currentFrame), algCode+bytesWritten, 4-bytesWritten, currentOffset); 
+    pair<int, int> written = alg->embed(dec->getFrame(currentFrame), algCode+bytesWritten, 4-bytesWritten, currentOffset); 
+    bytesWritten += written.first;
+    currentOffset = written.second;
+    if (written.second == 0) currentFrame ++;
   } while (bytesWritten != 4);
   bytesWritten = 0;
 
   do {
-    dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    bytesWritten += alg->embed(dec->getFrame(currentFrame), &capacityB+bytesWritten, 1-bytesWritten, currentOffset); 
+    pair<int, int> written = alg->embed(dec->getFrame(currentFrame), &capacityB+bytesWritten, 1-bytesWritten, currentOffset); 
+    bytesWritten += written.first;
+    currentOffset = written.second;
+    if (written.second == 0) currentFrame ++;
   } while (bytesWritten != 1);
   bytesWritten = 0;
 
   int headerBytes = 0;
   do {
-    dec->getNextFrameOffset(&currentFrame, &currentOffset);
-    int tmp = alg->embed(dec->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, 4-bytesWritten, currentOffset); 
-    bytesWritten += tmp;
+    pair<int, int> written = alg->embed(dec->getFrame(currentFrame), ((char *)&headerBytes)+bytesWritten, 4-bytesWritten, currentOffset); 
+    bytesWritten += written.first;
+    currentOffset = written.second;
+    if (written.second == 0) currentFrame ++;
   } while (bytesWritten != 4);
   
   int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
@@ -209,7 +215,7 @@ SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, Cry
   } else if (alg == "f5") {
     return new F5Algorithm(pass, dec, crypt);
   } else {
-    printf("Unknown algorithm: %s\n", alg.c_str());
+    printf("Unknown SteganographicAlgorithm: %s\n", alg.c_str());
     printUsage();
     exit(0);
   }
