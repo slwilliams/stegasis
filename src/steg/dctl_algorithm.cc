@@ -15,7 +15,7 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
     virtual pair<int, int> embed(Frame *c, char *data, int reqByteCount, int offset) {
       this->crypt->encrypt(data, reqByteCount);
 
-      int originalOffset = offset, bytesEmbedded = 0;
+      int bytesEmbedded = 0;
       int row, block, co;
       JBLOCKARRAY frame;
       while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
@@ -35,16 +35,11 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
         }
         bytesEmbedded ++;
       }
-      //int currentFrame, currentFrameOffset;
-      //this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
 
+      this->crypt->decrypt(data, reqByteCount);
       if (offset == this->dec->getFrameSize()) {
-        //this->dec->setNextFrameOffset(currentFrame + 1, 0);
-        this->crypt->decrypt(data, reqByteCount);
         return make_pair(bytesEmbedded, 0);
       } else {
-        //this->dec->setNextFrameOffset(currentFrame, currentFrameOffset + (offset - originalOffset));
-        this->crypt->decrypt(data, reqByteCount);
         return make_pair(bytesEmbedded, offset);
       }
     };

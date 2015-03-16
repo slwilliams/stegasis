@@ -14,7 +14,7 @@ class F4Algorithm : public SteganographicAlgorithm {
     virtual pair<int, int> embed(Frame *c, char *data, int reqByteCount, int offset) {
       this->crypt->encrypt(data, reqByteCount);
 
-      int bytesEmbedded = 0, originalOffset = offset;
+      int bytesEmbedded = 0;
       int frameByte, row, block, co, comp;
       JBLOCKARRAY frame;
       while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {

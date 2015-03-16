@@ -16,7 +16,7 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
       this->crypt->encrypt(data, reqByteCount); 
 
       char *frame = c->getFrameData();
-      int frameByte = 0, bytesEmbedded = 0, originalOffset = offset;
+      int frameByte = 0, bytesEmbedded = 0;
       while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
         for (int j = 7; j >= 0; j --) {
           /*if (offset == this->dec->getFrameSize()) {

@@ -87,7 +87,7 @@ class F5Algorithm : public SteganographicAlgorithm {
       if (reqByteCount == 0) return make_pair(0, 0);
       this->crypt->encrypt(data, reqByteCount);
 
-      ASSERT(offset != 0, "Embed offset is zero\n");
+      ASSERT(offset != 0, "Embed offset is not zero\n");
 
       JBLOCKARRAY frame;
       int row, block, co;
@@ -120,10 +120,6 @@ class F5Algorithm : public SteganographicAlgorithm {
 
       if (embeddingCapacity < 8) {
         // No point trying to embed anything in this frame
-        int currentFrame, currentFrameOffset;
-        this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
-        this->dec->setNextFrameOffset(currentFrame + 1, 0);
-
         this->crypt->decrypt(data, reqByteCount);
         return make_pair(0, 0);
       }
@@ -168,7 +164,7 @@ class F5Algorithm : public SteganographicAlgorithm {
           bitsEmbedded += k;
           continue;
         } else {
-          // Need to decrement coefficent at index
+          // Need to decrement coefficent at index-1
           index --;
  
           if (this->decCo(c, oldOffset, codeWordLength, index) == 0) {
@@ -231,6 +227,7 @@ class F5Algorithm : public SteganographicAlgorithm {
         frame = (JBLOCKARRAY)c->getFrameData(row, 2);
         bytesInFrame |= (frame[0][block][co] & 1) << j;
       }
+      // Incorrect permutation passphrase
       if (bytesInFrame <= 0) return make_pair(dataBytes, 0);
 
       int bitsExtracted = 0, bytesExtracted = 0;
@@ -240,6 +237,7 @@ class F5Algorithm : public SteganographicAlgorithm {
         int *coefficients = this->getNextCoefficientBlock(c, &offset, codeWordLength);
         if (coefficients == NULL) {
           // Hit the bottom of the frame, don't think this should ever happen
+          printf("Data exceeded estimated capacity\n");
           this->crypt->decrypt(output, bytesExtracted);   
           return make_pair(bytesExtracted, 0);
         } 

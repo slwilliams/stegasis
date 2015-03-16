@@ -15,8 +15,8 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
     virtual pair<int, int> embed(Frame *c, char *data, int reqByteCount, int offset) {
       this->crypt->encrypt(data, reqByteCount);
 
-      int frameByte, bytesEmbedded = 0, originalOffset = offset;
-      int row, block, co;
+      int bytesEmbedded = 0;
+      int frameByte, row, block, co;
       JBLOCKARRAY frame;
       while (bytesEmbedded < reqByteCount && offset < this->dec->getFrameSize()) {
         for (int j = 7; j >= 0; j --) {
