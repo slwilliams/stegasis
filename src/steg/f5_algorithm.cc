@@ -119,7 +119,7 @@ class F5Algorithm : public SteganographicAlgorithm {
       embeddingCapacity -= embeddingCapacity % 8;
 
       if (embeddingCapacity < 8) {
-        // Not point trying to embed anything in this frame
+        // No point trying to embed anything in this frame
         int currentFrame, currentFrameOffset;
         this->dec->getNextFrameOffset(&currentFrame, &currentFrameOffset);
         this->dec->setNextFrameOffset(currentFrame + 1, 0);
@@ -210,11 +210,12 @@ class F5Algorithm : public SteganographicAlgorithm {
     }; 
     virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
       if (dataBytes == 0) return make_pair(0, 0);
-      ASSERT(offset != 0, "Extract offset not = to 0\n")
+      ASSERT(offset != 0, "Extract offset not equal to 0\n")
 
       JBLOCKARRAY frame;
       int row, block, co;
 
+      // Changing the permutation will stop this from working...
       char k = 0;
       for (int j = 7; j >= 0; j --) {
         this->getCoef(lcg.map[j+5], &row, &block, &co); 
@@ -235,6 +236,7 @@ class F5Algorithm : public SteganographicAlgorithm {
         frame = (JBLOCKARRAY)c->getFrameData(row, 2);
         bytesInFrame |= (frame[0][block][co] & 1) << j;
       }
+      if (bytesInFrame <= 0) return make_pair(dataBytes, 0);
 
       int bitsExtracted = 0, bytesExtracted = 0;
       char temp = 0;
