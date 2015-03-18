@@ -37,6 +37,7 @@ void printUsage();
 void incorrectArgNumber(string command);
 void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int capacity, string videoPath);
 void doMount(string videoPath, string mountPoint, string stegAlg, string cryptAlg, string pass, bool performance);
+void writeHeader(SteganographicAlgorithm *alg, VideoDecoder *dec, char capacityB, int frame);
 SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, CryptographicAlgorithm *crpyt);
 CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec);
 
@@ -61,7 +62,7 @@ int main(int argc, char *argv[]) {
 
   string command = argv[1];
   if (command == "format") {
-    // stegasis format --alg=lsbk --pass=123 --cap=10 /media/video.avi
+    // stegasis format --alg=lsbp --crypt=aes --pass=123 --cap=10 /media/video.avi
     if (argc != 3) {
       incorrectArgNumber(command);
       return 1;
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
     string videoPath = argv[2];
     doFormat(FLAGS_alg, FLAGS_crypt, FLAGS_pass, FLAGS_pass2, FLAGS_cap, videoPath);
   } else if (command == "mount") {
-    // stegasis mount [-p] --alb=lsbk --pass=123 /media/video.avi /tmp/test
+    // stegasis mount [-p,-f] --alb=lsbp --crypt=aes --pass=123 /media/video.avi /tmp/test
     if (argc != 4) {
       incorrectArgNumber(command);
       return 1;
@@ -78,7 +79,7 @@ int main(int argc, char *argv[]) {
     string mountPoint = argv[3];
     doMount(videoPath, mountPoint, FLAGS_alg, FLAGS_crypt, FLAGS_pass, FLAGS_p); 
   } else {
-    printf("Unknown command\n");
+    printf("Unknown command: %s\n", command.c_str());
     return 1;
   }
   return 0;
@@ -119,6 +120,7 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
   CryptographicAlgorithm *crypt = getCrypt(cryptAlg, pass, dec);
   SteganographicAlgorithm *alg = getSteg(stegAlg, pass, dec, crypt);
 
+  // Clamp capacity to 0-100
   capacity = max(0, capacity);
   capacity = min(capacity, 100);
   char capacityB = (char)capacity;
@@ -136,7 +138,24 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
     }
   }
 
-  int currentFrame = 0, currentOffset = 0;
+  writeHeader(alg, dec, capacityB, 0);
+  
+  int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
+  printf("\x1B[1;32mVolume capacity: %.2fMB\033[0m\n\n", totalCapacity/1000.0); 
+
+  if (pass2 != "") {
+    // Hidden volume requested
+    CryptographicAlgorithm *crypt2 = getCrypt(cryptAlg, pass2, dec);
+    SteganographicAlgorithm *alg2 = getSteg(stegAlg, pass2, dec, crypt2);
+    writeHeader(alg2, dec, capacityB, dec->getNumberOfFrames() / 2);
+  }
+
+  delete dec;
+  printf("Format successful!\n");
+}
+
+void writeHeader(SteganographicAlgorithm *alg, VideoDecoder *dec, char capacityB, int frame) {
+  int currentFrame = frame, currentOffset = 0;
   int bytesWritten = 0;
   char header[4] = {'S', 'T', 'E', 'G'};
   do {
@@ -172,33 +191,6 @@ void doFormat(string stegAlg, string cryptAlg, string pass, string pass2, int ca
     currentOffset = written.second;
     if (written.second == 0) currentFrame ++;
   } while (bytesWritten != 4);
-  
-  int totalCapacity = (int)floor((dec->getNumberOfFrames() * (dec->getFrameSize() / 8000) * (capacity / 100.0)));
-  printf("\x1B[1;32mVolume capacity: %.2fMB\033[0m\n\n", totalCapacity/1000.0); 
-
-  if (pass2 != "") {
-    // Hidden volume requested
-    Frame *headerFrame2 = dec->getFrame(dec->getNumberOfFrames() / 2);
-    SteganographicAlgorithm *alg2 = getSteg(stegAlg, pass2, dec, crypt);
-
-    char header2[4] = {'S', 'T', 'E', 'G'};
-    alg2->embed(headerFrame2, header2, 4, 0);
-
-    char algCode2[4];
-    alg2->getAlgorithmCode(algCode);
-    alg2->embed(headerFrame2, algCode2, 4, 4 * 8);
-
-    alg2->embed(headerFrame2, &capacityB, 1, 8 * 8);
-
-    int headerBytes2 = 0;
-    alg2->embed(headerFrame2, (char *)&headerBytes2, 4, 9 * 8);
-    
-    // Make sure the hidden header is written back
-    headerFrame2->setDirty();
-  }
-
-  delete dec;
-  printf("Format successful!\n");
 }
 
 SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, CryptographicAlgorithm *crypt) {

@@ -48,11 +48,15 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   if (strncmp(headerSig, "STEG", 4) != 0) {
     this->decoder->setHiddenVolume(); 
     headerFrame = this->decoder->getHeaderFrame();
-    offset = this->alg->extract(headerFrame, headerSig, 4, 0);
+    //offset = this->alg->extract(headerFrame, headerSig, 4, 0);
+    frame = this->decoder->getNumberOfFrames() / 2;
+    offset.second = 0;
+    this->extract(&frame, &offset.second, 4, headerSig);
     if (strncmp(headerSig, "STEG", 4) != 0) {
       printf("Could not read header. Has this video been formated?\n");
       exit(0);
     }
+    printf("Hidden Header: %.4s\n", headerSig);
     hiddenVolume = true;
   }
 
