@@ -337,10 +337,11 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
     triple.bytes += written.first;
 
     if (written.first != 0) {
+    /*if (written.first != 0) {
       // ------ tmp ------
-     /* char *tmpData = (char *)malloc(sizeof(int) * written.first);
-      this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, written.first, nextOffset);
-      for (int i = 0; i < written.first; i ++) {
+      char *tmpData = (char *)malloc(sizeof(int) * tmp);
+      this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, tmp, 0);
+      for (int i = 0; i < tmp; i ++) {
         if (tmpData[i] != (buf + bytesWritten)[i]) {
           printf("i: %d, input: %d, gotout: %d, tmp: %d\n", i, (buf + bytesWritten)[i], tmpData[i], written.first);
           abort();
