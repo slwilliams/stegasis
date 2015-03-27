@@ -25,7 +25,6 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
             break;
           }
           this->getCoef(offset++, &row, &block, &co);
-          // TODO: Not efficient...
           frame = (JBLOCKARRAY)c->getFrameData(row, 1);
           if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
             frame[0][block][co] |= 1;

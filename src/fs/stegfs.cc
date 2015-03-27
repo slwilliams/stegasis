@@ -37,21 +37,16 @@ void SteganographicFileSystem::extract(int *frame, int *offset, int bytes, char 
 SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, SteganographicAlgorithm *alg,
     bool performance): decoder(decoder), alg(alg), performance(performance) {
   bool hiddenVolume = false;
-
-  Frame *headerFrame = this->decoder->getHeaderFrame();
-  pair<int, int> offset = make_pair(0,0);
-  int frame = 0;
+  int frame = 0, offset = 0;
 
   char headerSig[4] = {0,0,0,0};
-  this->extract(&frame, &offset.second, 4, headerSig);
+  this->extract(&frame, &offset, 4, headerSig);
   printf("Header: %.4s\n", headerSig);
   if (strncmp(headerSig, "STEG", 4) != 0) {
     this->decoder->setHiddenVolume(); 
-    headerFrame = this->decoder->getHeaderFrame();
-    //offset = this->alg->extract(headerFrame, headerSig, 4, 0);
     frame = this->decoder->getNumberOfFrames() / 2;
-    offset.second = 0;
-    this->extract(&frame, &offset.second, 4, headerSig);
+    offset = 0;
+    this->extract(&frame, &offset, 4, headerSig);
     if (strncmp(headerSig, "STEG", 4) != 0) {
       printf("Could not read header. Has this video been formated?\n");
       exit(0);
@@ -61,22 +56,21 @@ SteganographicFileSystem::SteganographicFileSystem(VideoDecoder *decoder, Stegan
   }
 
   char algE[4] = {0,0,0,0};
-  this->extract(&frame, &offset.second, 4, algE);
+  this->extract(&frame, &offset, 4, algE);
   printf("Embedding Algorithm: %.4s\n", algE);
 
   char capacity = 0;
-  this->extract(&frame, &offset.second, 1, &capacity);
+  this->extract(&frame, &offset, 1, &capacity);
   printf("Capacity: %d\n", capacity);
 
   int headerBytes = 0;
-  //printf("offset before headberyets: %d, frame: %d\n", offset.second, frame); 
   this->headerBytesFrame = frame;
-  this->headerBytesOffset = offset.second;
-  this->extract(&frame, &offset.second, 4, (char *)&headerBytes);
+  this->headerBytesOffset = offset;
+  this->extract(&frame, &offset, 4, (char *)&headerBytes);
   printf("Total headerbytes: %d\n", headerBytes);
 
   char *headerData = (char *)malloc(sizeof(char) * headerBytes);
-  this->extract(&frame, &offset.second, headerBytes, headerData);
+  this->extract(&frame, &offset, headerBytes, headerData);
   this->readHeader(headerData, headerBytes); 
   this->decoder->setCapacity(capacity);
 
@@ -344,18 +338,18 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 
     if (written.first != 0) {
       // ------ tmp ------
-      char *tmpData = (char *)malloc(sizeof(int) * written.first);
+     /* char *tmpData = (char *)malloc(sizeof(int) * written.first);
       this->alg->extract(this->decoder->getFrame(nextFrame), tmpData, written.first, nextOffset);
       for (int i = 0; i < written.first; i ++) {
         if (tmpData[i] != (buf + bytesWritten)[i]) {
           printf("i: %d, input: %d, gotout: %d, tmp: %d\n", i, (buf + bytesWritten)[i], tmpData[i], written.first);
           abort();
         }
-      }
+      }*/
       // ------- end tmp -----
-      nextOffset = written.second;
-      if (written.second == 0) nextFrame ++;
     }
+    nextOffset = written.second;
+    if (written.second == 0) nextFrame ++;
     bytesWritten += written.first;
   }
   //printf("adding triple frame: %d, bytes:%d, offset: %d\n", triple.frame, triple.bytes, triple.offset);
