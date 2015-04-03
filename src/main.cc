@@ -12,7 +12,7 @@
 
 #include "video/video_decoder.h" 
 #include "video/avi_decoder.cc"
-#include "video/mp4_decoder.cc"
+//#include "video/mp4_decoder.cc"
 #include "video/other_decoder.cc"
 
 #include "steg/steganographic_algorithm.h"

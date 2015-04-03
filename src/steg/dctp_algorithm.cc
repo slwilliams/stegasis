@@ -11,7 +11,7 @@ using namespace std;
 
 class DCTPAlgorithm : public SteganographicAlgorithm {
   public:
-    DCTPAlgorithm(string password, VideoDecoder *dec, CryptographicAlgorithm *crypt): SteganographicAlgorithm(password, dec, crypt) {};
+    DCTPAlgorithm(string pass, VideoDecoder *dec, CryptographicAlgorithm *crypt): SteganographicAlgorithm(pass, dec, crypt) {};
     virtual pair<int, int> embed(Frame *c, char *data, int reqByteCount, int offset) {
       this->crypt->encrypt(data, reqByteCount);
 
