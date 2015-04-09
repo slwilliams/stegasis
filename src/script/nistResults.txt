@@ -5,23 +5,23 @@ RESULTS FOR THE UNIFORMITY OF P-VALUES AND THE PROPORTION OF PASSING SEQUENCES
 ------------------------------------------------------------------------------
  C1  C2  C3  C4  C5  C6  C7  C8  C9 C10  P-VALUE  PROPORTION  STATISTICAL TEST
 ------------------------------------------------------------------------------
-  1   6   3   4   0   6   0   8   0  22  0.000000 *   50/50      Frequency
-  0   0   0   0   0   0   0   0   0  50  0.000000 *   50/50      BlockFrequency
-  0   4   5   0   4   3   3   0  24   7  0.000000 *   50/50      CumulativeSums
-  0   4   4   0   6   2   4   0  20  10  0.000000 *   50/50      CumulativeSums
-  5   2   3   4   3  25   2   4   0   2  0.000000 *   48/50      Runs
- 50   0   0   0   0   0   0   0   0   0  0.000000 *    0/50   *  LongestRun
-  0  13   0   0   0   0   0   0   0  37  0.000000 *   50/50      FFT
-  0   0   0   0   0   0   0   0   0  50  0.000000 *   50/50      ApproximateEntropy
-  0   0   0   0  50   0   0   0   0   0  0.000000 *   50/50      Serial
-  0   0   0   0  50   0   0   0   0   0  0.000000 *   50/50      Serial
-  3   0   0   3   0   0   0   0   8  36  0.000000 *   49/50      LinearComplexity
+  6   1   5  18   0   3   0   5   0   2  0.000000 *   40/40      Frequency
+  0   0   0   0   0   0   0   0   0  40  0.000000 *   40/40      BlockFrequency
+  3   4   1   2   3  13   4   5   3   2  0.002465     40/40      CumulativeSums
+  3   3   0   8   4  11   0   6   1   4  0.000954     40/40      CumulativeSums
+  5  11   4   4   4   2   5   1   2   2  0.035174     38/40      Runs
+ 40   0   0   0   0   0   0   0   0   0  0.000000 *    0/40   *  LongestRun
+  2   7   0  17   0   0   0  14   0   0  0.000000 *   40/40      FFT
+  0   0   0   0   0   0   0   0   0  40  0.000000 *   40/40      ApproximateEntropy
+  1   0   0   0  39   0   0   0   0   0  0.000000 *   39/40      Serial
+  0   0   0   0  40   0   0   0   0   0  0.000000 *   40/40      Serial
+ 15   0   0   3   0   0   0   0   7  15  0.000000 *   37/40      LinearComplexity
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 The minimum pass rate for each statistical test with the exception of the
-random excursion (variant) test is approximately = 47 for a
-sample size = 50 binary sequences.
+random excursion (variant) test is approximately = 37 for a
+sample size = 40 binary sequences.
 
 For further guidelines construct a probability table using the MAPLE program
 provided in the addendum section of the documentation.
