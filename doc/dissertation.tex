@@ -40,6 +40,7 @@
 \usepackage{fancyhdr}
 \usepackage{pgfplots}
 \usetikzlibrary{pgfplots.groupplots}
+\usepackage[hyperpageref]{backref} 
 
 
 % --------------------------------------------------------------------
@@ -1141,7 +1142,7 @@ However, at lower capacity settings it is not possible to visually differentiate
 \label{jpegnoart}
 \end{figure}
 
-The basic \texttt{JPEG} embedding algorithm and the permuted variant (\texttt{OutGuess 0.1}) are both vulnerable to the \textit{histogram attack} discussed in Section \ref{security}. This motivates the implementation of more advanced algorithms such as \texttt{F4} and \texttt{F5} which resist this type of steganalysis attack. Instead of replacing the LSB of DCT coefficients, \texttt{F5} decrements the coefficients absolute value via \textit{matrix encoding}. This results in no pairs of values being produced and thus \texttt{F5} cannot be detected by the Chi-Squared attack. Matrix encoding within \texttt{F5} uses \textit{Hamming codes} to embed a k-bit message into a $2^k -1$ bit code word, changing it at most by one bit. This allows \texttt{F5} to achieve high embedding efficiencies. See the Appendix Section \ref{app:f5} for more details and an implementation of \texttt{F5}.\\
+The basic \texttt{JPEG} embedding algorithm and the permuted variant (\texttt{OutGuess 0.1}) are both vulnerable to the \textit{histogram attack} discussed in Section \ref{security}. This motivates the implementation of more advanced algorithms such as \texttt{F4} and \texttt{F5}\textsuperscript{\cite{f5}} which resist this type of steganalysis attack. Instead of replacing the LSB of DCT coefficients, \texttt{F5} decrements the coefficients absolute value via \textit{matrix encoding}. This results in no pairs of values being produced and thus \texttt{F5} cannot be detected by the Chi-Squared attack. Matrix encoding within \texttt{F5} uses \textit{Hamming codes} to embed a k-bit message into a $2^k -1$ bit code word, changing it at most by one bit. This allows \texttt{F5} to achieve high embedding efficiencies. See the Appendix Section \ref{app:f5} for more details and an implementation of \texttt{F5}.\\
  
 \noindent 
 Due to the final lossless stage of \texttt{JPEG} compression, it can in some cases\footnote{This is highly dependant on the data being embedded. The best possible scenario is embedding all zeros.} be possible to embedded files larger than the cover object - achieving embedding capacities in excess of 100\%. This is because the encoding effectively compresses the embedded data before it is written back to disk. To show this in action, Listing \ref{200cap} shows a 306 MB file embedded within a 189 MB video.
@@ -1344,26 +1345,40 @@ Due to the layout of the website, if a user cannot tell the difference between t
 
 The raw bit string obtained from the user study is included in the Appendix Section \ref{app:userstudy}. To determine if the obtained bit string is in fact random, firstly a hypothesis test is constructed to test if the bits are i.i.d. Bernoulli(1/2) which would be the case for a truly random bit string.
 
-Let the bit string $\mathbf{X} = X_1 \ldots X_n$, with each $X_i \stackrel{iid}{\sim} \text{Bernoulli}(p)$ define $T = \sum_{i=1}^{n}X_i$. $T$ is a sufficient statistic for $p$. Clearly $T \sim \text{Binomial}(n, p)$.
+Let the bit string $\mathbf{X} = X_1 \ldots X_n$, with each $X_i \stackrel{iid}{\sim} \text{Bernoulli}(p)$ and define $T = \sum_{i=1}^{n}X_i$. $T$ is a sufficient statistic for $p$ and clearly $T \sim \text{Binomial}(n, p)$.
 
-Test $H_{0}: p = \frac{1}{2}$ against $H_{1}: p \neq \frac{1}{2}$ at significance level $\alpha$. Under $H_0$, $T \sim \text{Binomial}(n, \frac{1}{2})$, by the de Moivre-Laplace theorem $T \sim N(\frac{n}{2}, \frac{n}{4})$ for large n. So $(1 - \alpha)$ confidence interval for $T$ is
+Test $H_{0}: p = \frac{1}{2}$ against $H_{1}: p \neq \frac{1}{2}$ at significance level $\alpha$. Under $H_0$, $T \sim \text{Binomial}(n, \frac{1}{2})$, by the de Moivre-Laplace theorem $T \sim N(\frac{n}{2}, \frac{n}{4})$ for large n. The $(1 - \alpha)$ confidence interval for $T$ therefore is
 \begin{equation*}
 	\left[\text{ }\frac{n}{2} - z_{\alpha / 2}\sqrt{\frac{n}{4}},\text{ }\frac{n}{2} + z_{\alpha / 2}\sqrt{\frac{n}{4}}\text{ }\right].
 \end{equation*}
 
 For the bit string observed from the user study, $n = 2040 \text{ and } T = 1042$. At $\alpha = 5\%,\text{ } z_{\alpha / 2} = 1.9600$, the confidence interval is $[975, 1065]$ which contains $T$. Therefore there is insufficient evidence to reject the null hypothesis and therefore insufficient evidence to conclude the bit string is not random.
 
-Secondly, the National Institute of Standards and Technology Statistical Test Suite is applied to the bit string. The results are summarised in Listing \ref{nistres}.
+Secondly, the National Institute of Standards and Technology Statistical Test Suite\textsuperscript{\cite{nist}} is used to evaluate the bit string. The results are summarised in Listing \ref{nistres}.
 
 \begin{lstlisting}[language={},caption={Output of the NIST Statistical Test Suite.},frame=single, upquote=true,label=nistres, showstringspaces=false]
-
+ C1  C2  C3  C4  C5  C6  C7  C8  C9 C10  P-VALUE  PROPORTION  TEST
+--------------------------------------------------------------------------
+  6   1   5  18   0   3   0   5   0   2  0.000000 * 40/40  Frequency
+  0   0   0   0   0   0   0   0   0  40  0.000000 * 40/40  BlockFrequency
+  3   4   1   2   3  13   4   5   3   2  0.002465   40/40  CumulativeSums
+  3   3   0   8   4  11   0   6   1   4  0.000954   40/40  CumulativeSums
+  5  11   4   4   4   2   5   1   2   2  0.035174   38/40  Runs
+ 40   0   0   0   0   0   0   0   0   0  0.000000 * 0/40 * LongestRun
+  2   7   0  17   0   0   0  14   0   0  0.000000 * 40/40  FFT
+  0   0   0   0   0   0   0   0   0  40  0.000000 * 40/40  ApproxEntropy
+  1   0   0   0  39   0   0   0   0   0  0.000000 * 39/40  Serial
+  0   0   0   0  40   0   0   0   0   0  0.000000 * 40/40  Serial
+ 15   0   0   3   0   0   0   0   7  15  0.000000 * 37/40  LinearComplexity
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+The minimum pass rate for each statistical test with the exception of the
+random excursion (variant) test is approximately = 47 for a
+sample size = 50 binary sequences.
 \end{lstlisting}
 
-These results strongly indicate that the bit string is random. 
+With the exception of the Longest Runs test (which I believe has failed due to the small sample size), these results strongly indicate that the bit string is random and therefore that the users could not differentiate between the cover and stego objects produced by \texttt{Stegasis}.
 
-These analyses show that the bit string with high probability is random and therefore that the users could not differentiate between the cover and stego objects produced by \texttt{Stegasis}.
-
-Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. For example, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the basic embedding algorithms (\texttt{DCT} and \texttt{DCTP}) implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0, that is, coefficients $n$ and $-n$ have roughly equal frequencies. This characteristic is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
+Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. For example, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the basic embedding algorithms (\texttt{DCT} and \texttt{DCTP}) implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0. This characteristic is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
 
 \begin{figure}[!tbh]
 \centerline{\includegraphics[width=\textwidth]{images/hist.png}}
@@ -1373,7 +1388,7 @@ Although we have concluded that \texttt{Stegasis} can operate with no perceivabl
 
 \texttt{F4} and \texttt{F5} however resist this attack and provide a much higher level of steganographic security. Jessica Fridrich et al. showed they were able to break the \texttt{F5} algorithm by estimating the cover image histogram by slightly cropping the stego image. However, \texttt{Stegasis} is able to spread the embedded data across thousands of \texttt{JPEG} images using a small capacity setting, so I am unsure how effective this attack would be.
 
-The framework \texttt{Stegasis} provides makes is easy to implement more secure embedding algorithms which would be a possible future project direction.
+The framework \texttt{Stegasis} provides makes it easy to implement more secure embedding algorithms which would be a possible future project direction.
 
 \subsection{Performance}
 \label{perf}
@@ -1406,11 +1421,11 @@ Due to the large embedding capacities offered, large files are expected to be co
 
 The data points for the graph were obtained using the command line tool \texttt{dd} as shown in Listing \ref{dd}. Note that this test provides ideal conditions, having a large block size and writing all zeros - most use cases will not be like this.
 
-\begin{lstlisting}[caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,float, floatplacement=!htb]
+\begin{lstlisting}[language={},caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,float, floatplacement=!htb]
 $ dd if=/dev/zero of=test bs=65k count=1221
 610+0 records in
 610+0 records out
-79953920 bytes (80 MB) copied, 0.456444 s, 77.1 MB/s
+79953920 bytes (80 MB) copied, 1.037613 s, 77.1 MB/s
 \end{lstlisting}
 
 To evaluate the file system performance under more standard conditions, I timed the copying of an 80 MB video file into and out of the file system for the LSB algorithm using the \texttt{time} tool. This process was repeated multiple time and an average taken giving an average write speed of 33.6 MB/s and read speed of 46.3 MB/s. This is slower than above, but is still on par with USB 3.0 device speeds\textsuperscript{\cite{usb3}}, surpassing the performance requirement. As expected, the embedding algorithms which permute and encrypt data give worse file system performance as shown in Table \ref{algperf}, but I think this is a fair trade off.
@@ -1468,16 +1483,17 @@ Another area worth considering is the time \texttt{Stegasis} takes to format vid
 \label{formatres}
 \end{table}
 
-\vfill
+\vfill 
+
 \pagebreak
 
 \section{Conclusions}
 
-Informally, I wanted this project to result in the ``\texttt{TrueCrypt} of video steganography'' focusing on a practical application allowing multiple files to be easily steganographically embedded within video files utilising a file system interface. This involved researching multiple technical fields (mainly Steganography, file systems and video formats) and developing an application to combine them all into a polished tool.
+Informally, I wanted this project to result in the ``\texttt{TrueCrypt} of video steganography'', focusing on a practical application allowing multiple files to be easily steganographically embedded within video files utilising a file system interface. This involved researching multiple technical fields (mainly Steganography, file systems and various video formats) and developing an application to combine them all into a polished tool.
 
-A number of steganographic embedding algorithms were researched and implemented borrowing ideas and algorithms from cryptography to further increase security. A file system in user space residing within a video file was designed and implemented offering the majority of the functionality one would expect from a standard file system. A native \texttt{AVI} parser was developed along with a novel method of supporting other video formats utilising \texttt{FFmpeg}. Finally a Linux command-line application, \texttt{Stegasis}, was produced combining the above into a single application.
+A number of steganographic embedding algorithms were researched and implemented borrowing ideas and algorithms from cryptography to further increase security. A file system in user space residing within a video file was designed and developed offering the majority of the functionality one would expect from a standard file system. A native uncompressed \texttt{AVI} parser was implemented along with a novel method of supporting other video formats utilising \texttt{FFmpeg}. Finally a Linux command-line application, \texttt{Stegasis}, was produced combining the above into a single application.
 
-\texttt{Stegasis} satisfies all of the core project requirements and implements all of the proposed extension tasks. In reference to the evaluation section of this document, I very much consider this project a success and hope to release \texttt{Stegasis} in the near future.
+\texttt{Stegasis} satisfies all of the core project requirements and addresses all of the proposed extension tasks. In reference to the evaluation section of this document, I very much consider this project a success and hope to release \texttt{Stegasis} in the near future.
 
 \subsection{Lessons Learnt}
 
@@ -1485,8 +1501,11 @@ The ``Launch early, iterate often'' approach taken to development did come with 
 
 \subsection{Future Project Directions}
 
-As discussed in the evaluation section, \texttt{Stegasis} currently lacks secure steganographic embedding algorithms. Further work would therefore likely involve implementing more secure embedding algorithms. Another avenue to explore would be implementing more native video decoders. For example, a native \texttt{MP4} decoder could be produced which embedded data within motion vectors. This has an advantage over the \texttt{FFmpeg} method since a new, \texttt{MKV} video is not produced - the \texttt{MP4} would be modified in place as occurs with \texttt{AVI} files.
-Finally, it would be great for \texttt{Stegasis} to be cross platform. Developing a Linux only application severely limits the target audience. However, since the file system was implemented using \texttt{FUSE} (which is not compatible with Windows) this may prove tricky.
+Further work would likely involve implementing more secure embedding algorithms. Another avenue to explore would be implementing more native video decoders. For example, I am currently working on a native \texttt{h.264} decoder which embeds data within motion vectors. This has the advantage over the \texttt{FFmpeg} method that the video file would be modified in place as occurs with \texttt{AVI} files.
+Finally, it would be great for \texttt{Stegasis} to be cross platform - developing a Linux only application severely limits the target audience. However, since the file system was implemented using \texttt{FUSE} (which is not compatible with Windows) this may prove tricky.\\
+
+\noindent
+Overall I believe I have developed a useful application which will hopefully make video steganography more accessible to users. Steganographically embedding file systems within video files has not been researched before and \texttt{Stegasis} is the first available program to support this functionality.
 
 \vfill
 
@@ -1606,11 +1625,17 @@ Finally, it would be great for \texttt{Stegasis} to be cross platform. Developin
 \bibitem{pool} \emph{The Whirlpool Secure Hash Function}, Williams Stallings 2006\\
 \path{www.seas.gwu.edu/~poorvi/Classes/CS381_2007/Whirlpool.pdf}
 
+\bibitem{f5} \emph{F5: steganographic algorithm: High capacity despite better steganalysis}, Andreas Westfeld 2001, 4th International Workshop on Information Hiding\\
+\path{os.inf.tu-dresden.de/~westfeld/publikationen/21370289.pdf}
+
+\bibitem{breakingf5} \emph{Steganalysis of JPEG Images: Breaking the F5 Algorithm}, Jessica Fridrich et al., 2002, 5th International Workshop\\
+\path{ws2.binghamton.edu/fridrich/Research/f5.pdf}
+
 \bibitem{random} \emph{Random versus Encrypted Data}, A. G. Basile 2008\\
 \path{opensource.dyc.edu/sites/default/files/random-vs-encrypted.pdf}
 
-\bibitem{ent} \emph{Ent: A Pseudorandom Number Sequence Test Program}, John Walker 2008\\
-\path{www.fourmilab.ch/random}
+\bibitem{nist} \emph{National Institute of Standards and Technology Statistical Test Suite}, Juan Soto 1999\\
+\path{csrc.nist.gov/groups/ST/toolkit/rng/documentation_software.html}
 
 \bibitem{usb3} \emph{Lexar 8GB USB 3.0 JumpDrive}, Ebuyer 2015\\
 \path{www.ebuyer.com/399229-lexar-8gb-jumpdrive}
