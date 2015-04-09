@@ -1330,7 +1330,7 @@ Plausible deniability functionality was implemented allowing a second hidden fil
 
 \subsubsection{Evaluation of the visual impact of embedding}
 
-A web application was implemented and hosted for the majority of the duration of the project. A total of 2040 data points were collected from 21 unique users. The results are discussed below in Section \ref{security}, and the outcome of the study confirmed that it was not possible for the users to visually differentiate videos produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
+A web application was implemented and hosted for the majority of the duration of the project. A total of 2040 data points were collected from 21 unique users. The results are discussed below in Section \ref{security}, and the outcome of the study confirmed that it was not possible for the users to visually perceive embedding artifacts produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
 
 \noindent
 \texttt{Stegasis} therefore has addressed all of the proposed extension tasks, further cementing the success of the project.
@@ -1353,20 +1353,10 @@ Test $H_{0}: p = \frac{1}{2}$ against $H_{1}: p \neq \frac{1}{2}$ at significanc
 
 For the bit string observed from the user study, $n = 2040 \text{ and } T = 1042$. At $\alpha = 5\%,\text{ } z_{\alpha / 2} = 1.9600$, the confidence interval is $[975, 1065]$ which contains $T$. Therefore there is insufficient evidence to reject the null hypothesis and therefore insufficient evidence to conclude the bit string is not random.
 
-Secondly, a number of statistical randomness tests are used. Both \texttt{ent}\textsuperscript{\cite{ent}}, a pseudorandom number sequence test program is used. Listing \ref{entout} shows the output of \texttt{ent} when applied to the bit string.
+Secondly, the National Institute of Standards and Technology Statistical Test Suite is applied to the bit string. The results are summarised in Listing \ref{nistres}.
 
-\begin{lstlisting}[language={},caption={Output of \texttt{ent}.},frame=single, upquote=true,label=entout,showstringspaces=false]
-Entropy = 0.999664 bits per bit.
+\begin{lstlisting}[language={},caption={Output of the NIST Statistical Test Suite.},frame=single, upquote=true,label=nistres, showstringspaces=false]
 
-Optimum compression would reduce the size
-of this 2040 bit file by 0 percent.
-
-Chi square distribution for 2040 samples is 0.95, and randomly
-would exceed this value 33.00 percent of the times.
-
-Arithmetic mean value of data bits is 0.5108 (0.5 = random).
-Monte Carlo value for Pi is 3.523809524 (error 12.17 percent).
-Serial correlation coefficient is -0.035776 (totally uncorrelated = 0.0).
 \end{lstlisting}
 
 These results strongly indicate that the bit string is random. 
