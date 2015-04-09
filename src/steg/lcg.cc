@@ -3,6 +3,7 @@
 
 #include "lcg.h"
 
+// Borrowed from http://rosettacode.org/wiki/Greatest_common_divisor
 int LCG::gcd(int u, int v) {
   int shift;
  
