@@ -1747,7 +1747,7 @@ Listing \ref{usage} shows the information displayed to the user when the program
   \___ \| __/ _ \/ _` |/ _` / __| / __|  
   ____) | ||  __/ (_| | (_| \__ \ \__ \ 
  |_____/ \__\___|\__, |\__,_|___/_|___/ 
-                  __/ | v2.1a               
+                  __/ | v3.7a               
                  |___/                      
 
 Stegasis usage:
@@ -1788,14 +1788,14 @@ Embedding Algorithms:
 Listing \ref{usecase} shows an example use of \texttt{Stegasis}, formatting and mounting a video with complete command line output.
 
 \begin{lstlisting}[caption={\texttt{Stegasis} example use.},frame=single, upquote=true,label=usecase,showstringspaces=false]
-$ stegasis format -alg=lsbp -pass=hunter2 -cap=20 /media/Backup/video.avi 
+$ stegasis format -alg=lsbp -crypt=aes -pass=hunter2 -cap=20 /media/Backup/video.avi 
    _____ _                                  
   / ____| |                     (_)         
  | (___ | |_ ___  __ _  __ _ ___ _ ___      
   \___ \| __/ _ \/ _` |/ _` / __| / __|  
   ____) | ||  __/ (_| | (_| \__ \ \__ \ 
  |_____/ \__\___|\__, |\__,_|___/_|___/ 
-                  __/ | v2.1a               
+                  __/ | v3.7a               
                  |___/                      
 Filesize: 776143108
 Totalframes: 280
@@ -1812,14 +1812,14 @@ Writing back to disc...
 100% [==================================================]
 Format successful!
 
-$ stegasis mount -alg=lsbp -pass=hunter2 /media/Backup/video.avi /tmp/steg
+$ stegasis mount -alg=lsbp -crypt=aes -pass=hunter2 /media/Backup/video.avi /tmp/steg
    _____ _                                  
   / ____| |                     (_)         
  | (___ | |_ ___  __ _  __ _ ___ _ ___      
   \___ \| __/ _ \/ _` |/ _` / __| / __|  
   ____) | ||  __/ (_| | (_| \__ \ \__ \ 
  |_____/ \__\___|\__, |\__,_|___/_|___/ 
-                  __/ | v2.1a               
+                  __/ | v3.7a               
                  |___/                      
 Filesize: 776143108
 Totalframes: 280
@@ -1838,8 +1838,7 @@ $ cd /tmp/steg
 /tmp/steg$ cp ~/vid.mp4 .
 
 [Stegasis Terminal]
-Embeding, Frame: 203, Size: 36158, Offset: 0
-Compacting header...
+Embedding, Frame: 203, Size: 36158, Offset: 0
 100% [==================================================]
 Writing back to disc...
 100% [==================================================]
@@ -1849,12 +1848,11 @@ Writing back to disc...
 total 4.0K
 drwxr-xr-x  2 root root    0 Jan  1  1970 .
 drwxrwxrwt 10 root root 4.0K Jan 15 21:59 ..
--rwxr-xr-x  1 root root  14M Jan  1  1970 lba2.mp4
+-rwxr-xr-x  1 root root  14M Jan  1  1970 vid.mp4
 
 [Stegasis Terminal]
 <Control-C>
 Unmounting...
-Compacting header...
 100% [==================================================]
 Writing back to disc...
 100% [==================================================]
@@ -1961,10 +1959,10 @@ for i in range(1, len(output)):
 \subsection{Reading and writing to the file system}
 \label{app:coderead}
 
-Listing \ref{readfs} shows the final implemented version of the \texttt{FUSE} read function call implementation.
+Listing \ref{readfs} shows the final implemented version of the \texttt{FUSE} read function callback.
 
-\begin{lstlisting}[caption={\texttt{FUSE} read function call implementation.}, frame=single, label=readfs,showstringspaces=false,upquote=true]
-int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+\begin{lstlisting}[caption={\texttt{FUSE} read function callback.}, frame=single, label=readfs,showstringspaces=false,upquote=true]
+int SteganographicFileSystem::read(const char *path,char *buf,size_t size, off_t offset, struct fuse_file_info *fi) {
   unordered_map<string, int>::const_iterator file = this->fileSizes.find(path);
   
   if (file == this->fileSizes.end() || offset > file->second) 
@@ -2008,12 +2006,11 @@ int SteganographicFileSystem::read(const char *path, char *buf, size_t size, off
 \end{lstlisting}
 
 \noindent
-Listing \ref{writefs} shows the final implemented version of the \texttt{FUSE} write function call implementation.
+Listing \ref{writefs} shows the final implemented version of the \texttt{FUSE} write function callback.
 
-\begin{lstlisting}[caption={\texttt{FUSE} write function call implementation.}, frame=single, label=writefs,showstringspaces=false,upquote=true]
+\begin{lstlisting}[caption={\texttt{FUSE} write function callback.}, frame=single, label=writefs,showstringspaces=false,upquote=true]
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   int bytesWritten = 0, nextFrame = 0, nextOffset = 0; 
-
   this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
 
   struct FileChunk triple;
@@ -2022,22 +2019,24 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
   triple.bytes = 0;
 
   while (bytesWritten < size) {
-    this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
-
     printf("\e[1A"); 
     printf("\e[0K\rEmbeding, nextFrame: %d, nextOffset: %d, bytesWritten: %d\n", nextFrame, nextOffset, bytesWritten);
-    int tmp = this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf + bytesWritten), size-bytesWritten, nextOffset); 
-    triple.bytes += tmp;
-    bytesWritten += tmp;
+    pair<int, int> written = this->alg->embed(this->decoder->getFrame(nextFrame), (char *)(buf+bytesWritten), size-bytesWritten, nextOffset); 
+    
+    triple.bytes += written.first;
+    nextOffset = written.second;
+    if (written.second == 0) nextFrame ++;
+    bytesWritten += written.first;
   }
   this->fileIndex[path].push_back(triple);
+
+  this->decoder->setNextFrameOffset(nextFrame, nextOffset);
 
   if (offset == 0) {
     this->fileSizes[path] = size;
   } else {
     this->fileSizes[path] += size;
   }
-  this->mux.unlock();
   return size;
 };
 \end{lstlisting}
@@ -2045,7 +2044,7 @@ int SteganographicFileSystem::write(const char *path, const char *buf, size_t si
 \subsection{Implementing F5}
 \label{app:f5}
 
-The \texttt{F5} steganographic algorithm, developed by Andreas Westfeld, embeds data within the LSBs of DCT coefficients within \texttt{JPEG}  images. \texttt{F5} implements matrix encoding to improve embedding efficiency and is not vulnerable to the Chi-Squared and Histogram attacks. The \texttt{F5} embedding procedure is summarised in Algorithm \ref{algf5}.
+The \texttt{F5} steganographic algorithm, developed by Andreas Westfeld\textsuperscript{\cite{f5}}, embeds data within the LSBs of DCT coefficients within \texttt{JPEG}  images. \texttt{F5} implements matrix encoding to improve embedding efficiency and is not vulnerable to the Chi-Squared and Histogram attacks. The \texttt{F5} embedding procedure is summarised in Algorithm \ref{algf5}.
 
 \begin{algorithm}[!h]
 \caption{The \texttt{F5} algorithm.}
@@ -2079,7 +2078,7 @@ and is used to compute the optimal value for $k$. From the estimated capacity $\
 \begin{center}
 $\mathcal{R}(k) > r$
 \end{center}
-The hash function used to hash the LSBs of the nonzero DCT coefficients is the bitwise \texttt{XOR} of each element:
+The hash function used to hash the LSBs of the nonzero DCT coefficients is the bitwise \texttt{XOR} of each element multiplied by the index:
 \begin{equation*}
   f(\mathbf{a}) = \sideset{}{a_{i} \cdot i}\bigoplus_{i=1}^{n}
 \end{equation*}
@@ -2090,13 +2089,13 @@ The index of the coefficient to modify (if any) is calculated by \texttt{XOR}ing
 If $i \neq 0$ then the $(i - 1)$th buffer elements coefficients absolute value is decremented by 1.\\
 
 \noindent 
-Extraction follows a similar procedure in which blocks of $n$\footnote{There are some fiddly issues here which are not mentioned within the original paper on \texttt{F5} since the extraction procedure must know the value of $k$ in advance along with the number of embedded bits within the image. My solution for this was to embed the value of $k$ and the number of embedded bits within the second \texttt{JPEG} component using the basic \texttt{JSteg} algorithm. The \texttt{F5} extraction producer can then access this information.}  nonzero valued DCT coefficients are hashed to give $k$ message bits. These need to be collected together and return as a byte array.
+Extraction follows a similar procedure in which blocks of $n$\footnote{There are some fiddly issues here (which are not mentioned within the original paper on \texttt{F5}) since the extraction procedure must know the value of $k$ in advance along with the number of embedded bits within the image. My solution for this was to embed the value of $k$ and the number of embedded bits within the second \texttt{JPEG} component using the basic \texttt{JSteg} algorithm. The \texttt{F5} extraction process can then access this information.}  nonzero valued DCT coefficients are hashed to give $k$ message bits. These need to be collected together and returned as a byte array.
 
 Listing \ref{f5imp} shows a cut down version of the final implementation.
 
 
 \begin{lstlisting}[caption={\texttt{F5} embedding implementation (\texttt{steg/f5.cc:86})).}, frame=single, label=f5imp,showstringspaces=false,upquote=true]
-virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
+virtual pair<int,int> embed(Frame *c, char *data, int reqByteCount, int offset) {
   this->crypt->encrypt(data, reqByteCount);
   JBLOCKARRAY frame;
   int row, block, co;
@@ -2114,10 +2113,10 @@ virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
   // Force to be a multiple of 8
   embeddingCapacity -= embeddingCapacity % 8;
   if (embeddingCapacity < 8) {
-    // Not point trying to embed anything in this frame
+    // No point trying to embed anything in this frame
     int currentFrame, currentFrameOffset;
     this->crypt->decrypt(data, reqByteCount);
-    return 0;
+    return make_pair(0,0)%;
   }
   int bitsToEmbed = min(reqByteCount * 8, (int)(embeddingCapacity * (this->dec->getCapacity()/100.0)));
   double embeddingRate = (double)bitsToEmbed / (double)embeddingCapacity;
@@ -2142,10 +2141,10 @@ virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
       bitsEmbedded += k;
       continue;
     } else {
-      // Need to decrement coefficent at index
+      // Need to decrement coefficent at index-1
       index --;
       if (this->decCo(c, oldOffset, codeWordLength, index) == 0) {
-        // Shrinkage occured
+        // Shrinkage occurred
         offset = oldOffset;
         continue;
       } else {
@@ -2156,7 +2155,7 @@ virtual int embed(Frame *c, char *data, int reqByteCount, int offset) {
     free(coefficients);
   }  
   
-  return bitsEmbedded / 8;
+  return make_pair(bitsEmbedded / 8, 0);
 }; 
 \end{lstlisting}
 
@@ -2183,8 +2182,8 @@ function cleanExit() {
 }
 
 # Run stegasis
-(stegasis format --alg=lsba --pass=test $1)
-(stegasis mount --alg=lsba --pass=test $1 /tmp/test) &
+(stegasis format -alg=lsbp -pass=test $1)
+(stegasis mount -alg=lsbp -pass=test $1 /tmp/test) &
 stegasis_pid=$!
 # Wait for the video to mount
 sleep 5
