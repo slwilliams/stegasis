@@ -1,4 +1,7 @@
-Embed does not return a pair
+Collect performance data
+do some sort of graph for embedding capcity vs file
+update useage info and detailed useage examples
+TESTING!!!!!
 
 - Clean up code
 g++ -std=c++11 -I ../../lib/ -I ../ mp4_decoder.cc -o test.o -pthread -static -L/usr/local/lib -lavformat -lavcodec -lbz2 -lz -lswresample -lswscale -lavutil -lm

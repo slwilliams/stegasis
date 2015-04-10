@@ -40,8 +40,7 @@
 \usepackage{fancyhdr}
 \usepackage{pgfplots}
 \usetikzlibrary{pgfplots.groupplots}
-\usepackage[hyperpageref]{backref} 
-
+\usepackage[hyperref]{backref} 
 
 % --------------------------------------------------------------------
 % Definitions
@@ -105,6 +104,7 @@
 {
    \fancyhf{}
    \fancyhead[L]{1 ~~\textsc{INTRODUCTION}}
+   \fancyfoot[R]{1}
 }
 % --------------------------------------------------------------------
 % Metadata
@@ -135,6 +135,8 @@
 
 \begin{document}
 \renewcommand{\thelstlisting}{\thesection.\arabic{lstlisting}}
+\renewcommand{\backrefxxx}[3]{%
+  (Section #2)}
 \counterwithin{lstlisting}{section}
 % ------------------------------------------------------------------------------
 % Maketitle
@@ -199,8 +201,8 @@ area of the Laboratory's website.\\[20pt]
 \pagebreak
 
 \section{Introduction}
-\pagenumbering{arabic} 
 \thispagestyle{firststyle}
+\pagenumbering{arabic} 
 
 Steganography is the art of hiding information in apparently inconspicuous objects. Whereas cryptography seeks to protect the content of information, steganography attempts to conceal the fact that the information exists\textsuperscript{\cite[pp. xv - xvi]{digmedia}}. This allows steganographic methods to be utilised in countries where encryption is illegal and identification of encrypted data can be grounds for imprisonment. Within the UK for example, keys for identified encrypted data can be forced to be disclosed\textsuperscript{\cite{uklaw}}, rendering standard cryptographic methods alone unfavourable.
 
@@ -1513,106 +1515,103 @@ Overall I believe I have developed a useful application which will hopefully mak
 
 \begin{thebibliography}{1}
 
-\bibitem{digmedia} \emph{Steganography in Digital Media}, Jessica Fridrich 2010
+\bibitem{digmedia} \emph{Steganography in Digital Media}, Jessica Fridrich 2010, Cambridge University Press
 
 \bibitem{uklaw} \emph{Regulation of Investigatory Powers Act 2000}\\ 
-\path{www.legislation.gov.uk/ukpga/2000/23/section/53}
+\url{http://www.legislation.gov.uk/ukpga/2000/23/section/53}
 
 \bibitem{survey} \emph{A Survey of Steganographic and Steganalytic Tools for the Digital Forensic Investigator}, Pedram Hayati et al.\\
-\path{www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf}
+\url{http://www.pedramhayati.com/images/docs/survey_of_steganography_and_steganalytic_tools.pdf}
 
 \bibitem{truecrypt} \emph{TrueCrypt is a source-available freeware utility used for on-the-fly encryption.}\\
-\path{www.truecrypt.org}
+\url{http://www.truecrypt.org}
 
 \bibitem{nsa} \emph{The NSA Thinks You Are an Extremist If You Care About Privacy}, Fahmida Rashid 2014, PCMag\\
-\path{securitywatch.pcmag.com/privacy/325273-the-nsa}
+\url{http://securitywatch.pcmag.com/privacy/325273-the-nsa}
 
 \bibitem{prisoner} \emph{The prisoners' problem and the subliminal channel}, Gustavus Simmons 1984, Advances in Cryptology, pp. 51 - 67
 
-\bibitem{kirc} \emph{La Cryptographie Militaire}, Auguste Kerckhoffs 1883
+\bibitem{kirc} \emph{La Cryptographie Militaire}, Auguste Kerckhoffs 1883, Journal des sciences militaires, vol. IX
 
-\bibitem{steganalysis} \emph{Steganalysis: The Investigation of Hidden Information}, Neil Johnson and Sushil Jajodia 1998 
+\bibitem{steganalysis} \emph{Steganalysis: The Investigation of Hidden Information}, Neil Johnson and Sushil Jajodia 1998, Information Technology Conference
 
 \bibitem{avicommon} \emph{Using Video Data}, ATLAS.ti 6 2011\\
-\path{atlasti.com/wp-content/uploads/2014/05/video_formats.pdf}
+\url{http://atlasti.com/wp-content/uploads/2014/05/video_formats.pdf}
 
 \bibitem{aviformat} \emph{AVI RIFF File Reference}, Microsoft\\
-\path{msdn.microsoft.com/en-us/library/windows/desktop/dd318189\%28v=vs.85\%29.aspx}
+\url{https://msdn.microsoft.com/en-us/library/windows/desktop/dd318189\%28v=vs.85\%29.aspx}
 
 \bibitem{jpegsteg} \emph{Steganography and Steganalysis of JPEG Images}, Mahendra Kumar\\
-\path{www.cise.ufl.edu/~makumar/proposalppt.pdf}
+\url{https://www.cise.ufl.edu/~makumar/proposalppt.pdf}
 
 \bibitem{jsteg} \emph{JSteg: Steganography and Steganalysis}, Murali P 2009\\
-\path{csis.bits-pilani.ac.in/faculty/murali/netsec-09/seminar/refs/anuroopsrep.pdf}
+\url{http://csis.bits-pilani.ac.in/faculty/murali/netsec-09/seminar/refs/anuroopsrep.pdf}
 
 \bibitem{outguess} \emph{Hide and Seek: An Introduction to Steganography}, Niels Provos and Peter Honeyman 2003, p. 36\\
-\path{niels.xtdnet.nl/papers/practical.pdf}
-
-\bibitem{f5} \emph{F5 — A Steganographic Algorithm}, Andreas Westfeld\\
-\path{www2.htw-dresden.de/~westfeld/publikationen/f5.pdf}
+\url{http://niels.xtdnet.nl/papers/practical.pdf}
 
 \bibitem{libjpeg} \emph{Libjpeg, a widely used C library for reading and writing JPEG image files}\\
-\path{libjpeg.sourceforge.net}
+\url{http://libjpeg.sourceforge.net}
 
 \bibitem{sensitive} \emph{Human eye sensitivity and photometric quantities}\\
-\path{www.ecse.rpi.edu/~schubert/Light-Emitting-Diodes-dot-org/Sample-Chapter.pdf}
+\url{https://www.ecse.rpi.edu/~schubert/Light-Emitting-Diodes-dot-org/Sample-Chapter.pdf}
 
 \bibitem{ffmpeg} \emph{FFmpeg: A complete, cross-platform solution to record, convert and stream audio and video}\\
-\path{www.ffmpeg.org}
+\url{https://www.ffmpeg.org/}
 
 \bibitem{ffmpegcodec} \emph{FFmpeg Codecs Documentation}\\
-\path{www.ffmpeg.org/ffmpeg-codecs.html}
+\url{https://www.ffmpeg.org/ffmpeg-codecs.html}
 
 \bibitem{fuse} \emph{FUSE: File system in userspace}\\
-\path{fuse.sourceforge.net}
+\url{http://fuse.sourceforge.net}
 
 \bibitem{fuseper} \emph{Linus vs FUSE: Kernel file system vs FUSE}, Sage 2011\\
-\path{ceph.com/dev-notes/linus-vs-fuse}
+\url{https://ceph.com/dev-notes/linus-vs-fuse}
 
 \bibitem{stegostick} \emph{Stegostick: A steganographic Tool that lets you hide any file into any file}, 2008\\
-\path{sourceforge.net/projects/stegostick}
+\url{http://sourceforge.net/projects/stegostick}
 
 \bibitem{stegomagic} \emph{Stegomagic: An encrypting software application designed specifically for helping you hide files or messages in media items}, 2014\\
-\path{www.softpedia.com/get/Security/Encrypting/StegoMagic.shtml}
+\url{http://www.softpedia.com/get/Security/Encrypting/StegoMagic.shtml}
 
 \bibitem{tcsteg} \emph{Real steganography with TrueCrypt}, Martin Fiedler 2011\\
-\path{keyj.emphy.de/real-steganography-with-truecrypt}
+\url{http://keyj.emphy.de/real-steganography-with-truecrypt}
 
 \bibitem{stegovideo} \emph{Stegovideo: A unique tool for hiding information in video}, Oleg Petrov 2011\\
-\path{www.compression.ru/video/stego_video/index_en.html}
+\url{http://www.compression.ru/video/stego_video/index_en.html}
 
 \bibitem{openpuff} \emph{OpenPuff: A steganography tool supporting many carrier formats}, EmbeddedSW\\
-\path{embeddedsw.net/OpenPuff_Steganography_Home.html}
+\url{http://embeddedsw.net/OpenPuff_Steganography_Home.html}
 
 \bibitem{steganosaurus} \emph{Steganosaurus is a dissertation project exploring the application of video steganographic and video steganalysis techniques.}, James Ridgway 2014\\
-\path{www.steganosaur.us}
+\url{http://www.steganosaur.us}
 
 \bibitem{bitrate} \emph{YouTube Advanced encoding settings.}, Google 2014\\
-\path{support.google.com/youtube/answer/1722171?hl=en-GB}
+\url{https://support.google.com/youtube/answer/1722171?hl=en-GB}
 
 \bibitem{usb2} \emph{Example USB 2.0 flash drive}, Ebuyer 2015\\
-\path{www.ebuyer.com/543103-toshiba-transmemory-8gb}
+\url{https://www.ebuyer.com/543103-toshiba-transmemory-8gb}
 
 \bibitem{javafuse} \emph{JavaFUSE provides Java bindings for FUSE}, Aditya Rajgarhia 2010\\
-\path{code.google.com/p/javafuse/}
+\url{https://code.google.com/p/javafuse/}
 
 \bibitem{turbojpeg} \emph{TurboJPEG: A Java interface for libjpeg-turbo}\\
-\path{www.libjpeg-turbo.org}
+\url{http://www.libjpeg-turbo.org}
 
 \bibitem{javaper1} \emph{Numeric performance in C, C\# and Java}, Peter Sestoft 2010\\
-\path{www.itu.dk/people/sestoft/papers/numericperformance.pdf}
+\url{https://www.itu.dk/people/sestoft/papers/numericperformance.pdf}
  
 \bibitem{javaper2} \emph{Time Comparing between Java and C++ Software}, As’ad Mahmoud Alnaser et al. 2012\\
-\path{www.scirp.org/journal/PaperDownload.aspx?paperID=21960}
+\url{http://www.scirp.org/journal/PaperDownload.aspx?paperID=21960}
  
 \bibitem{javaper3} \emph{A Java vs. C++ performance evaluation: a 3D modeling benchmark}, L. Gherardi et al.\\
-\path{www.best-of-robotics.org/pages/publications/gherardi12java.pdf}
+\url{http://www.best-of-robotics.org/pages/publications/gherardi12java.pdf}
 
 \bibitem{iterate} \emph{Release Early, Release Often}, Eric S. Raymond \\
-\path{www.catb.org/~esr/writings/cathedral-bazaar/cathedral-bazaar/ar01s04.html}
+\url{http://www.catb.org/~esr/writings/cathedral-bazaar/cathedral-bazaar/ar01s04.html}
 
 \bibitem{inver} \emph{The Dependency Inversion Principle}\\
-\path{www.objectmentor.com/resources/articles/dip.pdf}
+\url{http://www.objectmentor.com/resources/articles/dip.pdf}
 
 \bibitem{chi} \emph{Attacks on Steganographic Systems: Breaking the Steganographic Utilities EzStego, Jsteg, Steganos, and S-Tools and Some Lessons Learned}, Andreas Westfeld and Andreas Pfitzmann 2000
 
@@ -1620,25 +1619,26 @@ Overall I believe I have developed a useful application which will hopefully mak
 
 \bibitem{hull} \emph{Random number generators}, T E. Hull A. R. Dobell 1962, SIAM Review, Volume 4, Issue 3
 
-\bibitem{keyd} \emph{PKCS \#5: Password-Based Cryptography Standard}, RSA Laboratories.
+\bibitem{keyd} \emph{PKCS \#5: Password-Based Cryptography Standard}, RSA Laboratories, 2000
+\url{https://tools.ietf.org/html/rfc2898}
 
 \bibitem{pool} \emph{The Whirlpool Secure Hash Function}, Williams Stallings 2006\\
-\path{www.seas.gwu.edu/~poorvi/Classes/CS381_2007/Whirlpool.pdf}
+\url{https://www.seas.gwu.edu/~poorvi/Classes/CS381_2007/Whirlpool.pdf}
 
 \bibitem{f5} \emph{F5: steganographic algorithm: High capacity despite better steganalysis}, Andreas Westfeld 2001, 4th International Workshop on Information Hiding\\
-\path{os.inf.tu-dresden.de/~westfeld/publikationen/21370289.pdf}
+\url{https://f5-steganography.googlecode.com/svn/tags/release-0.3/F5\%20Steganography.pdf}
 
 \bibitem{breakingf5} \emph{Steganalysis of JPEG Images: Breaking the F5 Algorithm}, Jessica Fridrich et al., 2002, 5th International Workshop\\
-\path{ws2.binghamton.edu/fridrich/Research/f5.pdf}
+\url{http://ws2.binghamton.edu/fridrich/Research/f5.pdf}
 
 \bibitem{random} \emph{Random versus Encrypted Data}, A. G. Basile 2008\\
-\path{opensource.dyc.edu/sites/default/files/random-vs-encrypted.pdf}
+\url{http://opensource.dyc.edu/sites/default/files/random-vs-encrypted.pdf}
 
 \bibitem{nist} \emph{National Institute of Standards and Technology Statistical Test Suite}, Juan Soto 1999\\
-\path{csrc.nist.gov/groups/ST/toolkit/rng/documentation_software.html}
+\url{http://csrc.nist.gov/groups/ST/toolkit/rng/documentation_software.html}
 
 \bibitem{usb3} \emph{Lexar 8GB USB 3.0 JumpDrive}, Ebuyer 2015\\
-\path{www.ebuyer.com/399229-lexar-8gb-jumpdrive}
+\url{https://www.ebuyer.com/399229-lexar-8gb-jumpdrive}
 
 \vfill
 
