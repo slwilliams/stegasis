@@ -163,7 +163,7 @@
 \textsc{Project Title}: \tab{Steganographic file systems within video files}\\
 \textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
 \textsc{Year}: \tab{2015}\\
-\textsc{Word Count}: \tab{13,758 (cut out 870)}\\
+\textsc{Word Count}: \tab{13,281 (cut out 477)}\\
 \textsc{Project Originator}: \tab{Scott Williams}\\
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
@@ -225,16 +225,18 @@ The most important property of any steganographic system is undetectability, tha
 
 Alice and Bob are imprisoned in separate cells and wish to formulate an escape plan. They are allowed to communicate, but all messages must pass through a warden Eve. If Eve suspects the prisoners of secretly discussing their escape plan, the communication channel will be severed and Alice and Bob thrown into solitary confinement. The prisoners attempt to utilise steganograhpy to exchange details of their plan undetected. The steganographic system is considered broken if Eve is able to detect the presence of hidden messages within the prisoners exchanges. It is assumed that Eve has a complete knowledge of the steganographic algorithm being used, with the exception of the stego key, which Alice and Bob have agreed upon beforehand. This is in parallel with Kerckhoff's principle used within cryptography\textsuperscript{\cite{kirc}}. The warden can be considered to be one of three categories: \textit{passive}, \textit{active} and \textit{malicious}. A passive warden does not modify the exchanged messages in any way, whereas an active warden may modify the messages whilst maintaining their original meaning. For example replacing words with synonyms or reordering sentences. If images are being used as a transport medium then an active warden may recompress or crop the images. A malicious warden attempts to break the steganograhpic system and impersonate the prisoners in an attempt to obtain information.
 
-This project is concerned only with the case of the passive warden. As such, any modification of the video files once \texttt{Stegasis} has embedded data within them, will most likely render the embedded file system corrupt. This unfortunately means utilising video sharing websites such as YouTube and Facebook for distribution is not possible due to them performing compression and transcoding upon video upload.
+This project is concerned only with the case of the passive warden. As such, any modification of the video files once \texttt{Stegasis} has embedded data within them, will most likely render the embedded file system corrupt.
 
 \subsubsection{Steganographic Concepts}
-A \textit{steganographic system} will form a core part of the final application, allowing requested data to be hidden within video. A steganographic system depends on the following components:
+A \textit{steganographic system} will form a core part of the final application, allowing data to be hidden within video. A steganographic system depends on the following components:
+
 \begin{itemize}
 	\item A \textit{Cover object} is the original object that the message will be embedded within. A cover object consists of a number of \textit{elements}, for example pixels.
 	\item A \textit{Message} is an arbitrary length sequence of symbols. For this project we consider messages of the form $\mathcal{M} \in \{0,1\}^{8 \cdot n} $ for some $n$ - a sequence of bytes.
 	\item A \textit{Stego key} is a secret key used within the embedding process.
 	\item A \textit{Stego object} is the result of embedding a message inside a cover object.
 \end{itemize}
+
 
 \begin{ddef}
 \textsc{Steganographic System}\\[5pt]
@@ -647,7 +649,7 @@ The effect of the capacity parameter is illustrated within Figure \ref{cap50}. T
 \end{figure}
 
 \noindent
-The image used throughout this chapter for illustration purposes has been specifically chosen to emphasise the effect of the embedding process. Due to post processing applied to the video, the LSB plane closely resembles that of the original frame. This would not be the case for a video recorded on a phone for example.
+The image used throughout this chapter for illustration purposes has been specifically chosen to emphasise the effect of the embedding process. Due to post processing applied to the video, the LSB plane closely resembles that of the original frame. This would not be the case for a video recorded on a mobile phone for example.
 
 The \texttt{AVI} decoder as described now provides all necessary functionality to allow the modification of pixel data to achieve the steganogrphic embedding of information within video frames. 
 
@@ -806,7 +808,7 @@ The Chi-squared attack produces very good results for the na\"ive sequential LSB
 \end{figure}
 
 \noindent
-The Chi-Squared attack motivates the development of a \textit{permuted} LSB embedding algorithm. The attack works so well because regardless of the capacity setting, the data is sequentially embedded from the top of the video frame. It would be better to distribute the data uniformly throughout the entire frame. A permuted LSB embedding algorithm achieves this and resists the Chi-Squared attack when using a small capacity setting\footnote{A permuted embedding using a capacity of 100\% is no different to sequential embedding!}.
+The Chi-Squared attack motivates the development of a \textit{permuted} LSB embedding algorithm. The attack works so well because regardless of the capacity setting, the data is sequentially embedded from the top of the video frame. It would be better to distribute the data uniformly throughout the entire frame. A permuted LSB embedding algorithm achieves this and resists the Chi-Squared attack when using a small capacity setting.\footnote{A permuted embedding using a capacity of 100\% is no different to sequential embedding!}
 
 \subsubsection{Permuted LSB Embedding}
 
@@ -1258,32 +1260,37 @@ To evaluate the requirement ``Embedding should occur with no perceivable impact 
 
 The user is presented with two images and asked the question ``Which image do you think contains hidden data?''. The user may inspect the image for as long as they wish, and by clicking on an image, they then select their choice.
 
-In total there are 14,912 pairs of images, one of which is randomly selected for each page load. One of the images is the original video frame while the other has 2.5 kB of data embedded within it using the permuted \texttt{JPEG} embedding algorithm and a capacity setting of 20\% (the default value). The position of the ``correct'' image is randomly chosen and the file names of the images are also random strings. This tries to thwart any attempts at foul play, possibly damaging the collected results. When a user first visits the site, a cookie containing a unique ID is issued allowing data points from the same user to be aggregated together.\\
+In total there are 14,912 pairs of images, one of which is randomly selected for each page load. One of the images is the original video frame while the other has 2.5 kB of data embedded within it using the permuted \texttt{JPEG} embedding algorithm and a capacity setting of 20\% (the default value). The position of the ``correct'' image is randomised and the file names of the images are random strings; attempting to thwart any attempts at foul play, possibly damaging the collected results. When a user first visits the site, a cookie containing a unique ID is issued allowing data points from the same user to be aggregated together.\\
 
 \noindent
-The results of this evaluation study obtained by the implemented web application are discussed in Section \ref{security} and conclude that it is not possible to visually differentiate between the cover and stego objects at the default capacity setting of 20\%.
+The results of this evaluation study obtained by the implemented web application are discussed in Section \ref{security} and conclude that it was not possible to visually differentiate between the cover and stego objects at the default capacity setting of 20\%.
 
 \subsection{Testing}
 \label{testing}
 
-\texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A total of *largenumber* test cases were written testing all stenographic algorithms and associated code. Listing \ref{unittest} gives an example unit test.
+\texttt{Stegasis} was tested using a combination of unit, integration and visual testing. Due to the decoupled nature of the steganogrphic embedding algorithms, it was easy to produce unit tests for the embedding and extraction functionality. A test suite was written testing all stenographic, cryptographic algorithms and associated code. Listing \ref{unittest} gives an example unit test.
 
-\begin{lstlisting}[caption={Embedding algorithm unit test (\texttt{steg/steg\_algorithm\_test.cc:100}).}, frame=single, label=unittest]
-bool SteganographicUnitTests::completeness(SteganographicAlgorithm alg) {
-   char *in, *out; this->initRandomData(in, out);
-   alg->embed(this->dummyChunk, in, this->dataSize, 0); 
-   alg->extract(this->dummyChunk, out, this->dataSize, 0);
-   return compareData(in, out);
+\begin{lstlisting}[caption={Embedding algorithm unit test (\texttt{steg/steg\_algorithm\_test.cc:83}).}, frame=single, label=unittest, showstringspaces=false]
+void AlgorithmShouldCorrectlyExtractEmbededData() {
+  char *randomData = (char *)malloc(sizeof(char) * 10);
+  for (int i = 0; i < 10; i ++) { randomData[i] = rand(); }
+  pair<int, int> output = this->alg->embed(this->dec->getFrame(0), randomData, 10, 0);
+  ASSERT(output.first == 10, "StegAlgorithm did not embed 10 bytes as requested\n")
+  char *outputData = (char *)malloc(sizeof(char) * 10);
+  this->alg->extract(this->dec->getFrame(0), outputData, 10, 0);
+  for (int i = 0; i < 10; i ++) {
+    ASSERT(randomData[i] == outputData[i], "StegAlgorithm extracted data did not match requested embedded data\n")
+  }
 };
 \end{lstlisting}
 
-The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded using a key \textbf{k} is correctly extracted when using the same key.
+The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded using a key is correctly extracted when using the same key.
 
-I deemed it more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. These archives are then copied into the file system and uncompressed. Once the extraction process has completed, the resulting file system is traversed to check the contents is as expected.
+I deemed it more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. The test archives are then decompressed into the file system. Once the extraction process has completed, the resulting file system is traversed and the files accessed to check the contents is as expected.
 
 Visual testing was also employed. For example, large media content such as high definition video was copied into the mounted volume and checked to see if it played back correctly. This is a good test case since the file (due to its size) will be spread across a large proportion of the video. Indeed, several bugs were identified using this testing approach.
 
-The \texttt{AVI} parser was tested using a black box testing approach on a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. For example, the resolution of the video contained within the \texttt{BITMAPINFOHEADER} can be compared against the known value. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
+The \texttt{AVI} parser was tested using a black box testing approach on a number of different uncompressed \texttt{AVI} videos. The parser prints out debug information about the video file which can be visually inspected. Checking that the \texttt{AVI} still plays back after steganographic modification is also a good indication that the parser is operating successfully.
 
 See the Appendix Section \ref{app:codetest} for some more testing code samples.
 
@@ -1423,7 +1430,7 @@ Due to the large embedding capacities offered, large files are expected to be co
 
 The data points for the graph were obtained using the command line tool \texttt{dd} as shown in Listing \ref{dd}. Note that this test provides ideal conditions, having a large block size and writing all zeros - most use cases will not be like this.
 
-\begin{lstlisting}[language={},caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,float, floatplacement=!htb]
+\begin{lstlisting}[language={},caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,]
 $ dd if=/dev/zero of=test bs=65k count=1221
 610+0 records in
 610+0 records out
@@ -1432,7 +1439,7 @@ $ dd if=/dev/zero of=test bs=65k count=1221
 
 To evaluate the file system performance under more standard conditions, I timed the copying of an 80 MB video file into and out of the file system for the LSB algorithm using the \texttt{time} tool. This process was repeated multiple time and an average taken giving an average write speed of 33.6 MB/s and read speed of 46.3 MB/s. This is slower than above, but is still on par with USB 3.0 device speeds\textsuperscript{\cite{usb3}}, surpassing the performance requirement. As expected, the embedding algorithms which permute and encrypt data give worse file system performance as shown in Table \ref{algperf}, but I think this is a fair trade off.
 
-\begin{table}[h]
+\begin{table}[!htb]
 \centering
 \begin{tabular}{|c|c|c|c|lll}
 \cline{1-4}
@@ -1471,7 +1478,7 @@ To evaluate the file system performance under more standard conditions, I timed 
 
 Another area worth considering is the time \texttt{Stegasis} takes to format video files. Although it is hard to quantify a ``good'' format time, I would expect a time of under 1 minute to be reasonable for an average 5 minute video. The format time of \texttt{AVI} files is more dependent on disk read performance, whereas for other video formats, processor performance will be more important (due to the video transcoding involved). I measured the time taken to format a variety of video files on my desktop computer. The results are summarised in table \ref{formatres} below.
 
-\begin{table}[h]
+\begin{table}[!htb]
 \centering
 \begin{tabular}{|c|c|c|lll}
 \cline{1-3}
@@ -1507,7 +1514,7 @@ Further work would likely involve implementing more secure embedding algorithms.
 Finally, it would be great for \texttt{Stegasis} to be cross platform - developing a Linux only application severely limits the target audience. However, since the file system was implemented using \texttt{FUSE} (which is not compatible with Windows) this may prove tricky.\\
 
 \noindent
-Overall I believe I have developed a useful application which will hopefully make video steganography more accessible to users. Steganographically embedding file systems within video files has not been researched before and \texttt{Stegasis} is the first available program to support this functionality.
+Overall I believe I have developed a useful application which will hopefully make video steganography more accessible to users. Steganographically embedding file systems within video files has as far as I can tell not been researched as of yet and \texttt{Stegasis} is the first available program to support this functionality.
 
 \vfill
 
@@ -2167,11 +2174,38 @@ virtual pair<int,int> embed(Frame *c, char *data, int reqByteCount, int offset) 
 
 \subsection{Unit Testing}
 
-Unit tests...
+Unit testing the steganographic and cryptographic algorithms involved mocking a number of the system components, for example the \texttt{Frame} and \texttt{VideoDecoder} objects. Listing \ref{mock} shows the implemented mock frame used within the test suite.
 
+\begin{lstlisting}[caption={MockFrame object (\texttt{steg/steg\_alg\_test.cc:27}).},frame=single, upquote=true,label=mock,showstringspaces=false]
+class MockFrame : public Frame {
+  public:
+    MockFrame(void *data): data(data) {};
+    long getFrameSize() { return 0; };
+    char *getFrameData(int n=0, int c=0) { return (char *)this->data; };
+    bool isDirty() { return false; };
+    void setDirty() {};
+
+  private:
+    void *data;
+};
+\end{lstlisting}
+
+Listing \ref{suite} shows the test suite which is executed for each steganographic algorithm and combination of cryptographic algorithm.
+\begin{lstlisting}[caption={Stego algorithm test suite (\texttt{steg/steg\_alg\_test.cc:63}).},frame=single, upquote=true,label=suite,showstringspaces=false]
+void runTests() {
+  printf("Running tests for %s...\n", this->name.c_str());
+
+  this->AlgorithmShouldReturnZeroBytesEmbeddedIfZeroBytesRequested();
+  this->AlgorithmShouldCorrectlyExtractEmbededData();
+  this->AlgorithmShouldNotModifyGivenData();
+
+  printf("All tests complete for %s!\n", this->name.c_str());
+  printf("---------------------------------\n\n");
+};
+\end{lstlisting}
 \subsection{Integration Testing}
 
-As briefly mentioned in the implementation section, the integration test suite makes use of a number of test archives. These archives are copied into the volume presented by \texttt{Stegasis} and extracted. The resulting file system is then traversed and the contents of files checked to make sure they match their original content. This process is automated using several bash scripts as shown in Listing \ref{inttest}.
+As briefly mentioned in the implementation section, the integration test suite makes use of a number of test archives. These archives are decompressed directly into the volume presented by \texttt{Stegasis}. The resulting file system is then traversed and the contents of files checked to make sure they match their original content. This process is automated using several bash scripts as shown in Listing \ref{inttest}.
 
 \begin{lstlisting}[language=bash,caption={The simple integration test suite (\texttt{test/simple\_integration\_tests.sh}).},frame=single, upquote=true,label=inttest,showstringspaces=false]
 #!/bin/bash
@@ -2228,7 +2262,6 @@ if [[ "$file1_sub" != "$expected_file_1_sub" ]]; then
   cleanExit
 fi
 
-
 (kill $stegasis_pid)
 sleep 3
 
@@ -2236,7 +2269,7 @@ echo -e "\nAll tests passed :)\n"
 exit
 \end{lstlisting}
 
-Other similar tests exist which test different parts of the file system functionality. For example the moving of files using \texttt{mv} and copying large amounts of data using \texttt{cp}.
+Other similar test suites exist which test different parts of the file system functionality, for example the moving of files using \texttt{mv} and copying large amounts of data using \texttt{cp}.
 
 \vfill
 \pagebreak
@@ -2260,7 +2293,7 @@ Users: 21
 \pagebreak
 
 \section{Original Project Proposal} 
-
+\setcounter{footnote}{0}
 \begin{center}	
  	~\\[2.0cm]			
 	\normalsize \textsc{Computer Science Part II Project Proposal}\\[2.0cm]     
@@ -2268,7 +2301,7 @@ Users: 21
     \LARGE \textbf{\uppercase{Steganographic file systems within video files}}    
     \HRule{2pt} \\[30pt]        
     \normalsize Scott Williams, Christ's College\\[2pt]Originators: Scott Williams\\[25pt]           
-    \normalsize \today            
+    \normalsize October 20, 2014           
      \vfill
 \end{center}
 \printauthor                
