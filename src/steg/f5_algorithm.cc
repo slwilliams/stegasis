@@ -8,7 +8,7 @@
 #include "steg/steganographic_algorithm.h"
 #include "crypt/cryptographic_algorithm.h"
 
-#define ASSERT(cond,text) if (cond) { printf(text); abort(); }
+#define ASSERTNEQ(cond,text) if (cond) { printf(text); abort(); }
 
 using namespace std;
 
@@ -65,7 +65,7 @@ class F5Algorithm : public SteganographicAlgorithm {
           }
         }
       }
-      ASSERT(true, "Shouldn't get here...\n");
+      ASSERTNEQ(true, "Shouldn't get here...\n");
     };
     int getNextDataBlock(char *data, int dataSize, int blockSizeInBits, int offsetInBits) {
       int output = 0;
@@ -87,7 +87,7 @@ class F5Algorithm : public SteganographicAlgorithm {
       if (reqByteCount == 0) return make_pair(0, 0);
       this->crypt->encrypt(data, reqByteCount);
 
-      ASSERT(offset != 0, "Embed offset is not zero\n");
+      ASSERTNEQ(offset != 0, "Embed offset is not zero\n");
 
       JBLOCKARRAY frame;
       int row, block, co;
@@ -175,7 +175,7 @@ class F5Algorithm : public SteganographicAlgorithm {
             // ---------- tmp --------
             int *tmp = this->getNextCoefficientBlock(c, &oldOffset, codeWordLength);
             int tmph = this->hash(tmp, codeWordLength);
-            ASSERT((tmph ^ this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded)) != 0, "Embedded data not extracted correctly.\n")
+            ASSERTNEQ((tmph ^ this->getNextDataBlock(data, reqByteCount, k, bitsEmbedded)) != 0, "Embedded data not extracted correctly.\n")
             // ----------- end tmp -----------
 
             bitsEmbedded += k;
@@ -202,7 +202,7 @@ class F5Algorithm : public SteganographicAlgorithm {
     }; 
     virtual pair<int, int> extract(Frame *c, char *output, int dataBytes, int offset) {
       if (dataBytes == 0) return make_pair(0, 0);
-      ASSERT(offset != 0, "Extract offset not equal to 0\n")
+      ASSERTNEQ(offset != 0, "Extract offset not equal to 0\n")
 
       JBLOCKARRAY frame;
       int row, block, co;
@@ -257,7 +257,7 @@ class F5Algorithm : public SteganographicAlgorithm {
         }
         free(coefficients);
       }
-      ASSERT(temp != 0, "Temp is zero at end of extract.\n");
+      ASSERTNEQ(temp != 0, "Temp is zero at end of extract.\n");
       //printf("Returning extracted bytes: %d\n", bytesInFrame);
       this->crypt->decrypt(output, bytesInFrame);
       return make_pair(bytesInFrame, 0);

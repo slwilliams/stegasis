@@ -3,6 +3,8 @@
 #include <string>
 #include <utility>
 
+#include <libjpeg/jpeglib.h>
+
 #include "crypt/cryptographic_algorithm.h"
 #include "steg/steganographic_algorithm.h"
 #include "video/video_decoder.h"

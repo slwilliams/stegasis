@@ -2,6 +2,8 @@
 #include <utility>
 #include <string>
 
+#include <libjpeg/jpeglib.h>
+
 #include "video/video_decoder.h"
 #include "steg/steganographic_algorithm.h"
 #include "crypt/cryptographic_algorithm.h"
