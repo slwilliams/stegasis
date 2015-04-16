@@ -28,11 +28,13 @@ class DCTLAlgorithm : public SteganographicAlgorithm {
           }
           this->getCoef(offset++, &row, &block, &co);
           frame = (JBLOCKARRAY)c->getFrameData(row, 1);
-          if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
+          frame[0][block][co] &= ~1;
+          frame[0][block][co] |= ((1 << j) & data[bytesEmbedded]) >> j;
+          /*if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
             frame[0][block][co] |= 1;
           } else {
             frame[0][block][co] &= ~1;
-          }
+          }*/
         }
         bytesEmbedded ++;
       }

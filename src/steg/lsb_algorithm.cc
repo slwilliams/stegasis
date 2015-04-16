@@ -19,11 +19,13 @@ class LSBAlgorithm : public SteganographicAlgorithm {
       int bytesEmbedded = 0, frameSize = this->dec->getFrameSize();
       while (bytesEmbedded < reqByteCount && offset < frameSize) {
         for (int j = 7; j >= 0; j --) {
-          if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
+          frame[offset] &= ~1; 
+          frame[offset++] |= ((1 << j) & data[bytesEmbedded]) >> j;  
+          /*if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
             frame[offset++] |= 1;
           } else {
             frame[offset++] &= ~1;
-          }
+          }*/
         }
         bytesEmbedded ++;
       }

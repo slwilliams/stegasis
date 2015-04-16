@@ -24,11 +24,13 @@ class LSBPAlgorithm : public SteganographicAlgorithm {
             break;
           }*/
           frameByte = lcg.map[offset++];
-          if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
+          frame[frameByte] &= ~1;
+          frame[frameByte] |= ((1 << j) & data[bytesEmbedded]) >> j;
+          /*if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
             frame[frameByte] |= 1;
           } else {
             frame[frameByte] &= ~1;
-          }
+          }*/
         }
         bytesEmbedded ++;
       }

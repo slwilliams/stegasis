@@ -29,11 +29,13 @@ class DCTPAlgorithm : public SteganographicAlgorithm {
           frameByte = lcg.map[offset++];
           this->getCoef(frameByte, &row, &block, &co);
           frame = (JBLOCKARRAY)c->getFrameData(row, (co % 2) + 1);
-          if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
+          frame[0][block][co] &= ~1;
+          frame[0][block][co] |= ((1 << j) & data[bytesEmbedded]) >> j;
+          /*if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
             frame[0][block][co] |= 1;
           } else {
             frame[0][block][co] &= ~1;
-          }
+          }*/
         }
         bytesEmbedded ++;
       }
