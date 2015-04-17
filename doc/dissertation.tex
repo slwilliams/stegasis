@@ -57,6 +57,7 @@
     {\large \@author}}                
 \makeatother       
 
+
 \newcommand\blankpage{%
     \null
     \thispagestyle{empty}%
@@ -64,6 +65,12 @@
     \newpage}                     
 
 \definecolor{mygray}{gray}{0.6}
+
+\newlength{\Oldarrayrulewidth}
+\newcommand{\Cline}[2]{%
+  \noalign{\global\setlength{\Oldarrayrulewidth}{\arrayrulewidth}}%
+  \noalign{\global\setlength{\arrayrulewidth}{#1}}\cline{#2}%
+  \noalign{\global\setlength{\arrayrulewidth}{\Oldarrayrulewidth}}}
 
 \titleformat{\section}
 {\normalfont\huge\bfseries}
@@ -457,7 +464,7 @@ After reviewing the necessary background material and investigating current avai
 \item Provide adequate file system performance:
 	\begin{enumerate}
 		\item Full HD video content should be playable directly from within the presented file system (bitrates of full HD video are roughly 8 - 12 Mb/s\textsuperscript{\cite{bitrate}}).
-		\item Ideally, the file system should provide read and write speeds comparable to those provided by USB 2.0 devices\footnote{Although the USB 2.0 standard supports speeds of up to 480 Mb/s, devices rarely reach this theoretical limit.}(roughly 20 MB/s\textsuperscript{\cite{usb2}}).
+		\item Ideally, the file system should provide read and write speeds comparable to those provided by USB 2.0 devices\footnote{Although the USB 2.0 standard supports speeds of up to 480 Mb/s, devices never reach this theoretical limit.}(roughly 20 MB/s\textsuperscript{\cite{usb2}}).
 	\end{enumerate}		
 \end{enumerate}
 
@@ -717,11 +724,8 @@ virtual pair<int,int> embed(Frame *f, char *data, int reqByteCount, int offset) 
   int bytesEmbedded = 0;
   while (bytesEmbedded<reqByteCount && offset<this->dec->getFrameSize()) {
     for (int j = 7; j >= 0; j --) {
-      if ((((1 << j) & data[bytesEmbedded]) >> j) == 1) {
-        frame[offset++] |= 1;
-      } else {
-        frame[offset++] &= ~1;
-      }
+      frame[offset] &= ~1;
+      frame[offset++] |= ((1 << j) & data[bytesEmbedded]) >> j;
     }
     bytesEmbedded ++;
   }  
@@ -903,7 +907,7 @@ The initial approach to encrypt the embedded data was to simply \texttt{XOR} it 
 
 
 \noindent
-This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video. Table \ref{totalalgs} shows a complete list of the implemented steganographic and cryptographic algorithms, including those implemented within the extension tasks (in italics). Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break these implemented stego systems. However, more secure steganogrphic systems are investigated within the extension tasks and the framework \texttt{Stegasis} provides allows easy incorporation of new, more secure embedding algorithms.
+This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video.  Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break these implemented stego systems. However, more secure steganogrphic systems are investigated within the extension tasks and the framework \texttt{Stegasis} provides allows easy incorporation of new, more secure embedding algorithms. Table \ref{totalalgs} shows a complete list of the implemented steganographic and cryptographic algorithms, including those implemented within the extension tasks (in italics).
 
 \begin{table}[h]
 \centering
@@ -1033,7 +1037,7 @@ The read function call is similar, recall the declaration which requests that \t
 
 The function \texttt{readdir} is called when the contents of a directory are requested to be listed, the implementation is straightforward and just iterates of the fileSizes map as shown in Listing \ref{readdir}.\\
 
-\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true]
+\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true,float,floatplacement=!htb]
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
   filler(buf, '.', NULL, 0);
   filler(buf, '..', NULL, 0);
@@ -1147,22 +1151,6 @@ However, at lower capacity settings it is not possible to visually differentiate
 \end{figure}
 
 The basic \texttt{JPEG} embedding algorithm and the permuted variant (\texttt{OutGuess 0.1}) are both vulnerable to the \textit{histogram attack} discussed in Section \ref{security}. This motivates the implementation of more advanced algorithms such as \texttt{F4} and \texttt{F5}\textsuperscript{\cite{f5}} which resist this type of steganalysis attack. Instead of replacing the LSB of DCT coefficients, \texttt{F5} decrements the coefficients absolute value via \textit{matrix encoding}. This results in no pairs of values being produced and thus \texttt{F5} cannot be detected by the Chi-Squared attack. Matrix encoding within \texttt{F5} uses \textit{Hamming codes} to embed a k-bit message into a $2^k -1$ bit code word, changing it at most by one bit. This allows \texttt{F5} to achieve high embedding efficiencies. See the Appendix Section \ref{app:f5} for more details and an implementation of \texttt{F5}.\\
- 
-\noindent 
-Due to the final lossless stage of \texttt{JPEG} compression, it can in some cases\footnote{This is highly dependant on the data being embedded. The best possible scenario is embedding all zeros.} be possible to embedded files larger than the cover object - achieving embedding capacities in excess of 100\%. This is because the encoding effectively compresses the embedded data before it is written back to disk. To show this in action, Listing \ref{200cap} shows a 306 MB file embedded within a 189 MB video.
-
-\begin{lstlisting}[language=bash,caption={Demonstration of 162\% embedding capacity.}, frame=single, label=200cap]
-$ ls -lah
--rw-rw-r-- 1 scott scott 189M Jan 15 22:30 video.mkv
-$ stegasis mount -alg=dctl video.mkv /mnt/video
-[...]
-Mounting...
-$ ls -lah /mnt/video
-total 4.0K
-drwxr-xr-x  2 root root    0 Jan  1  1970 .
-drwxrwxrwt 12 root root 4.0K Jan 15 22:26 ..
--rwxr-xr-x  1 root root 306M Jan  1  1970 file1
-\end{lstlisting}
 
 \noindent
 The performance of \texttt{Stegasis} operating on \texttt{JPEG} images is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the necessary decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the large amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
@@ -1221,7 +1209,7 @@ This method is vulnerable to steganalysis attacks that would be able to detect t
 The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag \texttt{pass2} was added, if this is specified during the format process two headers are written at the start and in the middle of the video. The mount process now attempts to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
 \begin{lstlisting}[language=bash,caption={\texttt{Stegasis} plausible deniability functionality.}, frame=single, label=deny]
-$ stegasis format -alg=lsb -crypt=serpent -pass=outer -pass2=hidden -cap=20 video.avi
+$ stegasis format -alg=lsbp -crypt=serpent -pass=outer -pass2=hidden       -cap=20 video.avi
 [...]
 Format successful!
 $ stegasis mount -alg=lsbp -crypt=serpent -pass=outer video.avi /tmp/steg
@@ -1263,7 +1251,7 @@ The user is presented with two images and asked the question ``Which image do yo
 In total there are 14,912 pairs of images, one of which is randomly selected for each page load. One of the images is the original video frame while the other has 2.5 kB of data embedded within it using the permuted \texttt{JPEG} embedding algorithm and a capacity setting of 20\% (the default value). The position of the ``correct'' image is randomised and the file names of the images are random strings; attempting to thwart any attempts at foul play, possibly damaging the collected results. When a user first visits the site, a cookie containing a unique ID is issued allowing data points from the same user to be aggregated together.\\
 
 \noindent
-The results of this evaluation study obtained by the implemented web application are discussed in Section \ref{security} and conclude that it was not possible to visually differentiate between the cover and stego objects at the default capacity setting of 20\%.
+The results of this evaluation study obtained by the implemented web application are discussed in Section \ref{security} and conclude that it was not possible for the users to visually differentiate between the cover and stego objects at the default capacity setting of 20\%.
 
 \subsection{Testing}
 \label{testing}
@@ -1284,8 +1272,9 @@ void AlgorithmShouldCorrectlyExtractEmbededData() {
 };
 \end{lstlisting}
 
-The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded using a key is correctly extracted when using the same key.
+The above unit test verifies the steganogrphic correctness of the stego systems, checking that data embedded is correctly extracted after being embedded. See the Appendix Section \ref{app:unit} for the complete test suite.\\
 
+\noindent
 I deemed it more appropriate to test the file system functionality via an integration test suite due to its highly coupled nature. The test suite revolved around a number of compressed archives containing test files and directory structures. \texttt{Stegasis} is first instructed to mount a test video into \texttt{/tmp/test}. The test archives are then decompressed into the file system. Once the extraction process has completed, the resulting file system is traversed and the files accessed to check the contents is as expected.
 
 Visual testing was also employed. For example, large media content such as high definition video was copied into the mounted volume and checked to see if it played back correctly. This is a good test case since the file (due to its size) will be spread across a large proportion of the video. Indeed, several bugs were identified using this testing approach.
@@ -1309,7 +1298,7 @@ See the Appendix Section \ref{app:codetest} for some more testing code samples.
 
 \subsubsection{Providing a file system interface}
 
-\texttt{Stegasis} allows users to specify a mount point at which the volume will be mounted and data written to and read from this volume will embedded and extracted from the video on the fly. Standard Unix tools including \texttt{cp}, \texttt{mv} and \texttt{rm} work as expected and the file system is correctly persevered between unmounts and remounts of the same video.
+\texttt{Stegasis} allows users to specify a mount point at which a logical volume will be presented. Data written to and read from this volume will be embedded into and extracted from the video on the fly. Standard Unix tools including \texttt{cp}, \texttt{mv} and \texttt{rm} work as expected along with directory structures. The file system is correctly persevered between unmounts and remounts of the same video.
 
 \subsubsection{Supporting uncompressed AVI}
 
@@ -1317,7 +1306,7 @@ Raw uncompressed \texttt{AVI} files are supported via a developed native parser 
 
 \subsubsection{File system performance}
 
-The performance of the file system allows full HD video content to be played back from directly within the volume (12 Mb/s). However, achieving read and write speeds in excess of 20 MB/s was not a trivial task. The file system can provide read and write speeds in excess of 30 MB/s (and under ideal conditions\footnote{These conditions are discussed in Section \ref{perf}.},  80MB/s.), but only for the \texttt{AVI} algorithms which do not encrypt the embedded data and only if the performance flag has been specified (to stop synchronous flushes to disk). Performance is discussed in more detail in Section \ref{perf}.
+The performance of the file system allows full HD video content to be played back from directly within the volume (12 Mb/s) for all embedding algorithms except \texttt{F4} and \texttt{F5}. The file system can provide read and write speeds in excess of 20 MB/s (up to 96 MB/s) but this is dependent on the embedding algorithm and encryption scheme chosen. File system performance is discussed in more detail in Section \ref{perf}.
 
 \noindent
 The extension task requirements are now discussed individually. 
@@ -1348,11 +1337,11 @@ A web application was implemented and hosted for the majority of the duration of
 \subsection{Security}
 \label{security}
 
-Although security of the steganographic algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The evaluation user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{Stegasis} when using its default capacity setting. The results of this study are now statistically analysed.
+Although security of the steganographic algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The evaluation user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{Stegasis} when using its default capacity setting. The raw data obtained from the user study is included in the Appendix Section \ref{app:userstudy}. These results are now statistically analysed.
 
 Due to the layout of the website, if a user cannot tell the difference between the two presented images, they will select one arbitrarily. From the phrasing of the question posed to the user, a response is considered correct if the image selected did contain hidden data and incorrect if it did not. If a user were to randomly guess each time, the resulting data stream would be a random stream of corrects and incorrects. Letting correct be represented by 1 and incorrect by 0, this stream of random corrects and incorrects becomes a random bit string. Therefore, if it can be shown that the collected data is a random bit string, it can then be concluded that the users must have been randomly guessing and therefore could not differentiate between the two presented images.
 
-The raw bit string obtained from the user study is included in the Appendix Section \ref{app:userstudy}. To determine if the obtained bit string is in fact random, firstly a hypothesis test is constructed to test if the bits are i.i.d. Bernoulli(1/2) which would be the case for a truly random bit string.
+To determine if the obtained bit string is in fact random, firstly a hypothesis test is constructed to test if the bits are i.i.d. Bernoulli(1/2) which would be the case for a truly random bit string.
 
 Let the bit string $\mathbf{X} = X_1 \ldots X_n$, with each $X_i \stackrel{iid}{\sim} \text{Bernoulli}(p)$ and define $T = \sum_{i=1}^{n}X_i$. $T$ is a sufficient statistic for $p$ and clearly $T \sim \text{Binomial}(n, p)$.
 
@@ -1361,7 +1350,7 @@ Test $H_{0}: p = \frac{1}{2}$ against $H_{1}: p \neq \frac{1}{2}$ at significanc
 	\left[\text{ }\frac{n}{2} - z_{\alpha / 2}\sqrt{\frac{n}{4}},\text{ }\frac{n}{2} + z_{\alpha / 2}\sqrt{\frac{n}{4}}\text{ }\right].
 \end{equation*}
 
-For the bit string observed from the user study, $n = 2040 \text{ and } T = 1042$. At $\alpha = 5\%,\text{ } z_{\alpha / 2} = 1.9600$, the confidence interval is $[975, 1065]$ which contains $T$. Therefore there is insufficient evidence to reject the null hypothesis and therefore insufficient evidence to conclude the bit string is not random.
+For the bit string observed from the user study, $n = 2040 \text{ and } T = 1042$. At $\alpha = 5\%,\text{ } z_{\alpha / 2} = 1.9600$ and the confidence interval is $[975, 1065]$ which contains $T$. Therefore there is insufficient evidence to reject the null hypothesis and therefore insufficient evidence to conclude the bit string is not random.
 
 Secondly, the National Institute of Standards and Technology Statistical Test Suite\textsuperscript{\cite{nist}} is used to evaluate the bit string. The results are summarised in Listing \ref{nistres}.
 
@@ -1385,7 +1374,7 @@ random excursion (variant) test is approximately = 47 for a
 sample size = 50 binary sequences.
 \end{lstlisting}
 
-With the exception of the Longest Runs test (which I believe has failed due to the small sample size), these results strongly indicate that the bit string is random and therefore that the users could not differentiate between the cover and stego objects produced by \texttt{Stegasis}.
+With the exception of the Longest Runs test (which I believe has failed due to the small sample size), the bit string has exceeded the minimum pass rate for each statistical test. These results strongly indicate that the bit string is random and therefore that the users could not differentiate between the cover and stego objects produced by \texttt{Stegasis}.
 
 Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. For example, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the basic embedding algorithms (\texttt{DCT} and \texttt{DCTP}) implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0. This characteristic is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
 
@@ -1395,7 +1384,7 @@ Although we have concluded that \texttt{Stegasis} can operate with no perceivabl
 \label{hist}
 \end{figure}
 
-\texttt{F4} and \texttt{F5} however resist this attack and provide a much higher level of steganographic security. Jessica Fridrich et al. showed they were able to break the \texttt{F5} algorithm by estimating the cover image histogram by slightly cropping the stego image. However, \texttt{Stegasis} is able to spread the embedded data across thousands of \texttt{JPEG} images using a small capacity setting, so I am unsure how effective this attack would be.
+\texttt{F4} and \texttt{F5} however resist this attack and provide a much higher level of steganographic security. Jessica Fridrich et al. showed they were able to break the \texttt{F5} algorithm by estimating the cover image histogram by slightly cropping the stego image.\textsuperscript{\cite{breakingf5}} However, \texttt{Stegasis} is able to spread the embedded data across thousands of \texttt{JPEG} images using a small capacity setting, so I am unsure how effective this attack would be.
 
 The framework \texttt{Stegasis} provides makes it easy to implement more secure embedding algorithms which would be a possible future project direction.
 
@@ -1406,7 +1395,7 @@ The performance of \texttt{Stegasis}, and in particular the file system, is very
 
 \subsubsection{Performance of the file system}
 
-Due to the large embedding capacities offered, large files are expected to be copied into the file system and therefore embedded into the video. The write performance of the file system was therefore given a lot of attention during the implementation. The biggest improvement in file system performance was obtained by enabling the \texttt{FUSE} \texttt{big\_writes} mount option. By default, \texttt{FUSE} limits write calls to blocks of 4096 bytes, \texttt{big\_writes} allows this limit to be increased to 65 kB. Figure \ref{writeper} shows the effect of varying the block size on write performance for the LSB embedding algorithm.
+Due to the large embedding capacities offered, large files are expected to be copied into the file system and embedded into the video. The write performance of the file system was therefore given a lot of attention during the implementation. The biggest improvement in file system performance was obtained by enabling the \texttt{FUSE} \texttt{big\_writes} mount option. By default, \texttt{FUSE} limits write calls to blocks of 4096 bytes, \texttt{big\_writes} allows this limit to be increased to 65 kB. Figure \ref{writeper} shows the effect of varying the block size on write performance for the LSB embedding algorithm.
 
 \pgfplotsset{scaled x ticks=false}
 \begin{figure}[!tbh]
@@ -1421,58 +1410,64 @@ Due to the large embedding capacities offered, large files are expected to be co
         \addplot[blue,thick,error bars/.cd,y dir=both,y explicit]
             table[x index=0, y index=1, y error index=2]{data/write_nor.txt};
 
-        \legend{With \texttt{-p} flag,Without \texttt{-p} flag}
+        \legend{Asynchronous flushes,Synchronous flushes}
     \end{axis}
     \end{tikzpicture}
     \caption[]{Write performance of the file system.}
 \label{writeper}
 \end{figure}
 
-The data points for the graph were obtained using the command line tool \texttt{dd} as shown in Listing \ref{dd}. Note that this test provides ideal conditions, having a large block size and writing all zeros - most use cases will not be like this.
+The data points for the graph were obtained using the command line tool \texttt{dd} as shown in Listing \ref{dd}.
 
 \begin{lstlisting}[language={},caption={Testing the file system performance using \texttt{dd}.}, frame=single, label=dd,]
-$ dd if=/dev/zero of=test bs=65k count=1221
+$ dd if=/tmp/randomData of=test bs=65k count=1221
 610+0 records in
 610+0 records out
-79953920 bytes (80 MB) copied, 1.037613 s, 77.1 MB/s
+79953920 bytes (80 MB) copied, 0.918484 s, 87.1 MB/s
 \end{lstlisting}
 
-To evaluate the file system performance under more standard conditions, I timed the copying of an 80 MB video file into and out of the file system for the LSB algorithm using the \texttt{time} tool. This process was repeated multiple time and an average taken giving an average write speed of 33.6 MB/s and read speed of 46.3 MB/s. This is slower than above, but is still on par with USB 3.0 device speeds\textsuperscript{\cite{usb3}}, surpassing the performance requirement. As expected, the embedding algorithms which permute and encrypt data give worse file system performance as shown in Table \ref{algperf}, but I think this is a fair trade off.
+To further evaluate the performance of the file system, I timed the copying of random data into the file system for each combination of steganographic and cryptographic algorithm (30 in total) using the \texttt{time} tool. The results of this are shown in Table \ref{algperf}. As expected, the embedding algorithms which permute and encrypt data give worse file system performance, but I think this is a fair trade off.
 
 \begin{table}[!htb]
 \centering
-\begin{tabular}{|c|c|c|c|lll}
-\cline{1-4}
-\textbf{Stego System} & \textbf{Encryption Algorithm} & \textbf{File Size (MB)} & \textbf{Copy time (s)}      \\ \cline{1-4}
-\texttt{LSB} & \texttt{AES} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSB} & \texttt{TwoFish} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSB} & \texttt{Serpent} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSB} & \texttt{AES(Serpent(TwoFish))} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSBP} & \texttt{AES} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSBP} & \texttt{TwoFish} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSBP} & \texttt{Serpent} & 6.146 & 123   \\ \cline{1-4}
-\texttt{LSBP} & \texttt{AES(Serpent(TwoFish))} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCT} & \texttt{AES} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCT} & \texttt{TwoFish} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCT} & \texttt{Serpent} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCT} & \texttt{AES(Serpent(TwoFish))} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCTP} & \texttt{AES} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCTP} & \texttt{TwoFish} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCTP} & \texttt{Serpent} & 6.146 & 123   \\ \cline{1-4}
-\texttt{DCTP} & \texttt{AES(Serpent(TwoFish))} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F4} & \texttt{AES} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F4} & \texttt{TwoFish} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F4} & \texttt{Serpent} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F4} & \texttt{AES(Serpent(TwoFish))} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F5} & \texttt{AES} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F5} & \texttt{TwoFish} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F5} & \texttt{Serpent} & 6.146 & 123   \\ \cline{1-4}
-\texttt{F5} & \texttt{AES(Serpent(TwoFish))} & 6.146 & 123   \\ \cline{1-4}
+\begin{tabular}{|c|c|c|c|c|llll}
+\cline{1-5}
+\textbf{Stego System} & \textbf{Crypto System} & \textbf{File Size} & \textbf{Copy time (s)} & \textbf{Speed (MB/s)}   \\ \cline{1-5}
+\texttt{LSB} & \textit{None} & 50 MB & 0.521 $\pm$ 0.03 & 96.08 $\pm$ 5.10   \\ \cline{1-5}
+\texttt{LSB} & \texttt{AES} & 50 MB & 0.603 $\pm$ 0.04 & 83.02 $\pm$ 4.99   \\ \cline{1-5}
+\texttt{LSB} & \texttt{Twofish} & 50 MB & 1.096 $\pm$ 0.03 & 45.63 $\pm$ 1.38   \\ \cline{1-5}
+\texttt{LSB} & \texttt{Serpent} & 50 MB & 1.600 $\pm$ 0.02 & 31.24 $\pm$ 0.29   \\ \Cline{2pt}{1-5}
+
+\texttt{LSBP} & \textit{None} & 50 MB & 7.94 $\pm$ 0.15 & 6.30 $\pm$ 0.12   \\ \cline{1-5}
+\texttt{LSBP} & \texttt{AES} & 50 MB & 8.18 $\pm$ 0.28 & 6.11 $\pm$ 0.21   \\ \cline{1-5}
+\texttt{LSBP} & \texttt{Twofish} & 50 MB & 8.57 $\pm$ 0.38 & 5.84 $\pm$ 0.26   \\ \cline{1-5}
+\texttt{LSBP} & \texttt{Serpent} & 50 MB & 9.24 $\pm$ 0.33 & 5.41 $\pm$ 0.20   \\ \Cline{2pt}{1-5}
+
+\texttt{DCTL} & \textit{None} & 25 MB & 14.63 $\pm$ 0.05 & 1.71 $\pm$ 0.01   \\ \cline{1-5}
+\texttt{DCTL} & \texttt{AES} & 25 MB & 14.69 $\pm$ 0.14 & 1.70 $\pm$ 0.02   \\ \cline{1-5}
+\texttt{DCTL} & \texttt{Twofish} & 25 MB & 15.15 $\pm$ 0.04 & 1.65 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{DCTL} & \texttt{Serpent} & 25 MB & 15.74 $\pm$ 0.01 & 1.59 $\pm$ 0.01   \\ \Cline{2pt}{1-5}
+
+\texttt{DCTP} & \textit{None} & 25 MB & 17.29 $\pm$ 0.13 & 1.45 $\pm$ 0.01   \\ \cline{1-5}
+\texttt{DCTP} & \texttt{AES} & 25 MB & 17.35 $\pm$ 0.13 & 1.44 $\pm$ 0.01   \\ \cline{1-5}
+\texttt{DCTP} & \texttt{Twofish} & 25 MB & 17.75 $\pm$ 0.07 & 1.41 $\pm$ 0.01   \\ \cline{1-5}
+\texttt{DCTP} & \texttt{Serpent} & 25 MB & 18.36 $\pm$ 0.05 & 1.36 $\pm$ 0.00   \\ \Cline{2pt}{1-5}
+
+\texttt{F4} & \textit{None} & 1 MB & 15.40 $\pm$ 0.03 & 0.065 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{F4} & \texttt{AES} & 1 MB & 15.54 $\pm$ 0.07 & 0.064 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{F4} & \texttt{Twofish} & 1 MB & 17.09 $\pm$ 0.09 & 0.059 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{F4} & \texttt{Serpent} & 1 MB & 18.82 $\pm$ 0.05 & 0.053 $\pm$ 0.00   \\ \Cline{2pt}{1-5}
+
+\texttt{F5} & \textit{None} & 150 kB & 12.07 $\pm$ 0.05 & 0.067 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{F5} & \texttt{AES} & 150 kB & 12.35 $\pm$ 0.26 & 0.012 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{F5} & \texttt{Twofish} & 150 kB & 12.93 $\pm$ 0.04 & 0.012 $\pm$ 0.00   \\ \cline{1-5}
+\texttt{F5} & \texttt{Serpent} & 150 kB & 13.97 $\pm$ 0.06 & 0.011 $\pm$ 0.00   \\ \cline{1-5}
 \end{tabular}
 \caption{Steganographic and cryptographic algorithm combination performance.}
 \label{algperf}
 \end{table}
 
+The \texttt{LSB} algorithm gives write speeds on par with SATA hard drives\textsuperscript{\cite{hdd}} far exceeding those of USB 2.0 and even 3.0 devices.\textsuperscript{\cite{usb3}} The \texttt{LSBP} algorithm is also almost on par with USB 2.0 devices. However the algorithms involving decompressing \texttt{JPEG} images offer a lot worse file system performance. 
 
 \subsubsection{Performance of video formatting}
 
@@ -1498,7 +1493,7 @@ Another area worth considering is the time \texttt{Stegasis} takes to format vid
 
 \section{Conclusions}
 
-Informally, I wanted this project to result in the ``\texttt{TrueCrypt} of video steganography'', focusing on a practical application allowing multiple files to be easily steganographically embedded within video files utilising a file system interface. This involved researching multiple technical fields (mainly Steganography, file systems and various video formats) and developing an application to combine them all into a polished tool.
+Informally, I wanted this project to result in the ``\texttt{TrueCrypt} of video steganography'', focusing on a practical application allowing multiple files to be easily steganographically embedded within video files utilising a file system interface. This involved researching multiple technical fields (mainly steganography, file systems and various video formats) and developing an application to combine them all into a polished tool.
 
 A number of steganographic embedding algorithms were researched and implemented borrowing ideas and algorithms from cryptography to further increase security. A file system in user space residing within a video file was designed and developed offering the majority of the functionality one would expect from a standard file system. A native uncompressed \texttt{AVI} parser was implemented along with a novel method of supporting other video formats utilising \texttt{FFmpeg}. Finally a Linux command-line application, \texttt{Stegasis}, was produced combining the above into a single application.
 
@@ -1510,7 +1505,7 @@ The ``Launch early, iterate often'' approach taken to development did come with 
 
 \subsection{Future Project Directions}
 
-Further work would likely involve implementing more secure embedding algorithms. Another avenue to explore would be implementing more native video decoders. For example, I am currently working on a native \texttt{h.264} decoder which embeds data within motion vectors. This has the advantage over the \texttt{FFmpeg} method that the video file would be modified in place as occurs with \texttt{AVI} files.
+Further work would likely involve implementing more embedding algorithms. Another avenue to explore would be implementing more native video decoders. For example, I am currently working on a native \texttt{h.264} decoder which embeds data within motion vectors. This has the advantage over the \texttt{FFmpeg} method that the video file would be modified in place as occurs with \texttt{AVI} files (rather than creating a new \texttt{MKV} file).
 Finally, it would be great for \texttt{Stegasis} to be cross platform - developing a Linux only application severely limits the target audience. However, since the file system was implemented using \texttt{FUSE} (which is not compatible with Windows) this may prove tricky.\\
 
 \noindent
@@ -1846,7 +1841,6 @@ $ cd /tmp/steg
 
 [Stegasis Terminal]
 Embedding, Frame: 203, Size: 36158, Offset: 0
-100% [==================================================]
 Writing back to disc...
 100% [==================================================]
 
@@ -1860,7 +1854,6 @@ drwxrwxrwt 10 root root 4.0K Jan 15 21:59 ..
 [Stegasis Terminal]
 <Control-C>
 Unmounting...
-100% [==================================================]
 Writing back to disc...
 100% [==================================================]
 Successfully unmounted
@@ -2173,6 +2166,7 @@ virtual pair<int,int> embed(Frame *c, char *data, int reqByteCount, int offset) 
 \label{app:codetest}
 
 \subsection{Unit Testing}
+\label{app:unit}
 
 Unit testing the steganographic and cryptographic algorithms involved mocking a number of the system components, for example the \texttt{Frame} and \texttt{VideoDecoder} objects. Listing \ref{mock} shows the implemented mock frame used within the test suite.
 
@@ -2190,7 +2184,7 @@ class MockFrame : public Frame {
 };
 \end{lstlisting}
 
-Listing \ref{suite} shows the test suite which is executed for each steganographic algorithm and combination of cryptographic algorithm.
+Listing \ref{suite} shows the test suite which is executed for steganographic and cryptographic algorithm combinations.
 \begin{lstlisting}[caption={Stego algorithm test suite (\texttt{steg/steg\_alg\_test.cc:63}).},frame=single, upquote=true,label=suite,showstringspaces=false]
 void runTests() {
   printf("Running tests for %s...\n", this->name.c_str());
