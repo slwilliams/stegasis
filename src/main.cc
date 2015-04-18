@@ -42,7 +42,7 @@ SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, Cry
 CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec);
 
 DEFINE_string(alg, "dctl", "Embedding algorithm to use");
-DEFINE_string(crypt, "", "Encrypting algorithm to use");
+DEFINE_string(crypt, "id", "Encrypting algorithm to use");
 DEFINE_string(pass, "", "Passphrase to encrypt and permute data with");
 DEFINE_string(pass2, "", "Passphrase to encrypt and permute the hidden volume");
 DEFINE_int32(cap, 20, "Percentage of frame to embed within");
@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
     // stegasis format --alg=lsbp --crypt=aes --pass=123 --cap=10 /media/video.avi
     if (argc != 3) {
       incorrectArgNumber(command);
-      return 1;
     }
     string videoPath = argv[2];
     doFormat(FLAGS_alg, FLAGS_crypt, FLAGS_pass, FLAGS_pass2, FLAGS_cap, videoPath);
@@ -73,7 +72,6 @@ int main(int argc, char *argv[]) {
     // stegasis mount [-p,-f] --alb=lsbp --crypt=aes --pass=123 /media/video.avi /tmp/test
     if (argc != 4) {
       incorrectArgNumber(command);
-      return 1;
     }
     string videoPath = argv[2];
     string mountPoint = argv[3];
@@ -207,14 +205,14 @@ SteganographicAlgorithm *getSteg(string alg, string pass, VideoDecoder *dec, Cry
   } else if (alg == "f5") {
     return new F5Algorithm(pass, dec, crypt);
   } else {
-    printf("Unknown SteganographicAlgorithm: %s\n", alg.c_str());
+    printf("Unknown Steganographic Algorithm: %s\n", alg.c_str());
     printUsage();
     exit(0);
   }
 }
 
 CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec) {
-  if (alg == "") {
+  if (alg == "id") {
     return new IDAlgorithm(pass, dec);
   } else if (alg == "aes") {
     return new AESAlgorithm(pass, dec);
@@ -225,7 +223,7 @@ CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec) {
   } else if (alg == "aes_serpent_twofish") {
     return new AESSerpentTwofishAlgorithm(pass, dec);
   } else {
-    printf("Unknown CryptographicAlgorithm: %s\n", alg.c_str());
+    printf("Unknown Cryptographic Algorithm: %s\n", alg.c_str());
     printUsage();
     exit(0);
   }
@@ -234,6 +232,7 @@ CryptographicAlgorithm *getCrypt(string alg, string pass, VideoDecoder *dec) {
 void incorrectArgNumber(string command) {
   printf("Error: Incorrect number of arguments for command '%s'\n", command.c_str());
   printUsage();
+  exit(0);
 }
 
 void printName() {
@@ -249,33 +248,35 @@ void printName() {
 
 void printUsage() {
   printf("\nStegasis usage:\n");
-  printf("  stegasis <command> [-p,-g] --alg=<alg> --pass=<pass> [--pass2=<pass2>] --cap=<capacity> <video_path> <mount_point>\n");
+  printf("  stegasis <command> [-p,-f] --alg=<alg> [--crypt=<alg>] --pass=<pass> [--pass2=<pass2>] --cap=<capacity> <video_path> <mount_point>\n");
   printf("-----------------------------------------------------------------\n");
-  printf("Example useage:\n");
-  printf("  stegasis format --alg=lsbk --pass=password123 --cap=50 /media/video.avi\n");
-  printf("  stegasis mount --alg=lsbk --pass=password123 /media/video.avi /tmp/test\n"); 
+  printf("Example usage:\n");
+  printf("  stegasis format --alg=lsbp --crypt=aes --pass=password123 --cap=50 /media/video.avi\n");
+  printf("  stegasis mount --alg=lsbp --crypt=aes --pass=password123 /media/video.avi /tmp/steg\n"); 
   printf("Commands:\n");
   printf("  format  Formats a video for use with stegasis\n");
   printf("  mount  Mounts a formatted video to a given mount point\n");
   printf("Required Flags:\n");
   printf("  --alg  Embedding algorithm to use, see below\n");
+  printf("  --pass  Passphrase used for encrypting and permuting data\n");
   printf("  --cap  Percentage of frame to embed within in percent\n");
   printf("Optional flags:\n");
-  printf("  --pass  Passphrase used for encrypting and permuting data\n");
+  printf("  --crypt  Cryptographic algorithm used to encrypt embedded data\n");
   printf("  --pass2  Passphrase used for encrypting and permuting the hidden volume\n");
   printf("  -p  Do not flush writes to disk until unmount\n");
   printf("  -f  Force the FFmpeg decoder to be used\n");
   printf("Embedding Algorithms:\n");
   printf("  Uncompressed AVI only:\n");
   printf("    lsb:  Least Significant Bit Sequential Embedding\n");
-  printf("    lsbk:  LSB Sequential Embedding XOR'd with a psudo random stream\n");
   printf("    lsbp:  LSB Permuted Embedding using a seeded LCG\n");
-  printf("    lsb2:  Combination of lsbk and lsbp\n");
-  printf("    lsba:  LSB Permuted Embedding encrypted using AES\n");
   printf("  Other video formats:\n");
   printf("    dctl:  LSB Sequential Embedding within DCT coefficients\n");
   printf("    dctp:  LSB Permuted Embedding within DCT coefficients\n");
-  printf("    dct2:  Combination of dctp and lsbk\n");
-  printf("    dcta:  LSB Permuted Embedding encrypted with AES\n");
-  printf("    dct3:  LSB Permuted Embedding encrypted with AES->Twofish->Serpent\n");
+  printf("    f4:  Implementation of the F4 embedding algorithm\n");
+  printf("    f5:  Implementation of the F5 algorithm\n");
+  printf("Cryptographic Algorithms:\n");
+  printf("  aes:  256 bit AES (Rijndael)\n");
+  printf("  twofish:  256 bit TwoFish\n");
+  printf("  serpent:  256 bit Serpent\n");
+  printf("  aes_serpent_twofish:  Chained combination of the above 3\n");
 }
