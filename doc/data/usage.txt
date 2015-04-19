@@ -1,0 +1,43 @@
+   _____ _                                  
+  / ____| |                     (_)         
+ | (___ | |_ ___  __ _  __ _ ___ _ ___      
+  \___ \| __/ _ \/ _` |/ _` / __| / __|  
+  ____) | ||  __/ (_| | (_| \__ \ \__ \ 
+ |_____/ \__\___|\__, |\__,_|___/_|___/ 
+                  __/ | v3.7a               
+                 |___/                      
+
+
+Stegasis usage:
+  stegasis <command> [-p,-f] --alg=<alg> [--crypt=<alg>] --pass=<pass> [--pass2=<pass2>] --cap=<capacity> <video_path> <mount_point>
+-----------------------------------------------------------------
+Example usage:
+  stegasis format --alg=lsbp --crypt=aes --pass=password123 --cap=50 /media/video.avi
+  stegasis mount --alg=lsbp --crypt=aes --pass=password123 /media/video.avi /tmp/steg
+Commands:
+  format  Formats a video for use with stegasis
+  mount  Mounts a formatted video to a given mount point
+Required Flags:
+  --alg  Embedding algorithm to use, see below
+  --pass  Passphrase used for encrypting and permuting data
+  --cap  Percentage of frame to embed within in percent
+Optional flags:
+  --crypt  Cryptographic algorithm used to encrypt embedded data
+  --pass2  Passphrase used for encrypting and permuting the hidden volume
+  -p  Do not flush writes to disk until unmount
+  -f  Force the FFmpeg decoder to be used
+Embedding Algorithms:
+  Uncompressed AVI only:
+    lsb:  Least Significant Bit Sequential Embedding
+    lsbp:  LSB Permuted Embedding using a seeded LCG
+  Other video formats:
+    dctl:  LSB Sequential Embedding within DCT coefficients
+    dctp:  LSB Permuted Embedding within DCT coefficients
+    f4:  Implementation of the F4 embedding algorithm
+    f5:  Implementation of the F5 algorithm
+Cryptographic Algorithms:
+  aes:  256 bit AES (Rijndael)
+  twofish:  256 bit TwoFish
+  serpent:  256 bit Serpent
+  aes_serpent_twofish:  Chained combination of the above 3
+
