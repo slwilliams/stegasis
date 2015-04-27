@@ -171,7 +171,7 @@
 \textsc{Project Title}: \tab{Steganographic file systems within video files}\\
 \textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
 \textsc{Year}: \tab{2015}\\
-\textsc{Word Count}: \tab{12,434}\\
+\textsc{Word Count}: \tab{12,220}\\
 \textsc{Project Originator}: \tab{Scott Williams}\\
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
@@ -398,7 +398,7 @@ The relatively little work on steganography within video was reflected in my sea
 
 \subsubsection{StegoStick}
 
-\texttt{StegoStick}\textsuperscript{\cite{stegostick}} claims to allow users to ``hide any file into any file''. This statement suggests that the program is simply appending the requested file to the end of the cover object. This suspicion is partly true; based on the file extension, \texttt{StegoStick} splits cover objects into 3 categories: images, media and other. The other category does indeed just append the file to the cover object, whereas the image and media category do attempt to employ steganographic embedding methods. The images category applies to files with extensions \texttt{JPG}, \texttt{GIF} and \texttt{BMP} and uses LSB embedding within \texttt{BMP} files (other image formats are converted to \texttt{BMP} prior to embedding). The media category applies to \texttt{WAV}, \texttt{AVI} and \texttt{MPG} files and assumes each format has a ``header'' of 44+55 bytes\footnote{Listed in the source as ``44 byte header + 54 bytes of extension space''.}. Although this seems to be true for the \texttt{WAV} format, this is not the case for \texttt{AVI} nor \texttt{MPG} files. \texttt{StegoStick} will then use blind LSB embedding within the remaining data. As such, my attempts to use \texttt{StegoStick} to embed within \texttt{AVI} files rendered the resulting video unplayable. % (I haven't actually done this...) 
+\texttt{StegoStick}\textsuperscript{\cite{stegostick}} claims to allow users to ``hide any file into any file''. This statement suggests that the program is simply appending the requested file to the end of the cover object. This suspicion is partly true; based on the file extension, \texttt{StegoStick} splits cover objects into 3 categories: images, media and other. The other category does indeed just append the file to the cover object, whereas the image and media category do attempt to employ steganographic embedding methods. The images category applies to  \texttt{BMP} files and uses LSB embedding. The media category applies to \texttt{WAV}, \texttt{AVI} and \texttt{MPG} files and assumes each format has a ``header'' of 99 bytes\footnote{Listed in the source as ``44 byte header + 54 bytes of extension space''.}. Although this seems to be true for the \texttt{WAV} format, this is not the case for \texttt{AVI} nor \texttt{MPG} files. \texttt{StegoStick} will then use blind LSB embedding within the remaining data. As such, my attempts to use \texttt{StegoStick} to embed within \texttt{AVI} files rendered the resulting video unplayable.
 
 \subsubsection{StegoMagic}
 
@@ -417,7 +417,7 @@ The above programs all resort to embedding within video files by either appendin
 
 \subsubsection{OpenPuff}
 
-\texttt{OpenPuff}\textsuperscript{\cite{openpuff}} is a steganographic tool supporting a wide range of formats, including \texttt{3GP}, \texttt{MP4}, \texttt{MPG} and \texttt{VOB}. It allows users to embed a file within a collection of carrier objects and uses 3 user provided passwords to encrypt, scramble and whiten (mixing with a high amount of noise) the provided file. Plausible deniability is also provided via the option to add decoy content. \texttt{OpenPuff} successfully embedded and retrieved a text file within a sample \texttt{MP4} video and I could notice no perceivable impact on video quality. Performance was also good due to multithreading support. However, the embedding capacity is very limited. A hard limit of \SI{256}{\mega\byte} is imposed regardless of the number and size of the carrier objects and I was only able to achieve embedding capacities of around 0.0043\%\footnote{2,600 bytes within a \SI{60}{\mega\byte} video.} even at the maximum capacity setting. This makes \texttt{OpenPuff} impractical for hiding large files - for example, you would need around 770 \SI{60}{\mega\byte} \texttt{MP4} carrier files to embed an average \SI{2}{\mega\byte} \texttt{JPEG} image.
+\texttt{OpenPuff}\textsuperscript{\cite{openpuff}} is a steganographic tool supporting a wide range of formats, including \texttt{3GP}, \texttt{MP4}, \texttt{MPG} and \texttt{VOB}. It allows users to embed a file within a collection of carrier objects and uses 3 user provided passwords to encrypt, scramble and whiten (mixing with noise) the provided file. Plausible deniability is also provided via the option to add decoy content. \texttt{OpenPuff} successfully embedded and retrieved a text file within a sample \texttt{MP4} video and I could notice no perceivable impact on video quality. Performance was also good due to multithreading support. However, the embedding capacity is very limited. I was only able to achieve embedding capacities of around 0.0043\%\footnote{2,600 bytes within a \SI{60}{\mega\byte} video.} even at the maximum capacity setting. This makes \texttt{OpenPuff} impractical for hiding large files - for example, you would need 770 \SI{60}{\mega\byte} \texttt{MP4} carrier files to embed an average \SI{2}{\mega\byte} \texttt{JPEG} image.
 
 \subsubsection{Steganosaurus}
 
@@ -502,7 +502,7 @@ With the above requirements for the final product defined, I identified an appro
 
 \texttt{Stegasis} will be designed to operate on the \texttt{Linux} operating system since \texttt{Windows} has no equivalent of the file system in user space paradigm.
 
-Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. \texttt{FUSE}, \texttt{libjpeg} and libraries provided by \texttt{FFmpeg} are all natively C libraries. Although wrappers for other languages (including Java) do exist\textsuperscript{\cite{javafuse} \cite{turbojpeg}}, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{Steganographic Algorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{Numerous studies have shown that C/C++ code performs better than equivalent Java code\textsuperscript{\cite{javaper1} \cite{javaper2} \cite{javaper3}}.} due to the JVM overheads. 
+Several of the core (and extension) requirements strongly suggest a lower level language such as C or C++ rather than a higher level sandboxed language such as Java. For example, the parsing and modification of \texttt{AVI} files lends itself to a language like C since it will involve large amounts of byte level manipulation. Furthermore, the Microsoft file format reference defines the different data structures used within \texttt{AVIs} as C \texttt{structs}. \texttt{FUSE}, \texttt{libjpeg} and libraries provided by \texttt{FFmpeg} are all natively C libraries. Although wrappers for other languages (including Java) do exist\textsuperscript{\cite{javafuse} \cite{turbojpeg}}, they seem to be lacking documentation and few are being actively maintained. The requirement that \texttt{Stegasis} should support several steganographic embedding algorithms implores the use of object oriented techniques; defining a \texttt{SteganographicAlgorithm} interface of which each embedding algorithm implements. This suggests C++ over C. The final core requirement, performance, also favours C/C++ over Java\footnote{Numerous studies have shown that C/C++ code performs better than equivalent Java code\textsuperscript{\cite{javaper1} \cite{javaper2} \cite{javaper3}}.} due to the JVM overheads. 
 
 The reasons above and the fact I have prior experience using C++ led to the conclusion that C++ should be the primary language used to develop \texttt{Stegasis}.
 
@@ -526,11 +526,11 @@ The software development process embraced the modern ``Launch early, iterate oft
 \subsection{AVI Decoder}
 \label{avidec}
 
-The concept of an \texttt{AVI} decoder is first abstracted to that of a generic \texttt{Video Decoder} interface\footnote{The term ``interface'' is used as shorthand for an abstract C++ base class. That is, a class with pure virtual member functions and no function implementations.}. The core requirements state that the \texttt{AVI} decoder should allow access to individual pixel data. The pixel data within an \texttt{AVI} file is grouped into chunks, one per video frame. This lead to the decision to define the \texttt{Video Decoder} to allow access to the video pixel data at the granularity of a single video frame. It will also be useful for the \texttt{Video Decoder} interface to expose metadata about the video, for example, the total number of video frames in the video, the height and width of the video frames and the total size (in bytes) of each video frame.
+The concept of an \texttt{AVI} decoder is first abstracted to that of a generic \texttt{VideoDecoder} interface\footnote{The term ``interface'' is used as shorthand for an abstract C++ base class. That is, a class with pure virtual member functions and no function implementations.}. The core requirements state that the \texttt{AVI} decoder should allow access to individual pixel data. The pixel data within an \texttt{AVI} file is grouped into chunks, one per video frame. This lead to the decision to define the \texttt{VideoDecoder} to allow access to the video pixel data at the granularity of a single video frame. It will also be useful for the \texttt{VideoDecoder} interface to expose metadata about the video, for example, the total number of video frames in the video, the height and width of the video frames and the total size (in bytes) of each video frame.
 
-This gives the definition for the \texttt{Video Decoder} interface as described in Listing \ref{viddec} (\texttt{NextFrameOffset} will be discussed in Section \ref{fsi}).
+This gives the definition for the \texttt{VideoDecoder} interface as described in Listing \ref{viddec} (\texttt{NextFrameOffset} will be discussed in Section \ref{fsi}).
 
-\begin{lstlisting}[language=C++, caption={\texttt{Video Decoder} interface (\texttt{video/video\_decoder.h:15})},frame=single, float,floatplacement=H,label=viddec]
+\begin{lstlisting}[language=C++, caption={\texttt{VideoDecoder} interface (\texttt{video/video\_decoder.h:15})},frame=single, float,floatplacement=H,label=viddec]
 class VideoDecoder {
   public:
     virtual Frame *getFrame(int frame) = 0;
@@ -555,7 +555,7 @@ Note that \texttt{getFrame} returns a \texttt{Frame} wrapper object, rather than
 
 A \texttt{Frame} abstracts the concept of a single frames video data. In the case of uncompressed \texttt{AVI}, this can be thought of as a \texttt{char} pointer to the GBR pixel data, along with an associated frame size in bytes. A boolean value is also associated with each chunk, signifying if the chunk data has been modified, that is, it is dirty. The \texttt{Frame} interface is defined in Listing \ref{frame}.
 
-\begin{lstlisting}[language=C++, caption={Frame interface (\texttt{video/video\_decoder.h:4})}, frame=single, label=frame]
+\begin{lstlisting}[language=C++, caption={\texttt{Frame} interface (\texttt{video/video\_decoder.h:4})}, frame=single, label=frame]
 class Frame {
   protected:
     long frameSize;
@@ -604,35 +604,7 @@ The \texttt{AVI} parsing process can be thought of consisting of two main parts;
 
 The actual implementation is slightly more complex than presented above due to the existence of \texttt{JUNK} chunks. The \texttt{AVI} file format specifies that any number of chunks with a \texttt{FourCC} code of \texttt{JUNK} and of arbitrary length can be inserted between any \texttt{AVI} list structures. The parser must therefore be able to cope with this.
 
-The \texttt{WriteBack} function of the \texttt{AVI} decoder will write back any modified \texttt{Frame} data into the original \texttt{AVI} file. This operation is described in Algorithm \ref{writeback} below.
-
-\begin{algorithm}[!h]
-\caption{\texttt{AVI} write back process}
-\label{writeback}
-\begin{algorithmic}[1]
-\State Seek f to the chunks offset
-\State i $\gets$ 0
-\While{i $<$ avi\_header.total\_frames}
-	\State chunk $\gets$ readChunk(f)
-	\If{chunk.fourCC == 00db}
-		\If{frame\_chunks[i].isDirty}
-			\State Write frame\_chunks[i].frameData to f
-			\State frame\_chunks[i].dirty = false
-			\Comment{This chunk is no longer dirty}
-		\Else
-			\State Advance f chunk.chunkSize bytes
-			\Comment{Chunk did not need to be written}
-		\EndIf
-		\State i ++
-	\Else
-		\State Advance f chunk.chunkSize bytes
-		\Comment{Chunk was not a video chunk}
-	\EndIf
-\EndWhile
-\end{algorithmic}
-\end{algorithm}
-
-\texttt{getFrameSize} returns the number of bytes within each frame that should be embedded within and is shown in Listing \ref{framesize}.
+The \texttt{writeBack} function of the \texttt{AVI} decoder will write any modified pixel data back into the original \texttt{AVI} file and \texttt{getFrameSize} returns the number of bytes within each frame that should be embedded within, as shown in Listing \ref{framesize}.
 
 \begin{lstlisting}[language=C++, caption={\texttt{AVI} decoder \texttt{frameSize} function (\texttt{video/avi\_decoder.cc:298})}, frame=single, label=framesize]
 virtual int frameSize() {
@@ -659,9 +631,9 @@ The \texttt{AVI} decoder as described now provides all necessary functionality t
 
 \subsection{Steganographic Algorithms}
 
-As defined within the previous section, a steganogrphic system consists of a pair of functions providing embedding and extraction functionality. Therefore, a generic \texttt{Steganographic Algorithm} interface will need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data into and out of cover objects. Listing \ref{stegoalg} shows the interface.
+As defined within the previous section, a steganogrphic system consists of a pair of functions providing embedding and extraction functionality. Therefore, a generic \texttt{SteganographicAlgorithm} interface will need to declare two functions \texttt{embed} and \texttt{extract} which will embed and extract data into and out of cover objects. Listing \ref{stegoalg} shows the interface.
 
-\begin{lstlisting}[language=C++, caption={\texttt{Stego Algorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=stegoalg]
+\begin{lstlisting}[language=C++, caption={\texttt{StegoAlgorithm} interface (\texttt{steg/steganographic\_algorithm.h:8})}, frame=single, label=stegoalg]
 class SteganographicAlgorithm {
   protected:
     string password;
@@ -979,17 +951,17 @@ The write calls are a bit trickier, recall the \texttt{FUSE} write call which re
 \caption{Writing to the file system.}
 \label{write}
 \begin{algorithmic}[1]
-\State bytes\_written $\gets$ 0
-\State (next\_frame, next\_offset) $\gets$ decoder.getNextFrameOffset()
+\State bytesWritten $\gets$ 0
+\State (nextFrame, nextOffset) $\gets$ decoder.getNextFrameOffset()
 \State chunk $\gets$ FileChunk()
-\While{bytes\_written $<$ size}
-	\State (bytes\_embedded, new\_offset) = embed size-bytes\_written from buf+bytes\_written into next\_frame at next\_offset
-	\State chunk.bytes += bytes\_embedded
-	\State next\_offset = new\_offset
-	\If{new\_offset == 0}
-		\State next\_frame ++
+\While{bytesWritten $<$ size}
+	\State (bytesEmbedded, newOffset) = embed size-bytesWritten from buf+bytesWritten into nextFrame at nextOffset
+	\State chunk.bytes += bytesEmbedded
+	\State nextOffset = newOffset
+	\If{newOffset == 0}
+		\State nextFrame ++
 	\EndIf
-	\State bytes\_written += bytes\_embedded
+	\State bytesWritten += bytesEmbedded
 \EndWhile
 \State fileIndex[path].append(chunk)
 \State return size
@@ -1102,7 +1074,7 @@ The first frame extraction command converts each frame of the video file to a \t
 Using the above commands, I implemented a video decoder performing the described method. When \texttt{Stegasis} is run, a check occurs to see whether the provided file is an uncompressed \texttt{AVI}. If it is, the native \texttt{AVI} decoder developed is used. If it is not, this video decoder is used, allowing \texttt{Stegasis} to operate seamlessly across all video types without the user needing to manually specify which video decoder to use.\\
 
 \noindent
-The final step of this extension task is to implement embedding algorithms operating on the extracted \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{Steganographic Algorithm} interface, all of the file system logic will continue to work as expected.
+The final step of this extension task is to implement embedding algorithms operating on the extracted \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{SteganographicAlgorithm} interface, all of the file system logic will continue to work as expected.
 
 The implemented algorithms all embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. As with the core project, several versions of the basic algorithm were implemented along with more advanced algorithms such as \texttt{F4} and \texttt{F5}. Algorithm \ref{jpegalg} shows pseudocode for the basic embedding algorithm.
 
@@ -1147,7 +1119,7 @@ However, at lower capacity settings it is not possible to visually differentiate
 The basic \texttt{JPEG} embedding algorithm and the permuted variant (\texttt{OutGuess 0.1}) are both vulnerable to the \textit{histogram attack} discussed in Section \ref{security}. This motivates the implementation of more advanced algorithms such as \texttt{F4} and \texttt{F5}\textsuperscript{\cite{f5}} which resist this type of steganalysis attack. Instead of replacing the LSB of DCT coefficients, \texttt{F5} decrements the coefficients absolute value via \textit{matrix encoding}. This results in no pairs of values being produced and thus \texttt{F5} cannot be detected by the Chi-Squared attack. Matrix encoding within \texttt{F5} uses \textit{Hamming codes} to embed a k-bit message into a $2^k -1$ bit code word, changing it at most by one bit. This allows \texttt{F5} to achieve high embedding efficiencies. See the Appendix Section \ref{app:f5} for more details and an implementation of \texttt{F5}.\\
 
 \noindent
-The performance of \texttt{Stegasis} operating on \texttt{JPEG} images is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested. Initially, the \texttt{JPEG} files were left on disk and read into memory and decompressed when requested before being recompressed and written back. This understandably gave terrible performance due to the large amount of disk IO. This was rectified by reading all of the compressed \texttt{JPEG} images into memory upon video mount. The decompression and recompression operates could then operate on this memory - no longer involving any disk IO.\\
+The performance of \texttt{Stegasis} operating on \texttt{JPEG} images is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested.\\
 
 \noindent
 The above described additions to \texttt{Stegasis} allow it to seamlessly operate across a large range of video formats, greatly increasing practicality and successfully completing the extension task.
@@ -1191,16 +1163,13 @@ Changes will now need to be made to write the directories to the video file and 
 
 These changes successfully implement the extension task and greatly improve the usability of the file system. With the exception of permissions and access and modification times, \texttt{Stegasis} now provides all the functionality one would expect from a typical file system.
 
-%unlink doesnt work check for dirs...
-%also have i implemented mv??
-
 \subsubsection{Plausible deniability}
 
 Similar to \texttt{TrueCrypt}'s hidden volume feature, I planned to implement plausible deniability by embedding two separate file systems within one video, each using a different user provided passphrase. The \textit{outer} volume will reside at the beginning of the video (where it usually would) and the user should populate this volume with files they are willing to reveal if necessary. The \textit{inner} volume will reside half way through the video file and the user should place sensitive files here. When forced to give up the encryption keys, the user can reveal the passphrase for the outer volume in confidence the inner volume will not be compromised.
 
 This method is vulnerable to steganalysis attacks that would be able to detect the presence of the hidden volume half way through the video. To combat this, random data is embedded throughout the entire video during the format process using both passphrases. Since the volumes are encrypted, it will not be possible to tell if the identified embedded data is a hidden volume or just the random data written during the formatting process\textsuperscript{\cite{random}}.
 
-The modifications required for \texttt{Stegasis} to implement this feature were surprisingly simple. A second passphrase command line flag \texttt{pass2} was added, if this is specified during the format process two headers are written at the start and in the middle of the video. The mount process now attempts to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
+A second passphrase command line flag \texttt{pass2} was added, if this is specified during the format process two headers are written at the start and in the middle of the video. The mount process now attempts to extract and decrypt the first header using the provided passphrase. If this fails, it then attempts to decode the second header (embedded within the middle frame). Depending on which header extracts successfully, the outer or hidden file system is presented to the user. Listing \ref{deny} shows an example use case of the plausible deniability functionality.
 
 \begin{lstlisting}[language=bash,caption={\texttt{Stegasis} plausible deniability functionality.}, frame=single, label=deny]
 $ stegasis format -alg=lsbp -crypt=serpent -pass=outer -pass2=hidden       -cap=20 video.avi
@@ -1321,7 +1290,7 @@ Plausible deniability functionality was implemented allowing a second hidden fil
 
 \subsubsection{Evaluation of the visual impact of embedding}
 
-A web application was implemented and hosted for the majority of the duration of the project. A total of 2040 data points were collected from 21 unique users. The results are discussed below in Section \ref{security}, and the outcome of the study confirmed that it was not possible for the users to visually perceive embedding artifacts produced by \texttt{stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
+A web application was implemented and hosted for the majority of the duration of the project. A total of 2040 data points were collected from 21 unique users. The results are discussed below in Section \ref{security}, and the outcome of the study confirmed that it was not possible for the users to visually perceive embedding artifacts produced by \texttt{Stegasis} when using the default capacity setting (20\%). This satisfies the final extension task.\\
 
 \noindent
 \texttt{Stegasis} therefore has addressed all of the proposed extension tasks, further cementing the success of the project.
@@ -1329,7 +1298,7 @@ A web application was implemented and hosted for the majority of the duration of
 \subsection{Security}
 \label{security}
 
-Although security of the steganographic algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{stegasis} when using its default capacity setting. The raw data obtained from the user study is included in the Appendix Section \ref{app:userstudy} and is now statistically analysed.
+Although security of the steganographic algorithms was not a major focus of this project, steganalysis techniques were implemented and these led to more secure algorithms being developed. The user study was also focused on security - attempting to decide if it is possible to visually differentiate between cover and stego objects produced by \texttt{Stegasis} when using its default capacity setting. The raw data obtained from the user study is included in the Appendix Section \ref{app:userstudy} and is now statistically analysed.
 
 Due to the layout of the website, if a user cannot tell the difference between the two presented images, they will select one arbitrarily. From the phrasing of the question posed to the user, a response is considered correct if the image selected contained hidden data and incorrect if it did not. If a user were to randomly guess each time, the resulting data stream would be a random stream of corrects and incorrects. Letting correct be represented by 1 and incorrect by 0, this stream becomes a random bit string. Therefore, if it can be shown that the collected data is a random bit string, it can then be concluded that the users must have been randomly guessing and therefore could not differentiate between the two presented images.
 
@@ -1364,9 +1333,9 @@ The minimum pass rate for each statistical test is approximately = 37 for a
 sample size = 40 binary sequences.
 \end{lstlisting}
 
-With the exception of the Longest Runs test (which I believe has failed due to the small sample size), the bit string has exceeded the minimum pass rate for each statistical test. These results strongly indicate that the bit string is random and therefore that the users could not differentiate between the cover and stego objects produced by \texttt{stegasis}.
+With the exception of the Longest Runs test (which I believe has failed due to the small sample size), the bit string has exceeded the minimum pass rate for each statistical test. These results strongly indicate that the bit string is random and therefore that the users could not differentiate between the cover and stego objects produced by \texttt{Stegasis}.
 
-Although we have concluded that \texttt{stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. For example, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the basic embedding algorithms (\texttt{DCT} and \texttt{DCTP}) implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0. This characteristic is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
+Although we have concluded that \texttt{Stegasis} can operate with no perceivable visual impact on video quality, this does not imply that it will resist further steganalysis techniques. For example, the \textit{Histogram attack} which operates on \texttt{JPEG} images breaks the basic embedding algorithms (\texttt{DCT} and \texttt{DCTP}) implemented in the multiple video formats extension task (even using low capacity settings). The histogram attack enumerates the frequencies of the DCT coefficients of a given image. A characteristic of unmodified \texttt{JPEG} images is that its histogram is symmetrical about 0. This characteristic is lost when embedding occurs. Figure \ref{hist} shows the effectiveness of the attack, comparing the histogram of an original video frame to one with embedded data. It clearly manages to differentiate between the cover and stego objects.
 
 \begin{figure}[!tbh]
 \centerline{\includegraphics[width=\textwidth]{images/hist.png}}
@@ -1374,14 +1343,14 @@ Although we have concluded that \texttt{stegasis} can operate with no perceivabl
 \label{hist}
 \end{figure}
 
-\texttt{F4} and \texttt{F5} however resist this attack and provide a much higher level of steganographic security. Jessica Fridrich et al. showed they were able to break the \texttt{F5} algorithm by estimating the cover image histogram by slightly cropping the stego image.\textsuperscript{\cite{breakingf5}} However, \texttt{stegasis} is able to spread the embedded data across thousands of \texttt{JPEG} images using a small capacity setting, so I am unsure how effective this attack would be.
+\texttt{F4} and \texttt{F5} however resist this attack and provide a much higher level of steganographic security. Jessica Fridrich et al. showed they were able to break the \texttt{F5} algorithm by estimating the cover image histogram by slightly cropping the stego image.\textsuperscript{\cite{breakingf5}} However, \texttt{Stegasis} is able to spread the embedded data across thousands of \texttt{JPEG} images using a small capacity setting, so I am unsure how effective this attack would be.
 
 The framework \texttt{Stegasis} provides makes it easy to implement more secure embedding algorithms which would be a possible future project direction.
 
 \subsection{Performance}
 \label{perf}
 
-The performance of \texttt{stegasis}, and in particular the file system, is very important to consider. As with \texttt{TrueCrypt}, using \texttt{stegasis} should constitute a similar experience to copying files onto removable storage. 
+The performance of \texttt{Stegasis}, and in particular the file system, is very important to consider. As with \texttt{TrueCrypt}, using \texttt{Stegasis} should constitute a similar experience to copying files onto removable storage. 
 
 \subsubsection{Performance of the file system}
 
@@ -1452,7 +1421,7 @@ The \texttt{LSB} algorithm gives write speeds on par with SATA hard drives\texts
 \iffalse
 \subsubsection{Performance of video formatting}
 
-Another area worth considering is the time \texttt{stegasis} takes to format video files. Although it is hard to quantify a ``good'' format time, I would expect a time of under 1 minute to be reasonable for an average 5 minute video. The format time of \texttt{AVI} files is more dependent on disk read performance, whereas for other video formats, processor performance will be more important (due to the video transcoding involved). I measured the time taken to format a variety of video files on my desktop computer. The results are summarised in table \ref{formatres} below and are all less then 1 minute even for longer videos.
+Another area worth considering is the time \texttt{Stegasis} takes to format video files. Although it is hard to quantify a ``good'' format time, I would expect a time of under 1 minute to be reasonable for an average 5 minute video. The format time of \texttt{AVI} files is more dependent on disk read performance, whereas for other video formats, processor performance will be more important (due to the video transcoding involved). I measured the time taken to format a variety of video files on my desktop computer. The results are summarised in table \ref{formatres} below and are all less then 1 minute even for longer videos.
 
 \begin{table}[!htb]
 \centering
