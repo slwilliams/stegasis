@@ -1,7 +1,7 @@
 % --------------------------------------------------------------------
 % Preamble
 % --------------------------------------------------------------------
-\documentclass[paper=a4, fontsize=11pt,twoside]{scrartcl}   
+\documentclass[paper=a4, fontsize=11pt,twoside,bibliography=totoc]{scrartcl}   
 
 \usepackage[a4paper,pdftex]{geometry}   
 \setlength{\oddsidemargin}{5mm}           
@@ -171,7 +171,7 @@
 \textsc{Project Title}: \tab{Steganographic file systems within video files}\\
 \textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
 \textsc{Year}: \tab{2015}\\
-\textsc{Word Count}: \tab{12,220}\\
+\textsc{Word Count}: \tab{12,035}\\
 \textsc{Project Originator}: \tab{Scott Williams}\\
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
@@ -612,7 +612,7 @@ virtual int frameSize() {
 };
 \end{lstlisting}
 
-This expression arises from the fact that uncompressed \texttt{AVI} uses 3 bytes per pixel value. Since there are $height \cdot width$ pixels within a single frame, multiplying this by 3 will give the total number of bytes. \textit{Capacity} is a user provided percentage ranging in value from 1 - 100. It specifies the percentage of the frame to embed within. \texttt{frameSize} must therefore reduce the returned frame size value by ``capacity percent''.
+This expression arises from the fact that uncompressed \texttt{AVI} uses 3 bytes per pixel value. \textit{Capacity} is a user provided percentage ranging in value from 1 - 100. It specifies the percentage of the frame to embed within. \texttt{frameSize} must therefore reduce the returned frame size value by ``capacity percent''.
 
 The effect of the capacity parameter is illustrated within Figure \ref{cap50}. The top left image is the original video frame and the top right image is the LSB plane (red channel) of the frame with no data embedded. The bottom two images have data sequentially embedded within them using capacity settings of 50\% and 15\% respectively.
 
@@ -641,14 +641,11 @@ class SteganographicAlgorithm {
   public:
     virtual pair<int, int> embed(Frame *f, char *data, int reqByteCount, int offset) = 0;
     virtual pair<int,int> extract(Frame *f, char *output, int reqByteCount, int offset) = 0;
-    virtual void getAlgorithmCode(char out[4]) = 0;
 };
 \end{lstlisting}
 
 \noindent
 The \texttt{embed} function attempts to embed \texttt{reqByteCount} bytes from \texttt{data} into frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and returns the number of bytes successfully embedded along with the reached frame offset. Similarly, the \texttt{extract} function attempts to extract \texttt{reqByteCount} bytes from frame \texttt{f} starting at an offset \texttt{offset} bytes into the frame and put them into \texttt{output} and returns the number of bytes successfully extracted along with the reached frame offset.
-
-\texttt{getAlgorithmCode} returns a 4 character algorithm identifier which is used when users specify which algorithm they want to use.\\
 
 \subsubsection{LSB Sequential Embedding}
 
@@ -755,7 +752,6 @@ $\mathcal{P}ov \triangleq \{~(2k, 2k + 1) ~\vert ~ 0 \leq k \leq 127 ~\}$
 \noindent
 Westfeld and Pfitzmann claim that the LSBs in images are not completely random, rather, the frequencies of each of the two pixel values in each POV tend to lie far from the mean of the POV. That is, it is unlikely for the frequency of pixel value $2k$ to be close to equal to the frequency of pixel value $2k+1$. Furthermore, as information is embedded into the cover object, the frequencies of $2k$ and $2k+1$ become (nearly) equal. The Chi-squared attack was designed to detect this and bases the probability of embedding on how close to equal POVs are in the image.
 
-\pagebreak
 To implement the attack, the following steps are taken in reference to a given image. First, $x_{k} =$ frequency($2k$) and $y_{k} =$ frequency($2k+1$) are calculated, followed by the expected frequency $z_{k} = \dfrac{x_{k} + y_{k}}{2}$ $~\forall ~k$. $n$ is defined to be the number of POVs, $\vert \mathcal{P}ov \vert$. For uncompressed \texttt{AVI} using 24 bits per pixel, $n=128$. The \textit{minimum frequency condition} is now applied. This sets $x_{k} = y_{k} = z_{k} = 0$ and decrements $n$ by one, if the condition $x_{k} + y_{k} \leq 4$ holds. The Chi-Squared statistic, with $n - 1$ degrees of freedom is then calculated:
 \begin{center}
 $\chi ^{2} _{n-1} = \mathlarger{\sum}\limits_{k=0}^{127} \dfrac{(x_{k} - z_{k})^2}{z_{k}}$
@@ -844,7 +840,7 @@ Therefore, if the above requirements can be satisfied, a LCG can be used as a ps
 \noindent
 As such, $m$ is set equal to the next power of 2 larger or equal to $n$. Any produced values larger or equal to $n$ are just discarded, therefore producing a full period of size $n$ as required.
 
-The pseudorandom permutation should be dependant on a user provided passphrase. Therefore, the values of $a$ and $c$ are determined using a key derived from the users passphrase. The popular key derivation function \texttt{PBKDF2}\textsuperscript{\cite{keyd}} is used along with the \texttt{Whirlpool}\textsuperscript{\cite{pool}} hash function to generate a 128 byte key pool and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these well known algorithms myself, I used a popular C++ cryptographic library, \texttt{Crypto++}.\\
+The pseudorandom permutation should be dependant on a user provided passphrase. Therefore, the values of $a$ and $c$ are determined using a key derived from the users passphrase. The popular key derivation function \texttt{PBKDF2}\textsuperscript{\cite{keyd}} is used along with the \texttt{Whirlpool}\textsuperscript{\cite{pool}} hash function to generate a 128 byte key pool and the first 4 bytes are taken as an unsigned integer and used to derive $c$ and $a$. Rather than implement these algorithms myself, I used a popular C++ cryptographic library, \texttt{Crypto++}.\\
 
 \noindent
 The result of the permuted embedding algorithm is illustrated in Figure \ref{lsbp_ill}. The left image has data embedded using the sequential embedding algorithm whereas the right image has the same data embedded using the permuted embedding algorithm. Both images were using a capacity setting of 15\%.
@@ -871,11 +867,11 @@ The above example embedded data within an uncompressed \texttt{AVI} video file w
 To further strengthen the security of \texttt{Stegasis}, I decided to offer the option to encrypt data before embedding it within the video. This way, even if the steganography is broken, the information itself will not be compromised. The available cryptographic algorithms are decoupled from the steganogrphic systems allowing the user to mix and match between them. In addition, the same user provided passphrase used to permute the data throughout the video frame is used within the encryption process\footnote{A different section of the 128 bytes key pool is used.}, addressing another concern of some of the investigated programs in Section \ref{tools}.\\
 
 \noindent
-The initial approach to encrypt the embedded data was to simply \texttt{XOR} it with a pseudorandom number stream. The \texttt{Crypto++} library provides a variety of suitable pseudorandom number generators which can be seeded. However, questions about the cryptographic strength of these number generators lead to the implementation of more standard encryption algorithms and the eventual removal of the pseudorandom number stream option. \texttt{AES} (256 bit), \texttt{TwoFish} and \texttt{Serpent} are all available within the \texttt{Crypto++} library which made incorporating them in \texttt{Stegasis} easy. Counter mode (\texttt{CTR}) is used as the block cipher mode so that data is not required to be padded to the block size. A hybrid chained encryption scheme \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent} is also supported. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also offered by \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption and decryption processes - see Section \ref{perf}.\\
+\texttt{AES}, \texttt{TwoFish} and \texttt{Serpent} (all 256 bit) are all available within the \texttt{Crypto++} library which made incorporating them in \texttt{Stegasis} easy. Counter mode (\texttt{CTR}) is used as the block cipher mode so that data is not required to be padded to the block size. A hybrid chained encryption scheme \texttt{AES} $\rightarrow$ \texttt{TwoFish} $\rightarrow$ \texttt{Serpent} is also supported. This method has the advantage that if even 2 of the above algorithms are cryptographically broken, the data will still be secure\footnote{This encryption option is also offered by \texttt{TrueCrypt}.}. You do however incur a performance penalty due to the encryption and decryption processes - see Section \ref{perf}.\\
 
 
 \noindent
-This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements operating on uncompressed \texttt{AVI} video.  Although I have shown resistance to some steganalysis techniques, I have no doubt that there exist attacks that would break these implemented stego systems. However, more secure steganogrphic systems are investigated within the extension tasks along with appropriate steganalysis methods. Table \ref{totalalgs} shows a complete list of the implemented steganographic and cryptographic algorithms, including those implemented within the extension tasks (in italics).
+This concludes the steganogrphic embedding algorithms developed to satisfy the core requirements. Additional steganogrphic systems are investigated within the extension tasks along with more appropriate steganalysis methods. Table \ref{totalalgs} shows a complete list of the implemented steganographic and cryptographic algorithms, including those implemented within the extension tasks (in italics).
 
 \begin{table}[h]
 \centering
@@ -964,7 +960,6 @@ The write calls are a bit trickier, recall the \texttt{FUSE} write call which re
 	\State bytesWritten += bytesEmbedded
 \EndWhile
 \State fileIndex[path].append(chunk)
-\State return size
 \end{algorithmic}
 \end{algorithm}
 
@@ -978,7 +973,7 @@ The read function call is similar, recall the declaration which requests that \t
 \caption{Reading from the file system.}
 \label{read}
 \begin{algorithmic}[1]
-\State bytesWritten $\gets$ 0, chunkNum $\gets$ 0, bytesWritten $\gets$ 0
+\State bytesWritten $\gets$ 0, chunkNum $\gets$ 0, bytesRead $\gets$ 0
 \For{chunk in fileChunks}
 	\If{bytesRead + chunk.bytes $>$ offset}
 		\State break
@@ -991,7 +986,7 @@ The read function call is similar, recall the declaration which requests that \t
 	\State chunk $\gets$ fileChunks[chunkNum]
 	\State bytesLeftInChunk $\gets$ chunk.bytes - chunkOffset
 	\State bytesLeftInChunk $\gets$ min(bytesLeftInChunk, size-bytesWritten)
-	\State extract(chunk.frame, chunk.offset + chunkOffset, bytesLeftInChunk, buf+bytesWritten)
+	\State extract bytesLeftInChunk from chunk.frame at chunk.offset+chunkOffset into buf+bytesWritten
 	\State bytesWritten += bytesLeftInChunk
 	\State chunkOffset $\gets$ 0
 	\State chunkNum ++
@@ -1055,7 +1050,7 @@ This method will work with virtually any video format presented to \texttt{Stega
 
 Although the initial conversion of the provided video to \texttt{JPEG} images can be lossy, the reassembly of video frames and extraction thereafter cannot - this would damage the embedded file system. This constraint leads to the following four \texttt{FFmpeg} commands shown in Listing \ref{ffmpegcmd}.
 
-\begin{lstlisting}[caption={\texttt{FFmpeg} frame extraction and reassembly command.}, frame=single, label=ffmpegcmd,upquote=true,float,floatplacement=!htb]
+\begin{lstlisting}[caption={\texttt{FFmpeg} extraction and reassembly commands.}, frame=single, label=ffmpegcmd,upquote=true,float,floatplacement=!htb]
 // Convert an arbitrary video to JPEG images (Lossy)
 ffmpeg -r <fps> -i <path> -qscale:v 1 -f image2 /tmp/stegasis/image-%d.jpg
 // Extract video audio
@@ -1068,15 +1063,14 @@ ffmpeg -framerate <fps> -i /tmp/stegasis/image-%d.jpg -i /tmp/stegasis/audio.mp3
 ffmpeg -r <fps> -i <path> -vcodec copy /tmp/stegasis/image-%d.jpg
 \end{lstlisting}
 
+The first two commands convert each frame of the video to \texttt{JPEG} images and extract any audio. The reassembly command muxes the modified video frames and audio together into a single \texttt{MKV} file. The use of \texttt{-codec copy} tells \texttt{FFmpeg} to literally copy the \texttt{JPEGs} into a Motion JPEG (\texttt{MJPEG}) stream. This ensures the frames are not recompressed - preserving the embedded data. The final command uses \texttt{-vcodec copy} which tells \texttt{FFmpeg} to losslessly extract each \texttt{JPEG} image from a \texttt{MJPEG} stream - preserving the already embedded file system.
 
-The first frame extraction command converts each frame of the video file to a \texttt{JPEG} image using the highest quality setting and writes them to \texttt{/tmp/stegasis/}. The reassembly command muxes the modified video frames and audio together into a single \texttt{MKV} file. The use of \texttt{-codec copy} tells \texttt{FFmpeg} to literally copy the \texttt{JPEGs} into a Motion JPEG (\texttt{MJPEG}) stream. This ensures the frames are not recompressed - preserving the embedded data. This process was verified to be correct by noting the \texttt{MD5} hash of the \texttt{JPEG} frames prior to being muxed. These frames were then extracted from the resulting \texttt{MKV} file, their hashes computed and compared. The second frame extraction command uses \texttt{-vcodec copy} which tells \texttt{FFmpeg} to losslessly extract each \texttt{JPEG} image from the \texttt{MJPEG} stream - preserving the embedded file system.
-
-Using the above commands, I implemented a video decoder performing the described method. When \texttt{Stegasis} is run, a check occurs to see whether the provided file is an uncompressed \texttt{AVI}. If it is, the native \texttt{AVI} decoder developed is used. If it is not, this video decoder is used, allowing \texttt{Stegasis} to operate seamlessly across all video types without the user needing to manually specify which video decoder to use.\\
+Using the above commands, I implemented a video decoder performing the described method. When \texttt{Stegasis} is run, a check occurs to see whether the provided file is an uncompressed \texttt{AVI}. If it is, the native \texttt{AVI} decoder developed is used. If not, this video decoder is used, allowing \texttt{Stegasis} to operate seamlessly across all video types without the user needing to manually specify which video decoder to use.\\
 
 \noindent
 The final step of this extension task is to implement embedding algorithms operating on the extracted \texttt{JPEG} images. Due to the design of \texttt{Stegasis}, by implementing the new algorithms satisfying the \texttt{SteganographicAlgorithm} interface, all of the file system logic will continue to work as expected.
 
-The implemented algorithms all embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. As with the core project, several versions of the basic algorithm were implemented along with more advanced algorithms such as \texttt{F4} and \texttt{F5}. Algorithm \ref{jpegalg} shows pseudocode for the basic embedding algorithm.
+The implemented algorithms all embed data within the least significant bits of the \texttt{JPEGs} discrete cosine transform coefficients. Several versions of the basic algorithm were implemented along with more advanced algorithms such as \texttt{F4} and \texttt{F5}. Algorithm \ref{jpegalg} shows pseudocode for the basic embedding algorithm.
 
 \begin{algorithm}
 \caption{Basic \texttt{JPEG} embedding algorithm.}
@@ -1826,7 +1820,7 @@ This section contains select detailed code samples.
 
 Listing \ref{chipy} shows an implementation of the Chi-Squared attack in Python which operates on the \texttt{PPM} image format.
 
-\begin{lstlisting}[language=Python,caption={Chi-Squared attack Python implementation.}, frame=single,label=chipy,showstringspaces=false,upquote=true]
+\begin{lstlisting}[language=Python,caption={Chi-Squared attack Python implementation (\texttt{script/pov3.py}).}, frame=single,label=chipy,showstringspaces=false,upquote=true]
 from scipy import integrate, special
 
 file_bytes = open(sys.argv[1], 'rb').read()
@@ -1916,7 +1910,7 @@ for i in range(1, len(output)):
 
 Listing \ref{readfs} shows the final implemented version of the \texttt{FUSE} read function callback.
 
-\begin{lstlisting}[caption={\texttt{FUSE} read function callback.}, frame=single, label=readfs,showstringspaces=false,upquote=true]
+\begin{lstlisting}[caption={\texttt{FUSE} read function callback (\texttt{fs/stegfs.cc:268}).}, frame=single, label=readfs,showstringspaces=false,upquote=true]
 int SteganographicFileSystem::read(const char *path,char *buf,size_t size, off_t offset, struct fuse_file_info *fi) {
   unordered_map<string, int>::const_iterator file = this->fileSizes.find(path);
   
@@ -1963,7 +1957,7 @@ int SteganographicFileSystem::read(const char *path,char *buf,size_t size, off_t
 \noindent
 Listing \ref{writefs} shows the final implemented version of the \texttt{FUSE} write function callback.
 
-\begin{lstlisting}[caption={\texttt{FUSE} write function callback.}, frame=single, label=writefs,showstringspaces=false,upquote=true]
+\begin{lstlisting}[caption={\texttt{FUSE} write function callback (\texttt{fs/stegfs.cc:320}).}, frame=single, label=writefs,showstringspaces=false,upquote=true]
 int SteganographicFileSystem::write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   int bytesWritten = 0, nextFrame = 0, nextOffset = 0; 
   this->decoder->getNextFrameOffset(&nextFrame, &nextOffset);  
@@ -2009,11 +2003,11 @@ The \texttt{F5} steganographic algorithm, developed by Andreas Westfeld\textsupe
 \State Determine the parameter k from the message size and embedding capacity. 
 \State Calculate the code word length $n = 2^k - 1$
 \State Embed the secret message with $(1, n, k)$ matrix encoding:
-\State \ \ \ Fill a buffer with the LSBs of $n$ nonzero DCT coefficients
+\State \ \ \ Fill a buffer with the LSBs of the next $n$ nonzero DCT coefficients
 \State \ \ \ Hash this buffer
-\State \ \ \ \texttt{XOR} the next k bits of the message with the hash value
-\State \ \ \ If the output $i$ is nonzero, the absolute value of the coefficient at buffer index $i-1$ is decremented
-\State \ \ \ Test for shrinkage. If so, jump to line 5, else advance the coefficients behind the buffer
+\State \ \ \ \texttt{XOR} k bits of the message with the hash value
+\State \ \ \ If the output $i$ is nonzero, decrement the absolute value of coefficient at index $i-1$
+\State \ \ \ If shrinkage did not occur, advance the message by k bits.
 \State \ \ \ If there is still message data, jump to line 5, else return
 \end{algorithmic}
 \end{algorithm}
@@ -2049,7 +2043,7 @@ Extraction follows a similar procedure in which blocks of $n$\footnote{There are
 Listing \ref{f5imp} shows a cut down version of the final implementation.
 
 
-\begin{lstlisting}[caption={\texttt{F5} implementation (\texttt{steg/f5.cc:86})).}, frame=single, label=f5imp,showstringspaces=false,upquote=true]
+\begin{lstlisting}[caption={\texttt{F5} implementation (\texttt{steg/f5.cc:86}).}, frame=single, label=f5imp,showstringspaces=false,upquote=true]
 virtual pair<int,int> embed(Frame *c, char *data, int reqByteCount, int offset) {
   this->crypt->encrypt(data, reqByteCount);
   JBLOCKARRAY frame;
