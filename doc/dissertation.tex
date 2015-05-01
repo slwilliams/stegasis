@@ -153,9 +153,7 @@
 
 \printtitle                    
 \vfill
-\begin{center}
-\huge{[~}\normalsize \textsc{Third Draft}\huge{~]}
-\end{center}
+
 \afterpage{\blankpage}
 \newpage
 % ------------------------------------------------------------------------------
@@ -171,7 +169,7 @@
 \textsc{Project Title}: \tab{Steganographic file systems within video files}\\
 \textsc{Examination}: \tab{Part II of the Computer Science Tripos}\\
 \textsc{Year}: \tab{2015}\\
-\textsc{Word Count}: \tab{12,035}\\
+\textsc{Word Count}: \tab{11,957}\\
 \textsc{Project Originator}: \tab{Scott Williams}\\
 \textsc{Project Supervisor}: \tab{Daniel Thomas}\\
 
@@ -357,7 +355,7 @@ Conveniently, the Independent JPEG Group provide the \texttt{libjpeg} C library\
 
 \texttt{JPEG} DCT coefficients are arranged into several \textit{components} containing \textit{rows} which contain a number of \textit{blocks}. Each block contains 64 coefficients ranging from $-2048$ to $2047$. A \texttt{JPEG} image will usually have 3 components corresponding to the \textit{Luminance and Chrominance} colour model (\texttt{YCbCr}) with the first component being luma and the remaining two being the blue-difference and red-difference chroma components. Since human perception is more sensitive to changes in luminance compared to colour\textsuperscript{\cite{sensitive}}, steganographic embedding will usually not occur within the luminance component.
 
-It is worth noting that the \texttt{JPEG} decompression and compression processes are computationally expensive. This is especially important when dealing with video since a 3 minute music video, for example, consists of around 4,500 frames (which can be considered as individual \texttt{JPEGs}). Since performance of the virtual file system is important, design decisions will need to be made to avoid any unnecessary compression and decompression operations. Also worth noting is that although \texttt{JPEG} files are small on disk, they are not once decompressed into memory. It will not be possible to hold all 4,500 decompressed \texttt{JPEG} frames of an average 3 minute video in memory.
+It is worth noting that the \texttt{JPEG} decompression and compression processes are computationally expensive. This is especially important when dealing with video since a 3 minute video, for example, consists of around 4,500 frames (which can be considered as individual \texttt{JPEGs}). Since performance of the virtual file system is important, design decisions will need to be made to avoid any unnecessary compression and decompression operations. Additionally, although \texttt{JPEG} files are small on disk, they are not once decompressed. It will not be possible to hold all decompressed \texttt{JPEG} frames of a video in memory.
 
 \subsubsection{FFmpeg}
 \label{ffmpeg}
@@ -394,7 +392,7 @@ The \texttt{read} function is called when a file system read occurs. It requests
 
 \subsection{Existing tools}
 \label{tools}
-The relatively little work on steganography within video was reflected in my search for steganographic programs operating on video files. This section contains an exhaustive list of all the video steganogrphy tools I could find freely\footnote{A further 2 programs exist claiming to embed within video, however these are closed source and not freely available to download. Therefore they have been excluded from this list. (Info Stego, Hiderman)} available on the Internet. A total of 6 tools claimed to provide steganographic embedding functionality within video files. Of these 6, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file\footnote{Admittedly you could embed a compressed archive using these tools to effectively allow a directory structure to be embedded.}  and none of them provide any sort of file system interface.
+The relatively little work on steganography within video was reflected in my search for steganographic programs operating on video files. This section contains an exhaustive list of all the video steganogrphy tools I could find freely\footnote{A further 2 programs exist claiming to embed within video, however these are not freely available to download (Info Stego, Hiderman).} available on the Internet. A total of 6 tools claimed to provide steganographic embedding functionality within video files. Of these 6, only 3 actually attempt to embed within the video data itself. None of the identified programs allow the user to embed more than one file\footnote{Admittedly you could embed a compressed archive using these tools to effectively allow a directory structure to be embedded.}  and none of them provide any sort of file system interface.
 
 \subsubsection{StegoStick}
 
@@ -417,7 +415,7 @@ The above programs all resort to embedding within video files by either appendin
 
 \subsubsection{OpenPuff}
 
-\texttt{OpenPuff}\textsuperscript{\cite{openpuff}} is a steganographic tool supporting a wide range of formats, including \texttt{3GP}, \texttt{MP4}, \texttt{MPG} and \texttt{VOB}. It allows users to embed a file within a collection of carrier objects and uses 3 user provided passwords to encrypt, scramble and whiten (mixing with noise) the provided file. Plausible deniability is also provided via the option to add decoy content. \texttt{OpenPuff} successfully embedded and retrieved a text file within a sample \texttt{MP4} video and I could notice no perceivable impact on video quality. Performance was also good due to multithreading support. However, the embedding capacity is very limited. I was only able to achieve embedding capacities of around 0.0043\%\footnote{2,600 bytes within a \SI{60}{\mega\byte} video.} even at the maximum capacity setting. This makes \texttt{OpenPuff} impractical for hiding large files - for example, you would need 770 \SI{60}{\mega\byte} \texttt{MP4} carrier files to embed an average \SI{2}{\mega\byte} \texttt{JPEG} image.
+\texttt{OpenPuff}\textsuperscript{\cite{openpuff}} is a steganographic tool supporting a wide range of formats, including \texttt{3GP}, \texttt{MP4}, \texttt{MPG} and \texttt{VOB}. It allows users to embed a file within a collection of carrier objects and uses 3 user provided passwords to encrypt, scramble and whiten (mixing with noise) the provided file. Plausible deniability is also provided via the option to add decoy content. \texttt{OpenPuff} successfully embedded and retrieved a text file within a sample \texttt{MP4} video and I could notice no perceivable impact on video quality. Performance was also good due to multithreading support. However, the embedding capacity is very limited. I was only able to achieve embedding capacities of around 0.0043\%\footnote{2,600 bytes within a \SI{60}{\mega\byte} video.} even at the maximum capacity setting. This makes \texttt{OpenPuff} impractical for hiding large files - requiring hundreds of carrier files to embed an average \SI{2}{\mega\byte} \texttt{JPEG} image.
 
 \subsubsection{Steganosaurus}
 
@@ -606,7 +604,7 @@ The actual implementation is slightly more complex than presented above due to t
 
 The \texttt{writeBack} function of the \texttt{AVI} decoder will write any modified pixel data back into the original \texttt{AVI} file and \texttt{getFrameSize} returns the number of bytes within each frame that should be embedded within, as shown in Listing \ref{framesize}.
 
-\begin{lstlisting}[language=C++, caption={\texttt{AVI} decoder \texttt{frameSize} function (\texttt{video/avi\_decoder.cc:298})}, frame=single, label=framesize]
+\begin{lstlisting}[language=C++, caption={\texttt{AVI} decoder \texttt{frameSize} function (\texttt{video/avi\_decoder.cc:298})}, frame=single,float,floatplacement=H, label=framesize]
 virtual int frameSize() {
   return (int)floor(this->aviHeader.width * this->aviHeader.height * 3 * (this->capacity / 100.0));
 };
@@ -624,8 +622,9 @@ The effect of the capacity parameter is illustrated within Figure \ref{cap50}. T
 \end{figure}
 
 \noindent
-The image used throughout this chapter for illustration purposes has been specifically chosen to emphasise the effect of the embedding process. Due to post processing applied to the video, the LSB plane closely resembles that of the original frame. This would not be the case for a video recorded on a mobile phone for example.
+The image used throughout this chapter for illustration purposes has been specifically chosen to emphasise the effect of the embedding process. Due to post processing applied to the video, the LSB plane closely resembles that of the original frame. This would not be the case for a video recorded on a mobile phone for example.\\
 
+\noindent
 The \texttt{AVI} decoder as described now provides all necessary functionality to allow the modification of pixel data to achieve the steganogrphic embedding of information within video frames. 
 
 
@@ -710,7 +709,7 @@ virtual pair<int,int> embed(Frame *f, char *data, int reqByteCount, int offset) 
 \end{figure}
 
 \noindent
-Using the LSB embedding algorithm, \SI{43.2}{\kilo\byte} of data is is embedded into a single 1280 $\times$ 720 video frame (using a capacity setting of 100\%). The resulting stego image is shown in Figure \ref{lsbemb_full}, with the left image being the cover object and the right image the stego object.
+Using the LSB embedding algorithm, \SI{43.2}{\kilo\byte} of data is embedded into a 1280 $\times$ 720 video frame (using a capacity setting of 100\%). The resulting stego image is shown in Figure \ref{lsbemb_full}, with the left image the cover object and the right image the stego object.
 
 \vfill
 
@@ -900,7 +899,7 @@ File permissions and access / modification times were considered non-essential a
 Since the file system functionality was being implemented from scratch, the code written turned out complex and intricate due to the many corner cases encountered during integration testing. A large amount of time was dedicated to testing the implemented file system and tracking down particularly nasty concurrency bugs arising in specific circumstances.\\
 
 \noindent
-The basic idea behind embedding a file system within a video is to break files written to the volume into many \textit{chunks} and embed these into the video frames. Some kind of header will need to be developed to keep track of the locations of the chunks so that each file can be rad back correctly.
+The basic idea behind embedding a file system within a video is to break files written to the volume into many \textit{chunks} and embed these into the video frames. Some kind of header will need to be developed to keep track of the locations of these chunks so that each file can be read back correctly.
 
 \subsubsection{Developing the header}
 
@@ -915,7 +914,7 @@ The header serves a similar purpose to the \textit{File Allocation Table} used w
 \noindent
 The header section (coloured blue) contains metadata about the embedded file system. ``STEG'' is the literal 4 character \texttt{ASCII} string and is used to check the header has been correctly extracted. If STEG is not found as the first 4 bytes of the header, the extraction process is aborted and an error message displayed to the user. The ``Header Bytes'' field contains the number of remaining bytes to be extracted from the \texttt{FAF}. This data contains information for each of the files within the file system, including the file name as a null terminated string, the number of chunks the file is split into and the location and size of each of these chunks. A file chunk is represented as a \texttt{FileChunk} struct defined in Listing \ref{triple}.
 
-\begin{lstlisting}[caption={FileChunk definition (\texttt{fs/stegfs.h:19})}, frame=single, label=triple]
+\begin{lstlisting}[caption={FileChunk definition (\texttt{fs/stegfs.h:19})}, frame=single, label=triple,float,floatplacement=!tbH]
 struct FileChunk {
   uint32_t frame;
   uint32_t offset;
@@ -998,7 +997,7 @@ The read function call is similar, recall the declaration which requests that \t
 
 The function \texttt{readdir} is called when the contents of a directory are requested. The implementation is straightforward and just iterates over the \texttt{fileSizes} map as shown in Listing \ref{readdir}.\\
 
-\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true,float,floatplacement=!htb]
+\begin{lstlisting}[language=C++, caption={\texttt{FUSE} readdir implementation (\texttt{fs/stegfs.cc:264}).}, frame=single, label=readdir,upquote=true]
 int SteganographicFileSystem::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
   filler(buf, '.', NULL, 0);
   filler(buf, '..', NULL, 0);
@@ -1113,9 +1112,6 @@ However, at lower capacity settings it is not possible to visually differentiate
 The basic \texttt{JPEG} embedding algorithm and the permuted variant (\texttt{OutGuess 0.1}) are both vulnerable to the \textit{histogram attack} discussed in Section \ref{security}. This motivates the implementation of more advanced algorithms such as \texttt{F4} and \texttt{F5}\textsuperscript{\cite{f5}} which resist this type of steganalysis attack. Instead of replacing the LSB of DCT coefficients, \texttt{F5} decrements the coefficients absolute value via \textit{matrix encoding}. This results in no pairs of values being produced and thus \texttt{F5} cannot be detected by the Chi-Squared attack. Matrix encoding within \texttt{F5} uses \textit{Hamming codes} to embed a k-bit message into a $2^k -1$ bit code word, changing it at most by one bit. This allows \texttt{F5} to achieve high embedding efficiencies. See the Appendix Section \ref{app:f5} for more details and an implementation of \texttt{F5}.\\
 
 \noindent
-The performance of \texttt{Stegasis} operating on \texttt{JPEG} images is noticeably slower compared to uncompressed \texttt{AVI} files. This is due to the decompressing and recompressing of the \texttt{JPEG} frames. As mentioned in the preparation section, it is not possible to hold all of the decompressed \texttt{JPEG} frames in memory, meaning they will need to remain compressed, only being decompressed when requested.\\
-
-\noindent
 The above described additions to \texttt{Stegasis} allow it to seamlessly operate across a large range of video formats, greatly increasing practicality and successfully completing the extension task.
 
 \subsubsection{File system directory structures}
@@ -1131,19 +1127,18 @@ int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
 }
 \end{lstlisting}
 
-The \texttt{readdir} implementation will need to be modified to correctly list the files with respect to the current working directory. It is no longer correct to just iterate over all files in the file system and return their names since you only want to return a file if the function call is requesting the directory that file directly resides within. This can be accomplished by testing if the requested path is a prefix of the file name and by checking the number of slashes in the file name and comparing this to the number of slashes in the path. Algorithm \ref{dirs} describes the \texttt{readdir} implementation.
+The \texttt{readdir} implementation will need to be modified to correctly list the files with respect to the current working directory. It is no longer correct to just iterate over all files in the file system and return their names since you only want to return a file if the function call is requesting the directory that file directly resides within. This can be accomplished by testing if the requested path is a prefix of the file name and by checking the number of slashes in the file name is equal to the number of slashes in the path. Algorithm \ref{dirs} describes the \texttt{readdir} implementation.
 
 \begin{algorithm}
 \caption{Algorithm for \texttt{readdir}.}
 \label{dirs}
 \begin{algorithmic}[1]
-\State add(`..')
-\State add(`.')
+\State add(`..'), add(`.')
 \State pathSlashes $\gets$ number of slashes in path
-\For{for file in (fileSizes and dirs)}
-	\State fileSlashes $\gets$ number of slashes in file
+\For{file in (fileSizes and dirs)}
+	\State fileSlashes $\gets$ number of slashes in file path
 	\If{path == /}
-		\If{file contains one slash}
+		\If{file path contains one slash}
 			\State add(file)
 		\EndIf
 	\ElsIf{path is a prefix of file and pathSlashes == fileSlashes - 1}
@@ -1153,9 +1148,9 @@ The \texttt{readdir} implementation will need to be modified to correctly list t
 \end{algorithmic}
 \end{algorithm}
 
-Changes will now need to be made to write the directories to the video file and to read them back, preserving the directory structure between unmounts and remounts. I chose to represent a directory as a file in the header of the video which has a value of $-1$ in the \texttt{number of triples} field. This meant the structure of the \texttt{FAF} did not need to be modified. The \texttt{readHeader} and \texttt{writeHeader} functions were modified appropriately.
+Directories will also need to be written to the header. I chose to represent a directory as a file in the header of the video which has a value of $-1$ in the \texttt{number of triples} field. This meant the structure of the \texttt{FAF} did not need to be modified. The \texttt{readHeader} and \texttt{writeHeader} functions were modified appropriately.
 
-These changes successfully implement the extension task and greatly improve the usability of the file system. With the exception of permissions and access and modification times, \texttt{Stegasis} now provides all the functionality one would expect from a typical file system.
+These changes successfully implement the extension task and greatly improve the usability of the file system. With the exception of permissions and access / modification times, \texttt{Stegasis} now provides all the functionality one would expect from a typical file system.
 
 \subsubsection{Plausible deniability}
 
