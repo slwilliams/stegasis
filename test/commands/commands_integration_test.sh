@@ -28,6 +28,7 @@ if [[ "$expected2" != "$output" ]]; then
   cleanExit
 fi
 
+dd if=/dev/urandom of=src/randData bs=1000000 count=25
 cp src/randData /tmp/stegtest
 cp /tmp/stegtest /tmp
 expectedmd5="d7fb762583ea90368cfac62a608890ad"
