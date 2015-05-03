@@ -210,6 +210,23 @@ int SteganographicFileSystem::mkdir(const char *path, mode_t mode) {
   return 0;
 };
 
+int SteganographicFileSystem::rename(const char *path, const char *newpath) {
+  string oldName = string(path);
+  string newName = string(newpath);
+  if (this->fileSizes.find(oldName) != this->fileSizes.end()) {
+    int size = this->fileSizes.find(oldName)->second;
+    this->fileSizes.erase(oldName);
+    this->fileSizes[newName] = size;
+    auto chunks = this->fileIndex.find(oldName)->second;
+    this->fileIndex.erase(oldName);
+    this->fileIndex[newName] = chunks;
+  } else {
+    this->dirs.erase(oldName);
+    this->dirs[newName] = true;
+  }
+  return 0;
+};
+
 int SteganographicFileSystem::create(const char *path, mode_t mode, struct fuse_file_info *fi) {
   this->fileSizes[path] = 0;
   this->fileIndex[path] = vector<struct FileChunk>();

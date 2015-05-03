@@ -19,6 +19,10 @@ int wrap_open(const char *path, struct fuse_file_info *fi) {
   return SteganographicFileSystem::Instance()->open(path, fi);
 }
 
+int wrap_rename(const char *path, const char *newpath) {
+  return SteganographicFileSystem::Instance()->rename(path, newpath);
+}
+
 int wrap_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
   return SteganographicFileSystem::Instance()->write(path, buf, size, offset, fi);
 }
@@ -104,6 +108,7 @@ void wrap_mount(string mountPoint) {
   fs_oper.unlink   = wrap_unlink;
   fs_oper.flush    = wrap_flush;
   fs_oper.mkdir    = wrap_mkdir;
+  fs_oper.rename   = wrap_rename;
 
   fuse_main(6, argv, &fs_oper, NULL);
 }
