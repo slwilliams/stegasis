@@ -31,7 +31,7 @@ fi
 dd if=/dev/urandom of=src/randData bs=1000000 count=25
 cp src/randData /tmp/stegtest
 cp /tmp/stegtest /tmp
-expectedmd5="d7fb762583ea90368cfac62a608890ad"
+expectedmd5=$(md5sum src/randData | cut -f 1 -d ' ')
 outputmd5=$(md5sum /tmp/randData | cut -f 1 -d ' ')
 if [[ "$expectedmd5" != "$outputmd5" ]]; then
   echo "MD5 of randData did not match"
